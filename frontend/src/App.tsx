@@ -595,8 +595,26 @@ export function App() {
               </span>
               <div>
                 <div className="text-xs font-bold text-slate-800 line-clamp-1">{selectedDiss.title}</div>
-                <div className="text-[11px] text-slate-500">
-                  {selectedDiss.authors} • {selectedDiss.university} ({selectedDiss.publication_year})
+                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
+                  <span>
+                    {selectedDiss.authors} • {selectedDiss.university} ({selectedDiss.publication_year})
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                    Source: {selectedDiss.source_repo}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                    Rigor Confidence: {(selectedDiss.scientific_rigor_score * 100).toFixed(0)}%
+                  </span>
+                  {selectedDiss.source_url && (
+                    <a
+                      href={selectedDiss.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-600 font-bold underline"
+                    >
+                      Verify Source Link ↗
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -1057,9 +1075,26 @@ export function App() {
                 <div className="bg-amber-50/90 border-2 border-amber-200 rounded-3xl p-6 shadow-xs">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1.5">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200/70 text-amber-900 text-xs font-bold">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Plain-English Discovery Summary
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200/70 text-amber-900 text-xs font-bold">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Discovery & Confidence Summary
+                        </div>
+                        {activeDataset && (
+                          <span className="px-3 py-1 rounded-full bg-white border border-amber-300 text-slate-700 text-xs font-semibold">
+                            Dataset Source: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows × {activeDataset.col_count} cols)
+                          </span>
+                        )}
+                        {activeDataset?.source_url && (
+                          <a
+                            href={activeDataset.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold underline"
+                          >
+                            Dataset Origin Link ↗
+                          </a>
+                        )}
                       </div>
                       <h2 className="text-lg font-bold text-slate-800">
                         We tested {activeRun.models_tested_count} machine learning models on{' '}
