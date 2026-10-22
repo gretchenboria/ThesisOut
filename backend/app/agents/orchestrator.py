@@ -100,10 +100,13 @@ class PipelineOrchestrator:
                 logger.warning("LazyPredict skipped target %s on %s: %s", t_col, dataset_name, exc)
                 continue
 
-        # Sort candidate runs so non-trivial empirical signals (where models don't all score a degenerate 1.0) come first
+        # Sort candidate runs so non-trivial empirical signals come first while preserving valid primary targets
         def _non_trivial_rank(r: dict) -> tuple:
-            is_trivial_ones = r["best_score"] >= 0.999 and r["signal_gain_delta"] == 0.0
-            return (0 if is_trivial_ones else 1, r["signal_gain_delta"], r["best_score"])
+            bs = float(r.get("best_score") or 0.0)
+            gain = float(r.get("signal_gain_delta") or 0.0)
+            is_valid_band = 0.55 <= bs <= 0.995
+            is_primary = 1 if (r.get("is_author_primary_target") and is_valid_band) else 0
+            return (1 if is_valid_band else 0, is_primary, round(gain, 3), round(bs, 3))
 
         candidate_results.sort(key=_non_trivial_rank, reverse=True)
 
@@ -396,6 +399,7 @@ class PipelineOrchestrator:
                     lazypredict_best_model=lazy_run.best_model_name,
                     lazypredict_best_score=lazy_run.best_score,
                     author_baseline_score=lazy_run.author_baseline_score,
+                    file_path=ds_art.file_path,
                 )
             except Exception as exc:
                 logger.warning("Autonomous deep verification warning: %s", exc)

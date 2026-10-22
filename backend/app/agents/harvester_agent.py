@@ -4,11 +4,15 @@ Queries OpenAlex (`type:dissertation`), EuropePMC, and Zenodo APIs for real doct
 and real open-access tabular datasets (.csv, .tsv, .xlsx, .parquet).
 Zero synthetic or simulated data generation.
 """
+import io
 import logging
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import httpx
+import pandas as pd
+
+from app.agents.data_scientist import is_junk_or_id_column
 
 logger = logging.getLogger(__name__)
 
@@ -188,16 +192,19 @@ class HarvesterAgent:
                             if dl_url:
                                 r_file = await client.get(dl_url)
                                 if r_file.status_code == 200:
-                                    # Verify the CSV has meaningful column headers before saving
-                                    preview_line = r_file.text.splitlines()[0] if r_file.text else ""
-                                    headers = [h.strip().strip('"') for h in preview_line.split(",") if h.strip()]
-                                    meaningful_headers = [
-                                        h for h in headers
-                                        if not h.lower().startswith("unnamed")
-                                        and not re.search(r"\.\d+$", h)
-                                        and len(h) >= 2
-                                    ]
-                                    if len(meaningful_headers) < 3:
+                                    # Verify the CSV has >= 20 rows and >= 3 non-junk columns before saving
+                                    try:
+                                        df_preview = pd.read_csv(io.BytesIO(r_file.content), nrows=120)
+                                        if len(df_preview) < 20 or len(df_preview.columns) < 4:
+                                            continue
+                                        usable_cols = [
+                                            c for c in df_preview.columns
+                                            if not is_junk_or_id_column(str(c), df_preview[c], len(df_preview))
+                                            and df_preview[c].nunique(dropna=True) >= 2
+                                        ]
+                                        if len(usable_cols) < 3:
+                                            continue
+                                    except Exception:
                                         continue
                                     safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", Path(key).name)
                                     out_path = target_dir / f"zenodo_{rec_id}_{safe_name}"

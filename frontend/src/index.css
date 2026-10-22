@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --bg-cool: #F3F6FC;
+  --bg-canvas: #F5F2EB;
   --ink-primary: #0F172A;
+  --leather-espresso: #3B1A08;
+  --leather-mahogany: #5C2C12;
+  --leather-saddle: #7C3F1D;
+  --leather-stitch: #D6B89C;
   --accent-sapphire: #2563EB;
   --accent-indigo: #4F46E5;
   --accent-violet: #7C3AED;
@@ -11,87 +15,226 @@
 
 body {
   background:
-    radial-gradient(1200px circle at 12% 8%, rgba(59, 130, 246, 0.08) 0%, transparent 55%),
-    radial-gradient(1000px circle at 88% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(900px circle at 50% 95%, rgba(225, 29, 72, 0.05) 0%, transparent 55%),
-    #F3F6FC;
+    radial-gradient(900px circle at 10% 12%, rgba(92, 44, 18, 0.10) 0%, transparent 55%),
+    radial-gradient(850px circle at 88% 18%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
+    radial-gradient(900px circle at 50% 90%, rgba(124, 63, 29, 0.10) 0%, transparent 55%),
+    #F4F1EA;
   color: var(--ink-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Google Sans', 'Google Sans Text', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-@keyframes trajectoryFlow {
+/* Vintage Mahogany & Saddle Leather Texture & Stitched Accents */
+.leather-bar {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(0, 0, 0, 0.06) 2px,
+      rgba(0, 0, 0, 0.06) 4px
+    ),
+    linear-gradient(180deg, #5C2C12 0%, #3E1C0A 100%);
+  border-bottom: 3px solid #1E0D04;
+  box-shadow: 0 4px 14px rgba(59, 26, 8, 0.22);
+}
+
+.leather-badge {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.04) 0px,
+      rgba(255, 255, 255, 0.04) 2px,
+      transparent 2px,
+      transparent 4px
+    ),
+    linear-gradient(135deg, #6B3410 0%, #431E08 100%);
+  color: #FAF6F0;
+  border: 2px solid #240F03;
+  outline: 1.5px dashed rgba(214, 184, 156, 0.55);
+  outline-offset: -4px;
+  box-shadow: 3px 3px 0px #240F03;
+}
+
+.leather-folio-banner {
+  background:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 2px,
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.05) 5px
+    ),
+    linear-gradient(90deg, #4A220B 0%, #6B3410 50%, #4A220B 100%);
+  color: #FAF6F0;
+  border: 2px solid #240F03;
+  outline: 1.5px dashed rgba(214, 184, 156, 0.45);
+  outline-offset: -5px;
+}
+
+/* Fast, noticeable trajectory dash animations */
+@keyframes trajectoryFlowFast {
   0% {
-    stroke-dashoffset: 240;
+    stroke-dashoffset: 160;
   }
   100% {
     stroke-dashoffset: 0;
   }
 }
 
-@keyframes trajectoryFlowReverse {
+@keyframes trajectoryFlowReverseFast {
   0% {
     stroke-dashoffset: 0;
   }
   100% {
-    stroke-dashoffset: 240;
+    stroke-dashoffset: 160;
   }
 }
 
-@keyframes lensDriftPrimary {
+/* Playful, clearly noticeable magnifying glass scanning animations */
+@keyframes lensScanPrimary {
   0%, 100% {
-    transform: translate(0px, 0px) rotate(0deg);
+    transform: translate(0px, 0px) rotate(-6deg) scale(1);
   }
-  33% {
-    transform: translate(42px, -24px) rotate(4deg);
-  }
-  66% {
-    transform: translate(-28px, 18px) rotate(-3deg);
-  }
-}
-
-@keyframes lensDriftSecondary {
-  0%, 100% {
-    transform: translate(0px, 0px) scale(1);
+  25% {
+    transform: translate(110px, 35px) rotate(8deg) scale(1.08);
   }
   50% {
-    transform: translate(-36px, -22px) scale(1.04);
+    transform: translate(65px, 95px) rotate(-4deg) scale(1.03);
+  }
+  75% {
+    transform: translate(-55px, 45px) rotate(6deg) scale(1.06);
+  }
+}
+
+@keyframes lensScanSecondary {
+  0%, 100% {
+    transform: translate(0px, 0px) rotate(5deg) scale(1);
+  }
+  33% {
+    transform: translate(-120px, 50px) rotate(-10deg) scale(1.1);
+  }
+  66% {
+    transform: translate(-45px, -65px) rotate(7deg) scale(1.04);
+  }
+}
+
+@keyframes lensScanTertiary {
+  0%, 100% {
+    transform: translate(0px, 0px) rotate(-4deg) scale(1);
+  }
+  50% {
+    transform: translate(95px, -70px) rotate(9deg) scale(1.12);
+  }
+}
+
+/* Binary stream drift animations */
+@keyframes binaryStreamDrift {
+  0% {
+    transform: translateX(-40px) translateY(0px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(40px) translateY(-12px);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateX(-40px) translateY(0px);
+    opacity: 0.35;
+  }
+}
+
+@keyframes binaryPulse {
+  0%, 100% {
+    opacity: 0.30;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.70;
+    transform: scale(1.05);
   }
 }
 
 .trajectory-dash {
-  stroke-dasharray: 8 10;
-  animation: trajectoryFlow 18s linear infinite;
+  stroke-dasharray: 14 10;
+  animation: trajectoryFlowFast 3.2s linear infinite;
 }
 
-.trajectory-dash-slow {
-  stroke-dasharray: 4 12;
-  animation: trajectoryFlowReverse 26s linear infinite;
+.trajectory-dash-reverse {
+  stroke-dasharray: 10 12;
+  animation: trajectoryFlowReverseFast 3.8s linear infinite;
 }
 
-.floating-magnifying-lens-1 {
-  animation: lensDriftPrimary 22s ease-in-out infinite;
+.lens-float-1 {
+  animation: lensScanPrimary 7s ease-in-out infinite;
   transform-origin: center;
 }
 
-.floating-magnifying-lens-2 {
-  animation: lensDriftSecondary 28s ease-in-out infinite;
+.lens-float-2 {
+  animation: lensScanSecondary 8.5s ease-in-out infinite;
   transform-origin: center;
 }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  box-shadow:
-    0 12px 32px -8px rgba(15, 23, 42, 0.06),
-    0 4px 12px -2px rgba(37, 99, 235, 0.04);
+.lens-float-3 {
+  animation: lensScanTertiary 6.5s ease-in-out infinite;
+  transform-origin: center;
 }
 
-.glass-subpanel {
-  background: rgba(248, 250, 252, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.24);
+.binary-drift {
+  font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  animation: binaryStreamDrift 6s ease-in-out infinite;
+}
+
+.binary-pulse {
+  font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  animation: binaryPulse 4s ease-in-out infinite;
+}
+
+/* Playful, high-contrast case-file cards with vintage leather spine & shadow accents */
+.pop-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 2px solid #2B1406;
+  border-left: 8px solid #5C2C12;
+  box-shadow: 5px 5px 0px #3B1A08;
+}
+
+.pop-card-sapphire {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border: 2px solid #2B1406;
+  border-left: 8px solid #2563EB;
+  box-shadow: 5px 5px 0px #3B1A08;
+}
+
+.pop-card-crimson {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border: 2px solid #2B1406;
+  border-left: 8px solid #E11D48;
+  box-shadow: 5px 5px 0px #3B1A08;
+}
+
+.pop-subcard {
+  background: #FAF8F5;
+  border: 1.5px solid #D6C7B8;
+  box-shadow: 3px 3px 0px rgba(59, 26, 8, 0.14);
+}
+
+.pop-btn {
+  border: 2px solid #240F03;
+  box-shadow: 3px 3px 0px #3B1A08;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.pop-btn:hover:not(:disabled) {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px #3B1A08;
+}
+
+.pop-btn:active:not(:disabled) {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 1.5px 1.5px 0px #3B1A08;
 }

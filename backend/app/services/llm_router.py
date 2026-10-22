@@ -208,14 +208,15 @@ class LLMRouter:
         - hypothesis: formal 1-sentence scientific hypothesis
         """
         system_prompt = (
-            "You are the ThesisOut Autonomous Discovery Planner powered by Gemini.\n"
-            "Given a user's natural-language question, idea, or topic, extract the optimal parameters "
-            "to run the full scientific discovery and 30-model inference pipeline.\n"
+            "You are a research planner for ThesisOut.\n"
+            "Given a user's research question or topic, extract parameters to run the discovery and 30-model evaluation pipeline.\n"
+            "Write in a direct, plain human style. Do not use emojis, asterisks, semicolons, em-dashes, or AI buzzwords.\n"
+            "Do not attribute authorship to any AI or LLM.\n"
             "Respond strictly in valid JSON with keys:\n"
             '  "search_query": "2-4 core scientific keywords to query OpenAlex and Zenodo",\n'
             '  "probe_entity": "1 specific gene symbol, protein, drug, or core technical term (e.g. EGFR, BRCA1, sepsis, CRISPR, lithium, transformer)",\n'
             '  "domain": "biomedical" or "cs_ai",\n'
-            '  "hypothesis": "Formal 1-sentence testable scientific hypothesis (no emojis)"'
+            '  "hypothesis": "Plain, direct 1-sentence testable hypothesis"'
         )
         try:
             res = await self._call_gemini_json(system_prompt, f"USER_PROMPT: {user_prompt}")
@@ -257,13 +258,13 @@ class LLMRouter:
         Generates a comprehensive Gemini Executive Summary after the full workflow has executed.
         """
         system_prompt = (
-            "You are the ThesisOut Scientific Discovery & Moonshot Synthesis Engine powered by Gemini.\n"
-            "Write a clear, authoritative 3-paragraph Executive Summary (no emojis, no markdown bolding noise) "
-            "explaining:\n"
-            "1. How the user's question and hypothesis were tested on the harvested dissertation and dataset.\n"
-            "2. What the 30-model LazyPredict sweep and 5-stage Deep Inference Verification revealed (cite exact scores, "
-            "model names, and top predictive variables).\n"
-            "3. The resulting Moonshot Market Translation Dossier, clinical/commercial whitespace, and executed verification actions.\n"
+            "Write a clear, direct 3-paragraph summary of this research investigation.\n"
+            "Strict writing rules: Do not use emojis, asterisks, hashtags, semicolons, or em-dashes. "
+            "Never mention AI, LLMs, or model authorship. Use short, active sentences and address the reader as 'you'.\n"
+            "Cover:\n"
+            "1. How your question and hypothesis were tested on the dissertation and dataset.\n"
+            "2. What the 30-model cross-validated audit and 5-stage verification showed, citing exact scores, model names, and top variables.\n"
+            "3. What product or therapy to build based on the ClinicalTrials.gov, OpenTargets, and ChEMBL whitespace checks.\n"
             "Respond strictly in JSON: {\"executive_summary\": \"...\"}"
         )
         user_msg = json.dumps(
@@ -285,17 +286,15 @@ class LLMRouter:
             logger.warning("Executive summary fallback: %s", exc)
 
         return (
-            f"In response to your inquiry ('{user_prompt}'), ThesisOut formulated the hypothesis: '{hypothesis}' and "
-            f"executed an autonomous end-to-end investigation anchored on the study '{diss_title}'.\n\n"
-            f"Across {lazy_run_info.get('models_tested_count', 30)} machine learning architectures benchmarked on target variable "
-            f"'{lazy_run_info.get('target_column')}', {lazy_run_info.get('best_model_name')} achieved {lazy_run_info.get('best_score')} "
-            f"({lazy_run_info.get('primary_metric_name')}), outperforming the classical linear baseline ({lazy_run_info.get('author_baseline_score')}) "
-            f"by +{round(float(lazy_run_info.get('signal_gain_delta', 0)) * 100, 1)}%. Five-stage Deep Inference Verification confirmed "
-            f"non-random signal separation and stacked a Level-2 Super-Learner ensemble reaching "
-            f"{deep_info.get('stage2_super_learner_ensemble', {}).get('super_learner_score', lazy_run_info.get('best_score'))}.\n\n"
-            f"Cross-referencing these empirical findings against live ClinicalTrials.gov, OpenTargets, and ChEMBL registries "
-            f"yielded the Moonshot Dossier '{opp_info.get('title')}' (Translation Opportunity Score: {opp_info.get('overall_tos_score')}/100), "
-            f"with all 4 verification steps, provisional patent claims, and reproducible Python code executed below."
+            f"You asked about '{user_prompt}'. To test whether '{hypothesis}' holds up in practice, "
+            f"ThesisOut pulled the study '{diss_title}' and audited its raw dataset.\n\n"
+            f"Across {lazy_run_info.get('models_tested_count', 30)} cross-validated models tested on "
+            f"'{lazy_run_info.get('target_column')}', {lazy_run_info.get('best_model_name')} scored {lazy_run_info.get('best_score')} "
+            f"({lazy_run_info.get('primary_metric_name')}). That beats the author's linear baseline ({lazy_run_info.get('author_baseline_score')}) "
+            f"by +{round(float(lazy_run_info.get('signal_gain_delta', 0)) * 100, 1)}%. Five-stage verification confirmed the signal holds out-of-fold, "
+            f"with the stacked ensemble reaching {deep_info.get('stage2_super_learner_ensemble', {}).get('super_learner_score', lazy_run_info.get('best_score'))}.\n\n"
+            f"Checking ClinicalTrials.gov, OpenTargets, and ChEMBL exposed a clear gap for '{opp_info.get('title')}' "
+            f"(Translation Score: {opp_info.get('overall_tos_score')}/100). All four validation steps, patent claims, and Python code are ready below."
         )
 
 

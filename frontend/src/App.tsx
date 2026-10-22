@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowRight,
   BookOpen,
   CheckCircle2,
   ChevronDown,
@@ -12,7 +11,6 @@ import {
   Play,
   RefreshCw,
   Search,
-  Send,
   Upload,
 } from 'lucide-react';
 
@@ -195,35 +193,12 @@ interface CopilotMessage {
   model_used?: string;
 }
 
-function inferDomainFromText(text: string): string {
-  const lower = text.toLowerCase();
-  const csKeywords = [
-    'transformer',
-    'battery',
-    'neural',
-    'compiler',
-    'quantum',
-    'robotics',
-    'silicon',
-    'algorithm',
-    'latency',
-    'gpu',
-    'semiconductor',
-    'grid',
-  ];
-  return csKeywords.some((k) => lower.includes(k)) ? 'cs_ai' : 'biomedical';
-}
-
 export function App() {
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [step1Mode, setStep1Mode] = useState<'copilot' | 'upload' | 'saved'>('copilot');
-
-  const [showAllModels, setShowAllModels] = useState<boolean>(false);
-  const [showDeepCheck, setShowDeepCheck] = useState<boolean>(true);
+  const [showAllModels, setShowAllModels] = useState<boolean>(true);
+  const [showUploadBox, setShowUploadBox] = useState<boolean>(false);
 
   const [dissertations, setDissertations] = useState<Dissertation[]>([]);
   const [opportunities, setOpportunities] = useState<MarketOpportunity[]>([]);
-  const [, setProblems] = useState<IndustryProblem[]>([]);
   const [selectedDissId, setSelectedDissId] = useState<number | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -233,21 +208,16 @@ export function App() {
   const [stepActionResults, setStepActionResults] = useState<Record<string, any>>({});
   const [executingStepKey, setExecutingStepKey] = useState<string | null>(null);
 
-  // Autonomous Gemini Executive Summary & Hypothesis
   const [executiveSummary, setExecutiveSummary] = useState<string>('');
   const [activeHypothesis, setActiveHypothesis] = useState<string>('');
-
-  const [, setRunningCustomTarget] = useState<boolean>(false);
-
-  const [zenodoInput, setZenodoInput] = useState<string>('');
-  const [attachingData, setAttachingData] = useState<boolean>(false);
+  const [runningCustomTarget, setRunningCustomTarget] = useState<boolean>(false);
 
   const [harvesting, setHarvesting] = useState<boolean>(false);
   const [streamEvents, setStreamEvents] = useState<string[]>([]);
-  const [probeData, setProbeData] = useState<any>(null);
-  const [, setProbing] = useState<boolean>(false);
+  const [, setProbeData] = useState<any>(null);
 
   const [chatInput, setChatInput] = useState<string>('');
+  const [followUpInput, setFollowUpInput] = useState<string>('');
   const [chatLoading, setChatLoading] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([]);
 
@@ -261,18 +231,15 @@ export function App() {
   const fetchAllData = async () => {
     setErrorMsg(null);
     try {
-      const [dRes, oRes, pRes] = await Promise.all([
+      const [dRes, oRes] = await Promise.all([
         fetch('/api/dissertations'),
         fetch('/api/opportunities'),
-        fetch('/api/problems'),
       ]);
       const dData: Dissertation[] = await dRes.json();
       const oData: MarketOpportunity[] = await oRes.json();
-      const pData: IndustryProblem[] = await pRes.json();
 
       setDissertations(dData);
       setOpportunities(oData);
-      setProblems(pData);
 
       if (dData.length > 0 && !selectedDissId) {
         setSelectedDissId(dData[0].id);
@@ -294,18 +261,19 @@ export function App() {
     activeDataset?.lazy_runs?.find((r) => r.id === selectedRunId) ||
     activeDataset?.lazy_runs?.[0];
 
+  const activeOpportunities = opportunities.filter(
+    (o) => !selectedDiss || o.dissertation_id === selectedDiss.id
+  );
+
   const handleSelectDissertation = (diss: Dissertation) => {
     setSelectedDissId(diss.id);
     const firstRun = diss.datasets?.[0]?.lazy_runs?.[0];
     if (firstRun) {
       setSelectedRunId(firstRun.id);
     }
-    setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEscalateDeepInference = async (lazyRunId: number) => {
-    setShowDeepCheck(true);
     if (escalationCache[lazyRunId]) return;
     setEscalatingRunId(lazyRunId);
     setErrorMsg(null);
@@ -336,74 +304,21 @@ export function App() {
           dataset_id: activeDataset.id,
           target_column: colName,
           is_author_primary_target: false,
-          target_rationale: `Investigating column ${colName} via Gemini Co-Pilot`,
+          target_rationale: `Testing column ${colName}`,
         }),
       });
       if (res.ok) {
         const newRun: LazyPredictRun = await res.json();
         await fetchAllData();
         setSelectedRunId(newRun.id);
-        setCurrentStep(2);
       }
     } catch (err) {
-      setErrorMsg('Could not run LazyPredict on that column.');
+      setErrorMsg('Could not run model sweep on that column.');
     } finally {
       setRunningCustomTarget(false);
     }
   };
 
-  const handleAttachZenodo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedDiss || !zenodoInput.trim()) return;
-    setAttachingData(true);
-    setErrorMsg(null);
-    try {
-      const fd = new FormData();
-      fd.append('zenodo_id_or_url', zenodoInput.trim());
-      const res = await fetch(`/api/dissertations/${selectedDiss.id}/attach-zenodo`, {
-        method: 'POST',
-        body: fd,
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        setErrorMsg(err.detail || 'Could not find a CSV/TSV file on that Zenodo record.');
-      } else {
-        await fetchAllData();
-        setZenodoInput('');
-      }
-    } catch (err) {
-      setErrorMsg('Failed to connect to Zenodo.');
-    } finally {
-      setAttachingData(false);
-    }
-  };
-
-  const handleAttachDatasetFile = async (file: File) => {
-    if (!selectedDiss) return;
-    setAttachingData(true);
-    setErrorMsg(null);
-    try {
-      const fd = new FormData();
-      fd.append('dataset_file', file);
-      const res = await fetch(`/api/dissertations/${selectedDiss.id}/upload-dataset`, {
-        method: 'POST',
-        body: fd,
-      });
-      if (res.ok) {
-        await fetchAllData();
-      }
-    } catch (err) {
-      setErrorMsg('Dataset upload failed.');
-    } finally {
-      setAttachingData(false);
-    }
-  };
-
-  /**
-   * Autonomous End-to-End Gemini Workflow:
-   * Ask Gemini -> Formulates hypothesis -> Streams dissertations & datasets -> Runs 30+ LazyPredict models ->
-   * Escalates to 5-Stage Deep Inference -> Probes 9 live APIs -> Executes all 4 actions -> Reveals Moonshot & Supporting Evidence!
-   */
   const handleRunAutonomousGeminiWorkflow = (promptOverride?: string) => {
     const promptText = (promptOverride ?? chatInput).trim();
     if (!promptText || harvesting) return;
@@ -411,7 +326,7 @@ export function App() {
     if (!promptOverride) setChatInput('');
     setHarvesting(true);
     setErrorMsg(null);
-    setStreamEvents([`Submitting inquiry to Gemini Autonomous Discovery Engine: "${promptText}"...`]);
+    setStreamEvents([`Running investigation: "${promptText}"`]);
     setChatMessages((prev) => [...prev, { role: 'user', content: promptText }]);
 
     const url = `/api/copilot/autonomous-stream?prompt=${encodeURIComponent(promptText)}`;
@@ -458,13 +373,10 @@ export function App() {
                 role: 'assistant',
                 content: payload.executive_summary,
                 hypothesis_formulation: payload.plan?.hypothesis,
-                model_used: 'Gemini Autonomous Discovery Engine',
+                model_used: 'ThesisOut Discovery',
               },
             ]);
           }
-          // Automatically reveal the Moonshot + Supporting Evidence view (Stage 03)
-          setCurrentStep(3);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (err) {
         console.error('Autonomous stream parse error:', err);
@@ -478,16 +390,13 @@ export function App() {
     };
   };
 
-  /**
-   * Conversational Follow-up Chat with Gemini on already-loaded data
-   */
   const handleFollowUpChat = async (customPrompt?: string) => {
-    const text = (customPrompt ?? chatInput).trim();
+    const text = (customPrompt ?? followUpInput).trim();
     if (!text || chatLoading) return;
 
     const updatedHistory: CopilotMessage[] = [...chatMessages, { role: 'user', content: text }];
     setChatMessages(updatedHistory);
-    if (!customPrompt) setChatInput('');
+    if (!customPrompt) setFollowUpInput('');
     setChatLoading(true);
     setErrorMsg(null);
 
@@ -514,55 +423,11 @@ export function App() {
             model_used: data.model_used || 'Gemini 2.5 (Live API)',
           },
         ]);
-      } else {
-        setErrorMsg('Gemini Co-Pilot request encountered an error.');
       }
     } catch (err) {
-      setErrorMsg('Failed to reach Gemini Co-Pilot endpoint.');
+      setErrorMsg('Failed to reach Gemini endpoint.');
     } finally {
       setChatLoading(false);
-    }
-  };
-
-  const handleCopilotActionClick = (action: CopilotAction) => {
-    if (action.action_type === 'harvest_stream') {
-      handleRunAutonomousGeminiWorkflow(action.query_or_column);
-    } else if (action.action_type === 'probe_apis') {
-      handleRunLiveProbe(action.query_or_column);
-    } else if (action.action_type === 'run_lazypredict_column') {
-      handleRunCustomTargetColumn(action.query_or_column);
-    } else if (action.action_type === 'run_deep_verification' && activeRun) {
-      handleEscalateDeepInference(activeRun.id);
-    } else if (action.action_type === 'follow_up_prompt') {
-      handleFollowUpChat(action.query_or_column);
-    }
-  };
-
-  const handleResetWorkspace = async () => {
-    await fetch('/api/workspace/reset', { method: 'DELETE' });
-    setDissertations([]);
-    setOpportunities([]);
-    setProblems([]);
-    setSelectedDissId(null);
-    setSelectedRunId(null);
-    setStreamEvents([]);
-    setProbeData(null);
-    setExecutiveSummary('');
-    setActiveHypothesis('');
-    setChatMessages([]);
-    setCurrentStep(1);
-  };
-
-  const handleRunLiveProbe = async (q: string) => {
-    const targetQ = q.trim() || selectedDiss?.title?.split(' ')[0] || 'EGFR';
-    setProbing(true);
-    try {
-      const res = await fetch(`/api/integrations/probe?query=${encodeURIComponent(targetQ)}`);
-      if (res.ok) {
-        setProbeData(await res.json());
-      }
-    } finally {
-      setProbing(false);
     }
   };
 
@@ -598,1306 +463,995 @@ export function App() {
     setUploading(true);
     setErrorMsg(null);
     try {
-      const formData = new FormData();
-      formData.append('title', uploadTitle);
-      formData.append('university', uploadUni || 'Research University');
-      formData.append('domain', inferDomainFromText(uploadTitle));
-      if (uploadTarget) formData.append('author_primary_target', uploadTarget);
-      if (uploadPdf) formData.append('pdf_file', uploadPdf);
-      if (uploadCsv) formData.append('dataset_file', uploadCsv);
+      const fd = new FormData();
+      fd.append('title', uploadTitle);
+      fd.append('authors', 'Uploaded Investigation');
+      fd.append('university', uploadUni || 'Research Lab');
+      fd.append('domain', 'biomedical');
+      if (uploadTarget.trim()) fd.append('author_primary_target', uploadTarget.trim());
+      if (uploadPdf) fd.append('pdf_file', uploadPdf);
+      if (uploadCsv) fd.append('dataset_file', uploadCsv);
 
-      const res = await fetch('/api/upload-dissertation', {
+      const res = await fetch('/api/dissertations/upload', {
         method: 'POST',
-        body: formData,
+        body: fd,
       });
       if (res.ok) {
-        const created: Dissertation = await res.json();
+        const data = await res.json();
         await fetchAllData();
-        handleSelectDissertation(created);
+        if (data.dissertation_id) setSelectedDissId(data.dissertation_id);
+        setShowUploadBox(false);
+        setUploadTitle('');
+        setUploadUni('');
+        setUploadTarget('');
       }
     } catch (err) {
-      setErrorMsg('Upload failed. Please verify the file format.');
+      setErrorMsg('Upload failed.');
     } finally {
       setUploading(false);
     }
   };
 
-  const activeOpportunities = selectedDiss
-    ? opportunities.filter((o) => o.dissertation_id === selectedDiss.id)
-    : opportunities;
-
   return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Subtle Animated Background with Trajectory Dash Lines & Drifting Magnifying Glass Optics */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+    <div className="relative min-h-screen text-slate-900">
+      {/* ===================================================================== */}
+      {/* PLAYFUL, NOTICEABLE MAGNIFYING GLASS, BINARY STREAM & TRAJECTORY SVG  */}
+      {/* ===================================================================== */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        aria-hidden="true"
+      >
         <svg
-          className="w-full h-full opacity-60"
-          viewBox="0 0 1440 900"
+          className="w-full h-full"
+          viewBox="0 0 1440 960"
           fill="none"
-          xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid slice"
         >
-          <defs>
-            <linearGradient id="trajGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#2563EB" stopOpacity="0.28" />
-              <stop offset="50%" stopColor="#4F46E5" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#E11D48" stopOpacity="0.18" />
-            </linearGradient>
-            <linearGradient id="trajGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.24" />
-              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.08" />
-            </linearGradient>
-            <radialGradient id="lensGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.12" />
-              <stop offset="70%" stopColor="#6366F1" stopOpacity="0.04" />
-              <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
-            </radialGradient>
-          </defs>
+          {/* Fast Animated Trajectory Dash Lines */}
+          <path
+            d="M -60 220 C 300 40, 660 400, 1040 160 C 1240 60, 1380 240, 1520 120"
+            stroke="#2563EB"
+            strokeWidth="3"
+            strokeOpacity="0.38"
+            className="trajectory-dash"
+          />
+          <path
+            d="M -40 620 C 360 420, 740 760, 1140 440 C 1300 320, 1410 470, 1520 390"
+            stroke="#7C3AED"
+            strokeWidth="2.8"
+            strokeOpacity="0.34"
+            className="trajectory-dash-reverse"
+          />
+          <path
+            d="M 120 980 C 460 660, 840 780, 1290 220"
+            stroke="#E11D48"
+            strokeWidth="2.8"
+            strokeOpacity="0.32"
+            className="trajectory-dash"
+          />
 
-          {/* Animated Curved Trajectory Dash Lines */}
-          <path
-            d="M -80 680 C 260 520, 480 200, 860 280 C 1140 340, 1290 140, 1520 90"
-            stroke="url(#trajGrad1)"
-            strokeWidth="2"
-            className="trajectory-dash"
-          />
-          <path
-            d="M -60 220 C 320 380, 640 120, 1020 440 C 1220 600, 1380 490, 1540 580"
-            stroke="url(#trajGrad2)"
-            strokeWidth="1.75"
-            className="trajectory-dash-slow"
-          />
-          <path
-            d="M 180 940 C 420 640, 780 690, 1120 320 C 1260 170, 1390 220, 1500 180"
-            stroke="url(#trajGrad1)"
-            strokeWidth="1.5"
-            className="trajectory-dash"
-          />
+          {/* Flowing Binary Code Streams Along Trajectories */}
+          <g className="binary-drift" opacity="0.55">
+            <text x="80" y="155" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="3">
+              01101101 10100110 01001110
+            </text>
+            <text x="540" y="265" fill="#4F46E5" fontSize="13" fontWeight="700" letterSpacing="3">
+              10110010 01011010 11001010
+            </text>
+            <text x="1020" y="135" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="3">
+              01000001 11010010 01110100
+            </text>
+          </g>
+
+          <g className="binary-pulse" opacity="0.5">
+            <text x="110" y="540" fill="#7C3AED" fontSize="14" fontWeight="700" letterSpacing="3">
+              11010110 00101101 10111001
+            </text>
+            <text x="680" y="610" fill="#2563EB" fontSize="15" fontWeight="700" letterSpacing="3">
+              01011100 10010110 01100011
+            </text>
+            <text x="1080" y="420" fill="#4F46E5" fontSize="14" fontWeight="700" letterSpacing="3">
+              10011010 01101101 00110101
+            </text>
+            <text x="290" y="830" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="3">
+              01110010 10101100 11000110
+            </text>
+            <text x="980" y="760" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="3">
+              11001011 01010010 10011101
+            </text>
+          </g>
 
           {/* Trajectory Waypoint Nodes */}
-          <circle cx="860" cy="280" r="4" fill="#2563EB" fillOpacity="0.35" />
-          <circle cx="860" cy="280" r="11" stroke="#2563EB" strokeOpacity="0.2" strokeWidth="1" />
-          <circle cx="1020" cy="440" r="4" fill="#4F46E5" fillOpacity="0.35" />
-          <circle cx="1020" cy="440" r="11" stroke="#4F46E5" strokeOpacity="0.2" strokeWidth="1" />
-          <circle cx="430" cy="360" r="3.5" fill="#E11D48" fillOpacity="0.3" />
+          <circle cx="320" cy="182" r="7" fill="#2563EB" fillOpacity="0.65" />
+          <circle cx="320" cy="182" r="16" stroke="#2563EB" strokeOpacity="0.35" strokeWidth="2" />
+          <circle cx="1040" cy="160" r="8" fill="#4F46E5" fillOpacity="0.65" />
+          <circle cx="1140" cy="440" r="7" fill="#E11D48" fillOpacity="0.65" />
 
-          {/* Floating Magnifying Glass Assembly 1 */}
-          <g className="floating-magnifying-lens-1">
-            <circle cx="1080" cy="250" r="120" fill="url(#lensGlow)" />
-            <circle
-              cx="1080"
-              cy="250"
-              r="76"
-              stroke="#3B82F6"
-              strokeOpacity="0.22"
-              strokeWidth="2"
-            />
-            <circle
-              cx="1080"
-              cy="250"
-              r="64"
-              stroke="#6366F1"
-              strokeOpacity="0.16"
-              strokeWidth="1"
-              strokeDasharray="6 6"
-            />
+          {/* MAGNIFYING GLASS 1 (Top-Left Scanning Lens with Magnified Binary Inside) */}
+          <g className="lens-float-1" opacity="0.52">
+            {/* Lens Glass Fill */}
+            <circle cx="240" cy="210" r="92" fill="#DBEAFE" fillOpacity="0.55" />
+            {/* Magnified Binary Stream Inside Lens 1 */}
+            <text
+              x="172"
+              y="198"
+              fill="#1D4ED8"
+              fontSize="16"
+              fontWeight="800"
+              letterSpacing="2"
+              fontFamily="Google Sans Mono, monospace"
+            >
+              01101001 1101
+            </text>
+            <text
+              x="178"
+              y="224"
+              fill="#E11D48"
+              fontSize="15"
+              fontWeight="800"
+              letterSpacing="2"
+              fontFamily="Google Sans Mono, monospace"
+            >
+              101101 → CLUE
+            </text>
+            {/* Outer Rim & Inner Dashed Ring */}
+            <circle cx="240" cy="210" r="92" stroke="#3B1A08" strokeWidth="7" />
+            <circle cx="240" cy="210" r="84" stroke="#2563EB" strokeWidth="3" />
+            <circle cx="240" cy="210" r="68" stroke="#6B3410" strokeWidth="1.8" strokeDasharray="8 6" />
+            {/* Specular Glint Arc */}
             <path
-              d="M 1035 215 A 56 56 0 0 1 1105 198"
-              stroke="#2563EB"
-              strokeOpacity="0.28"
-              strokeWidth="2.5"
+              d="M 182 162 A 68 68 0 0 1 278 148"
+              stroke="#FFFFFF"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+            {/* Vintage Mahogany Leather Handle with Stitch Detail */}
+            <line
+              x1="306"
+              y1="276"
+              x2="386"
+              y2="356"
+              stroke="#3B1A08"
+              strokeWidth="18"
               strokeLinecap="round"
             />
             <line
-              x1="1134"
-              y1="304"
-              x2="1192"
-              y2="362"
-              stroke="#3B82F6"
-              strokeOpacity="0.24"
-              strokeWidth="6"
+              x1="310"
+              y1="280"
+              x2="382"
+              y2="352"
+              stroke="#6B3410"
+              strokeWidth="11"
+              strokeLinecap="round"
+            />
+            <line
+              x1="314"
+              y1="284"
+              x2="378"
+              y2="348"
+              stroke="#D6B89C"
+              strokeWidth="1.8"
+              strokeDasharray="4 4"
               strokeLinecap="round"
             />
           </g>
 
-          {/* Floating Magnifying Glass Assembly 2 */}
-          <g className="floating-magnifying-lens-2">
-            <circle cx="290" cy="540" r="105" fill="url(#lensGlow)" />
-            <circle
-              cx="290"
-              cy="540"
-              r="58"
-              stroke="#6366F1"
-              strokeOpacity="0.2"
-              strokeWidth="1.75"
-            />
-            <circle
-              cx="290"
-              cy="540"
-              r="46"
-              stroke="#3B82F6"
-              strokeOpacity="0.14"
-              strokeWidth="1"
-              strokeDasharray="4 8"
-            />
+          {/* MAGNIFYING GLASS 2 (Right-Center Scanning Lens with Magnified Binary Inside) */}
+          <g className="lens-float-2" opacity="0.48">
+            <circle cx="1190" cy="360" r="105" fill="#EDE9FE" fillOpacity="0.55" />
+            <text
+              x="1110"
+              y="348"
+              fill="#4F46E5"
+              fontSize="17"
+              fontWeight="800"
+              letterSpacing="2"
+              fontFamily="Google Sans Mono, monospace"
+            >
+              10101100 0110
+            </text>
+            <text
+              x="1116"
+              y="376"
+              fill="#2563EB"
+              fontSize="15"
+              fontWeight="800"
+              letterSpacing="2"
+              fontFamily="Google Sans Mono, monospace"
+            >
+              010110 → SIGNAL
+            </text>
+            <circle cx="1190" cy="360" r="105" stroke="#3B1A08" strokeWidth="7" />
+            <circle cx="1190" cy="360" r="96" stroke="#7C3AED" strokeWidth="3" />
+            <circle cx="1190" cy="360" r="76" stroke="#6B3410" strokeWidth="2" strokeDasharray="10 8" />
             <path
-              d="M 256 512 A 42 42 0 0 1 310 500"
-              stroke="#4F46E5"
-              strokeOpacity="0.25"
-              strokeWidth="2"
+              d="M 1125 305 A 78 78 0 0 1 1235 288"
+              stroke="#FFFFFF"
+              strokeWidth="6"
               strokeLinecap="round"
             />
             <line
-              x1="331"
-              y1="581"
-              x2="376"
-              y2="626"
-              stroke="#6366F1"
-              strokeOpacity="0.22"
-              strokeWidth="5"
+              x1="1265"
+              y1="435"
+              x2="1360"
+              y2="530"
+              stroke="#3B1A08"
+              strokeWidth="20"
+              strokeLinecap="round"
+            />
+            <line
+              x1="1269"
+              y1="439"
+              x2="1355"
+              y2="525"
+              stroke="#5C2C12"
+              strokeWidth="12"
+              strokeLinecap="round"
+            />
+            <line
+              x1="1273"
+              y1="443"
+              x2="1350"
+              y2="520"
+              stroke="#D6B89C"
+              strokeWidth="1.8"
+              strokeDasharray="4 4"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* MAGNIFYING GLASS 3 (Bottom-Left Scanning Lens) */}
+          <g className="lens-float-3" opacity="0.44">
+            <circle cx="310" cy="720" r="76" fill="#FFE4E6" fillOpacity="0.5" />
+            <text
+              x="252"
+              y="718"
+              fill="#E11D48"
+              fontSize="14"
+              fontWeight="800"
+              letterSpacing="2"
+              fontFamily="Google Sans Mono, monospace"
+            >
+              01100101 1011
+            </text>
+            <circle cx="310" cy="720" r="76" stroke="#3B1A08" strokeWidth="6" />
+            <circle cx="310" cy="720" r="68" stroke="#E11D48" strokeWidth="2.5" />
+            <line
+              x1="364"
+              y1="774"
+              x2="430"
+              y2="840"
+              stroke="#5C2C12"
+              strokeWidth="15"
               strokeLinecap="round"
             />
           </g>
         </svg>
       </div>
 
-      {/* Top Sapphire-Indigo-Crimson Accent Line */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 relative z-20" />
-
-      {/* Sleek Glass Header with ThesisOut in Sentence/CamelCase */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-blue-500/20">
-              <Search className="w-5 h-5 text-white stroke-[2.2]" />
+      {/* ===================================================================== */}
+      {/* VINTAGE MAHOGANY LEATHER TOP BAR WITH STITCHED "TO" MONOGRAM          */}
+      {/* ===================================================================== */}
+      <header className="sticky top-0 z-30 leather-bar text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl leather-badge flex items-center justify-center font-extrabold text-lg tracking-tighter">
+              <span>
+                T<span className="text-blue-400">O</span>
+              </span>
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
-                <span className="font-extrabold text-xl tracking-tight text-slate-900">
-                  Thesis<span className="text-blue-600">Out</span>
-                </span>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  Taking Thesis Discoveries Out Into the World
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">
-                Ask Gemini any research question — it autonomously streams theses & datasets, tests 30+ models, and reveals moonshots
-              </p>
+              <span className="text-xl font-extrabold tracking-tight text-white">
+                Thesis<span className="text-blue-300">Out</span>
+              </span>
+              <span className="hidden sm:inline-block ml-3 px-3 py-0.5 rounded-full bg-black/25 border border-[#D6B89C]/40 text-[11px] font-semibold text-[#F5E6D8]">
+                Taking Thesis Discoveries Out Into the World
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 text-xs">
-            {dissertations.length > 0 && (
-              <button
-                onClick={handleResetWorkspace}
-                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold transition cursor-pointer"
-              >
-                Clear Workspace
-              </button>
-            )}
-            <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold flex items-center gap-1.5">
-              <Search className="w-3.5 h-3.5 text-indigo-600" />
-              Gemini Autonomous Engine
-            </span>
-          </div>
-        </div>
-
-        {/* 3-Stage Trajectory Stepper */}
-        <div className="max-w-5xl mx-auto px-6 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentStep(1)}
-              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
-                currentStep === 1
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
-                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
-              }`}
+              onClick={() => setShowUploadBox(!showUploadBox)}
+              className="pop-btn px-3.5 py-1.5 rounded-xl bg-[#FAF6F0] text-[#3B1A08] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
             >
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 1 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
-                }`}
-              >
-                01
-              </div>
-              <div>
-                <div className="text-xs font-bold">Ask Gemini (Full Run)</div>
-                <div className={`text-[11px] ${currentStep === 1 ? 'text-blue-100' : 'text-slate-500'}`}>
-                  Describe what to investigate & launch
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setCurrentStep(2)}
-              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
-                currentStep === 2
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
-                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 2 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
-                }`}
-              >
-                02
-              </div>
-              <div>
-                <div className="text-xs font-bold">30-Model & 5-Stage Evidence</div>
-                <div className={`text-[11px] ${currentStep === 2 ? 'text-blue-100' : 'text-slate-500'}`}>
-                  Inspect leaderboard, CIs & deep verification
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setCurrentStep(3)}
-              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
-                currentStep === 3
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
-                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 3 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
-                }`}
-              >
-                03
-              </div>
-              <div>
-                <div className="text-xs font-bold">Moonshot & Supporting Dossier</div>
-                <div className={`text-[11px] ${currentStep === 3 ? 'text-blue-100' : 'text-slate-500'}`}>
-                  Executive summary, actions & full evidence
-                </div>
-              </div>
+              <Upload className="w-3.5 h-3.5 text-blue-600" />
+              {showUploadBox ? 'Close Upload' : 'Upload Thesis CSV'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Workspace */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8 relative z-10">
+      {/* ===================================================================== */}
+      {/* SINGLE-PAGE UNIFIED DISCOVERY CANVAS (ZERO TABS, ZERO SILOS)          */}
+      {/* ===================================================================== */}
+      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {errorMsg && (
-          <div className="mb-6 bg-rose-50 border border-rose-200 text-rose-800 px-5 py-3.5 rounded-2xl text-xs flex items-center justify-between font-medium">
+          <div className="pop-card-crimson rounded-2xl p-4 flex items-center justify-between text-xs font-bold text-rose-900">
             <span>{errorMsg}</span>
-            <button onClick={() => setErrorMsg(null)} className="font-bold underline cursor-pointer">
+            <button
+              onClick={() => setErrorMsg(null)}
+              className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 cursor-pointer"
+            >
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Active Study Context Banner */}
-        {selectedDiss && (
-          <div className="mb-6 glass-panel rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-xs">
-                Active Study
-              </span>
-              <div>
-                <div className="text-xs font-bold text-slate-900 line-clamp-1">
-                  {selectedDiss.title}
-                </div>
-                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-2 mt-1">
-                  <span>
-                    {selectedDiss.authors} • {selectedDiss.university} ({selectedDiss.publication_year})
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                    Source: {selectedDiss.source_repo}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">
-                    Rigor Confidence: {(selectedDiss.scientific_rigor_score * 100).toFixed(0)}%
-                  </span>
-                  {selectedDiss.source_url && (
-                    <a
-                      href={selectedDiss.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 font-semibold underline inline-flex items-center gap-1"
-                    >
-                      Verify Source Record <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
-              </div>
+        {/* OPTIONAL UPLOAD DRAWER */}
+        {showUploadBox && (
+          <form
+            onSubmit={handleUploadSubmit}
+            className="pop-card rounded-3xl p-6 space-y-4"
+          >
+            <div className="text-sm font-extrabold text-slate-900">
+              Upload Your Own Thesis PDF & Raw Dataset CSV
             </div>
-
-            {dissertations.length > 1 && (
-              <select
-                value={selectedDiss.id}
-                onChange={(e) => {
-                  const found = dissertations.find((d) => d.id === Number(e.target.value));
-                  if (found) handleSelectDissertation(found);
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700"
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                required
+                value={uploadTitle}
+                onChange={(e) => setUploadTitle(e.target.value)}
+                placeholder="Thesis Title"
+                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
+              />
+              <input
+                type="text"
+                value={uploadUni}
+                onChange={(e) => setUploadUni(e.target.value)}
+                placeholder="University"
+                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
+              />
+              <input
+                type="text"
+                value={uploadTarget}
+                onChange={(e) => setUploadTarget(e.target.value)}
+                placeholder="Target Column (optional)"
+                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <label className="px-3.5 py-2 rounded-xl bg-slate-100 border-2 border-slate-900 font-bold cursor-pointer">
+                <FileText className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" />
+                {uploadPdf ? uploadPdf.name : 'Choose Thesis PDF'}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setUploadPdf(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
+              <label className="px-3.5 py-2 rounded-xl bg-blue-50 border-2 border-slate-900 font-bold cursor-pointer">
+                <Upload className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" />
+                {uploadCsv ? uploadCsv.name : 'Choose Dataset CSV'}
+                <input
+                  type="file"
+                  accept=".csv,.tsv"
+                  onChange={(e) => setUploadCsv(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={uploading}
+                className="pop-btn px-5 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
               >
-                {dissertations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    Switch: {d.title.slice(0, 45)}...
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+                {uploading ? 'Running 30 Models' : 'Run Audit on Upload'}
+              </button>
+            </div>
+          </form>
         )}
 
-        {/* ===================================================================== */}
-        {/* STAGE 01: ASK GEMINI TO RUN THE ENTIRE END-TO-END DISCOVERY WORKFLOW */}
-        {/* ===================================================================== */}
-        {currentStep === 1 && (
-          <div className="space-y-6">
-            <div className="text-center max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold mb-2">
-                <Search className="w-3.5 h-3.5" />
-                ThesisOut • Autonomous Scientific Discovery
-              </span>
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Tell Gemini What You Want to Discover
-              </h1>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Ask any scientific question or describe a mechanism, disease, or engineering challenge. Gemini will autonomously formulate the hypothesis, stream dissertations and open datasets, run 30+ models and 5-stage deep verification, execute validation steps, and reveal the moonshot with all supporting evidence.
-              </p>
+        {/* =================================================================== */}
+        {/* HERO ASK BAR                                                        */}
+        {/* =================================================================== */}
+        <section className="pop-card rounded-3xl p-6 sm:p-8 space-y-5">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-xl leather-badge text-xs font-bold">
+              <Search className="w-3.5 h-3.5 text-blue-300" />
+              Thesis Detective
             </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight pt-1">
+              Hunt for hidden discoveries inside university thesis data.
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Ask a research question to pull the thesis, test 30 cross-validated models on the raw dataset, check live clinical and patent registries, and see the moonshot below.
+            </p>
+          </div>
 
-            {/* Mode Switcher */}
-            <div className="flex justify-center">
-              <div className="inline-flex bg-white/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-xs gap-1">
-                <button
-                  onClick={() => setStep1Mode('copilot')}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    step1Mode === 'copilot'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  Ask Gemini (Autonomous Full Workflow)
-                </button>
-                <button
-                  onClick={() => setStep1Mode('upload')}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    step1Mode === 'upload'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload Own PDF / CSV
-                </button>
-                {dissertations.length > 0 && (
+          {/* Search Input Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRunAutonomousGeminiWorkflow();
+            }}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Enter a research question (for example: overlooked biomarkers for sepsis survival)"
+              className="flex-1 px-4 py-3.5 rounded-2xl bg-slate-50 border-2 border-slate-900 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-medium"
+            />
+            <button
+              type="submit"
+              disabled={harvesting || !chatInput.trim()}
+              className="pop-btn px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              {harvesting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Hunting Clues
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 stroke-[2.5]" />
+                  Investigate & Reveal
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* 3 Playful One-Click Prompts */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-xs font-extrabold text-slate-700">Try a 1-click hunt:</span>
+            {[
+              {
+                label: 'Hunt Sepsis Survival Clues',
+                prompt: 'Find overlooked patient biomarkers predicting ICU sepsis survival and drug response',
+              },
+              {
+                label: 'Uncover CRISPR Off-Target Signals',
+                prompt: 'Discover non-linear sequence features driving CRISPR gene editing efficiency and off-target toxicity',
+              },
+              {
+                label: 'Find Solid-State Battery Anomalies',
+                prompt: 'Identify hidden cycle-life degradation patterns in solid-state lithium battery datasets',
+              },
+            ].map((item, i) => (
+              <button
+                key={i}
+                onClick={() => handleRunAutonomousGeminiWorkflow(item.prompt)}
+                disabled={harvesting}
+                className="pop-btn px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-950 text-xs font-bold cursor-pointer"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Live Stream Progress Banner When Running */}
+          {(harvesting || streamEvents.length > 0) && (
+            <div className="bg-slate-900 text-white rounded-2xl p-4 border-2 border-slate-900 space-y-1.5 font-mono text-xs">
+              <div className="flex items-center justify-between text-blue-300 font-bold">
+                <span>
+                  {harvesting ? 'LIVE INVESTIGATION IN PROGRESS' : 'INVESTIGATION COMPLETE'}
+                </span>
+                <span>{streamEvents.length} steps logged</span>
+              </div>
+              {streamEvents.slice(-3).map((ev, i) => (
+                <div key={i} className="text-slate-200 truncate">
+                  → {ev}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Simple Case Switcher Pills (No Hidden Drawer!) */}
+          {dissertations.length > 1 && (
+            <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">Active Case File:</span>
+              {dissertations.map((d) => {
+                const isSelected = selectedDiss?.id === d.id;
+                return (
                   <button
-                    onClick={() => setStep1Mode('saved')}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                      step1Mode === 'saved'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:bg-slate-100'
+                    key={d.id}
+                    onClick={() => handleSelectDissertation(d)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold border-2 transition cursor-pointer ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-700 border-slate-300 hover:border-slate-900'
                     }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    Saved Studies ({dissertations.length})
+                    {d.university}: {d.title.slice(0, 44)}
                   </button>
-                )}
-              </div>
+                );
+              })}
             </div>
+          )}
+        </section>
 
-            {/* MODE A: Single Unified Gemini Command & Conversation Box */}
-            {step1Mode === 'copilot' && (
-              <div className="glass-panel rounded-3xl p-8 max-w-3xl mx-auto space-y-6">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleRunAutonomousGeminiWorkflow();
-                  }}
-                  className="space-y-4"
-                >
-                  <label className="block text-sm font-bold text-slate-900">
-                    What scientific question, biological mechanism, or technological bottleneck should Gemini investigate?
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Describe your idea or question in plain English..."
-                      className="flex-1 bg-white border border-slate-300 focus:border-blue-600 rounded-2xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none shadow-2xs"
-                    />
-                    <button
-                      type="submit"
-                      disabled={harvesting || !chatInput.trim()}
-                      className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition cursor-pointer shrink-0"
-                    >
-                      {harvesting ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Running Full Discovery Workflow...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          Ask Gemini & Run Full Discovery
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Live Autonomous Telemetry Log */}
-                {streamEvents.length > 0 && (
-                  <div className="glass-subpanel rounded-2xl p-5 space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-blue-700 uppercase tracking-wider text-[11px]">
-                        Autonomous Gemini Workflow Execution Log
-                      </span>
-                      {harvesting && (
-                        <span className="text-[11px] text-indigo-600 font-semibold flex items-center gap-1.5">
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Executing Pipeline...
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 font-mono text-[11px]">
-                      {streamEvents.map((msg, i) => (
-                        <div key={i} className="flex items-start gap-2.5 text-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1.5" />
-                          <span>{msg}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* MODE B: Upload PDF / CSV */}
-            {step1Mode === 'upload' && (
-              <div className="glass-panel rounded-3xl p-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base mb-1">
-                  <Upload className="w-5 h-5 text-blue-600" />
-                  Submit Dissertation PDF or Tabular Dataset
-                </div>
-                <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                  Upload a local CSV, TSV, Excel, or Parquet dataset along with an optional dissertation PDF. ThesisOut will execute 30+ LazyPredict models and synthesize the moonshot dossier.
-                </p>
-
-                <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Study or Dissertation Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={uploadTitle}
-                      onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="Enter study or dissertation title"
-                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Institution (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={uploadUni}
-                      onChange={(e) => setUploadUni(e.target.value)}
-                      placeholder="e.g., MIT, Stanford"
-                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div className="border border-dashed border-blue-300 rounded-2xl p-4 bg-blue-50/40">
-                      <label className="block font-semibold text-blue-900 mb-1">
-                        Dataset File (.csv, .xlsx, .tsv)
-                      </label>
-                      <input
-                        type="file"
-                        accept=".csv,.tsv,.xlsx,.parquet"
-                        onChange={(e) => setUploadCsv(e.target.files?.[0] || null)}
-                        className="w-full text-slate-600 text-[11px]"
-                      />
-                    </div>
-                    <div className="border border-dashed border-indigo-300 rounded-2xl p-4 bg-indigo-50/40">
-                      <label className="block font-semibold text-indigo-900 mb-1">
-                        Dissertation PDF (Optional)
-                      </label>
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setUploadPdf(e.target.files?.[0] || null)}
-                        className="w-full text-slate-600 text-[11px]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Target Column to Predict (Leave blank for automatic selection)
-                    </label>
-                    <input
-                      type="text"
-                      value={uploadTarget}
-                      onChange={(e) => setUploadTarget(e.target.value)}
-                      placeholder="Optional target column name"
-                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20 transition cursor-pointer"
-                  >
-                    {uploading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Auditing Dataset Across 30+ Models...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4" />
-                        Ingest Evidence & Reveal Moonshot
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* MODE C: Saved Studies */}
-            {step1Mode === 'saved' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dissertations.map((diss) => {
-                  const run = diss.datasets?.[0]?.lazy_runs?.[0];
-                  return (
-                    <div
-                      key={diss.id}
-                      onClick={() => handleSelectDissertation(diss)}
-                      className="glass-panel rounded-3xl p-6 transition cursor-pointer flex flex-col justify-between hover:border-blue-400"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                            {diss.university}
-                          </span>
-                          <span className="text-slate-500 font-medium">{diss.publication_year}</span>
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 leading-snug">{diss.title}</h3>
-                        <p className="text-xs text-slate-500 mt-2 line-clamp-2">{diss.abstract}</p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
-                        {run ? (
-                          <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">
-                            Best Model: {run.best_model_name} ({run.best_score})
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">Click to attach dataset</span>
-                        )}
-                        <span className="font-semibold text-blue-600 flex items-center gap-1">
-                          Open Dossier <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ===================================================================== */}
-        {/* STAGE 02: 30-MODEL & 5-STAGE EMPIRICAL EVIDENCE */}
-        {/* ===================================================================== */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            {!selectedDiss ? (
-              <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
-                <BookOpen className="w-10 h-10 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900">No Active Study Selected</h3>
-                <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Return to Stage 01 and ask Gemini a question to run the discovery pipeline.
-                </p>
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Return to Stage 01
-                </button>
-              </div>
-            ) : !activeRun ? (
-              <div className="glass-panel rounded-3xl p-8 max-w-xl mx-auto space-y-5">
-                <div className="text-center">
-                  <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                    Dataset Required
-                  </span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-2">
-                    Attach a Dataset to Execute the 30-Model Audit
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Upload a CSV/Excel table or enter a Zenodo Record ID below to benchmark 30+ machine learning models automatically.
-                  </p>
-                </div>
-
-                <form onSubmit={handleAttachZenodo} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={zenodoInput}
-                    onChange={(e) => setZenodoInput(e.target.value)}
-                    placeholder="Enter Zenodo Record ID or URL..."
-                    className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs"
-                  />
-                  <button
-                    type="submit"
-                    disabled={attachingData}
-                    className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
-                  >
-                    {attachingData ? 'Fetching...' : 'Fetch Zenodo CSV'}
-                  </button>
-                </form>
-
-                <div className="border border-dashed border-indigo-300 rounded-2xl p-4 bg-indigo-50/40 text-center">
-                  <label className="block text-xs font-semibold text-indigo-900 mb-2">
-                    Or Upload a Local Dataset File (.csv, .tsv, .xlsx, .parquet)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".csv,.tsv,.xlsx,.parquet"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleAttachDatasetFile(f);
-                    }}
-                    className="text-xs text-slate-600"
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="glass-panel rounded-3xl p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                          <Search className="w-3.5 h-3.5" />
-                          Empirical Signal & Confidence Report
-                        </div>
-                        {activeDataset && (
-                          <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium">
-                            Dataset Provenance: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows × {activeDataset.col_count} cols)
-                          </span>
-                        )}
-                        {activeDataset?.source_url && (
-                          <a
-                            href={activeDataset.source_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold underline inline-flex items-center gap-1"
-                          >
-                            Dataset Origin Link <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                      <h2 className="text-lg font-bold text-slate-900">
-                        Audited {activeRun.models_tested_count} models on target column{' '}
-                        <code className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700 font-mono">
-                          {activeRun.target_column}
-                        </code>
-                      </h2>
-                      <p className="text-sm text-slate-600 leading-relaxed">
-                        {activeRun.overlooked_signal_summary}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setCurrentStep(3);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="px-5 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs flex items-center gap-2 shrink-0 shadow-sm shadow-blue-500/20 transition cursor-pointer"
-                    >
-                      View Moonshot & Full Dossier <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {activeDataset && activeDataset.lazy_runs.length > 1 && (
-                    <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-semibold text-slate-600">Audited Columns:</span>
-                      {activeDataset.lazy_runs.map((run) => (
-                        <button
-                          key={run.id}
-                          onClick={() => setSelectedRunId(run.id)}
-                          className={`px-3 py-1 rounded-full font-semibold border transition cursor-pointer ${
-                            activeRun.id === run.id
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
-                          }`}
-                        >
-                          {run.target_column} ({run.best_score})
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* 3 Evidence Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                        01. Classical Linear Baseline
-                      </span>
-                      <div className="text-3xl font-extrabold text-slate-900 mt-2">
-                        {activeRun.author_baseline_score}
-                      </div>
-                      <div className="text-xs font-medium text-slate-600 mt-0.5">
-                        Metric: {activeRun.primary_metric_name}
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-                      Baseline performance of conventional linear statistical methods prior to nonlinear ensemble screening.
-                    </p>
-                  </div>
-
-                  <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between border-blue-300/80">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
-                          02. Top Model Identified
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-bold">
-                          +{(activeRun.signal_gain_delta * 100).toFixed(1)}% Gain
-                        </span>
-                      </div>
-                      <div className="text-3xl font-extrabold text-blue-700 mt-2">
-                        {activeRun.best_score}
-                      </div>
-                      <div className="text-xs font-bold text-slate-900 mt-0.5">
-                        Model: {activeRun.best_model_name}
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-                      Selected after benchmarking {activeRun.models_tested_count} distinct machine learning architectures on identical folds.
-                    </p>
-                  </div>
-
-                  <div className="glass-panel rounded-3xl p-5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-                      03. Primary Predictive Variables
+        {/* =================================================================== */}
+        {/* SECTION 1: THE MOONSHOT REVEAL (TOP OF STORY)                       */}
+        {/* =================================================================== */}
+        {activeOpportunities.length > 0 && (
+          <section className="space-y-6">
+            {activeOpportunities.slice(0, 1).map((opp) => (
+              <div key={opp.id} className="pop-card-sapphire rounded-3xl p-6 sm:p-8 space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3.5 py-1 rounded-xl leather-badge text-xs font-extrabold">
+                      01. THE MOONSHOT REVEAL
                     </span>
-                    <div className="space-y-3 mt-3">
-                      {activeRun.top_features.slice(0, 3).map((tf, i) => (
-                        <div key={tf.feature} className="glass-subpanel rounded-xl p-2.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-800 truncate pr-2">
-                              #{i + 1} {tf.feature}
-                            </span>
-                            <span className="font-semibold text-indigo-600 shrink-0">
-                              {(tf.importance * 100).toFixed(0)}% weight
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1.5">
-                            <div
-                              className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"
-                              style={{ width: `${Math.min(100, tf.importance * 180)}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <span className="px-3 py-1 rounded-xl bg-blue-50 text-blue-900 border-2 border-slate-900 text-xs font-extrabold">
+                      {opp.opportunity_type}
+                    </span>
+                  </div>
+                  <div className="px-4 py-1.5 rounded-xl bg-rose-600 text-white border-2 border-slate-900 text-xs font-extrabold shadow-[2px_2px_0px_#0F172A]">
+                    Translation Score: {opp.overall_tos_score} / 100
                   </div>
                 </div>
 
-                {/* Full Leaderboard Drawer */}
-                <div className="glass-panel rounded-3xl overflow-hidden">
-                  <button
-                    onClick={() => setShowAllModels(!showAllModels)}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
-                  >
-                    <div className="text-sm font-bold text-slate-900">
-                      Inspect Full {activeRun.leaderboard.length}-Model Leaderboard & 95% Confidence Intervals
+                {/* Executive Takeaway if available */}
+                {(executiveSummary || activeHypothesis) && (
+                  <div className="bg-blue-50/90 border-2 border-slate-900 rounded-2xl p-4 space-y-2">
+                    <div className="text-xs font-extrabold text-blue-900 uppercase tracking-wider">
+                      Case Brief
                     </div>
-                    {showAllModels ? (
-                      <ChevronUp className="w-5 h-5 text-slate-500" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-slate-500" />
+                    {activeHypothesis && (
+                      <div className="text-xs font-bold text-slate-900">
+                        Hypothesis: {activeHypothesis}
+                      </div>
                     )}
-                  </button>
-
-                  {showAllModels && (
-                    <div className="px-6 pb-6 pt-2 border-t border-slate-200/80 overflow-x-auto max-h-80">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-slate-600 font-semibold">
-                            <th className="py-2 px-3">Rank</th>
-                            {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
-                              <th key={col} className="py-2 px-3">
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-mono">
-                          {activeRun.leaderboard.map((row, idx) => (
-                            <tr
-                              key={idx}
-                              className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
-                            >
-                              <td className="py-2 px-3">#{idx + 1}</td>
-                              {Object.entries(row).map(([k, val]) => (
-                                <td key={k} className="py-2 px-3">
-                                  {val === null ? '-' : typeof val === 'number' ? val.toFixed(4) : String(val)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ===================================================================== */}
-        {/* STAGE 03: UNIFIED MOONSHOT REVEAL + GEMINI SUMMARY + ALL SUPPORTING EVIDENCE */}
-        {/* ===================================================================== */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            {/* 1. Gemini Executive Summary & Formulated Hypothesis Banner */}
-            {(executiveSummary || activeHypothesis) && (
-              <div className="glass-panel rounded-3xl p-6 border-blue-300/90 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
-                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
-                    <MessageSquare className="w-4 h-4 text-blue-600" />
-                    Gemini Executive Discovery Summary & Moonshot Synthesis
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
-                    Full Workflow Executed Automatically
-                  </span>
-                </div>
-
-                {activeHypothesis && (
-                  <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3.5 text-xs">
-                    <div className="font-bold uppercase tracking-wider text-[10px] text-indigo-700">
-                      Formulated Scientific Hypothesis
-                    </div>
-                    <div className="font-semibold text-slate-900 mt-0.5">{activeHypothesis}</div>
+                    {executiveSummary && (
+                      <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
+                        {executiveSummary}
+                      </p>
+                    )}
                   </div>
                 )}
 
-                {executiveSummary && (
-                  <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
-                    {executiveSummary}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">
+                    {opp.title}
+                  </h2>
+                  <p className="text-sm font-bold text-blue-700 mt-1">
+                    What to Build: {opp.proposed_product_or_therapeutic}
                   </p>
-                )}
-              </div>
-            )}
+                </div>
 
-            {/* 2. Revealed Moonshot Dossier & Pre-Executed Actions */}
-            {activeOpportunities.length === 0 ? (
-              <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
-                <Search className="w-10 h-10 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-slate-900">
-                  No Moonshot Dossiers Generated Yet
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Go to Stage 01 and ask Gemini a research question—it will run the entire workflow and reveal the moonshot here automatically.
-                </p>
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Ask Gemini in Stage 01
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {activeOpportunities.map((opp) => (
-                  <div key={opp.id} className="glass-panel rounded-3xl p-6 space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs">
-                        Moonshot Translation Score: {opp.overall_tos_score} / 100
-                      </span>
-                      <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200">
-                        {opp.opportunity_type}
-                      </span>
+                {/* 3 Simple Story Cards: Signal -> Why Missed -> Whitespace */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="pop-subcard rounded-2xl p-4 space-y-1.5">
+                    <div className="font-extrabold text-blue-700 uppercase">
+                      Hidden Signal Found
                     </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {opp.untranslated_finding_summary}
+                    </p>
+                  </div>
 
-                    <h3 className="text-xl font-extrabold text-slate-900 leading-snug">{opp.title}</h3>
-
-                    {/* 3 Case Notes */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div className="glass-subpanel rounded-2xl p-4">
-                        <div className="font-bold text-blue-700 mb-1.5">
-                          01. Empirical Signal Uncovered
-                        </div>
-                        <p className="text-slate-700 leading-relaxed">{opp.untranslated_finding_summary}</p>
-                      </div>
-
-                      <div className="glass-subpanel rounded-2xl p-4">
-                        <div className="font-bold text-indigo-700 mb-1.5">
-                          02. Why It Remained Untranslated
-                        </div>
-                        <p className="text-slate-700 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
-                      </div>
-
-                      <div className="glass-subpanel rounded-2xl p-4">
-                        <div className="font-bold text-rose-700 mb-1.5">
-                          03. Live Registry Whitespace
-                        </div>
-                        <p className="text-slate-700 leading-relaxed">
-                          <strong>ClinicalTrials.gov:</strong> {opp.clinical_trials_check?.whitespace_status}
-                        </p>
-                        <p className="text-slate-700 mt-1.5 leading-relaxed">
-                          <strong>Target / Modality:</strong> {opp.opentargets_chembl_check?.tractability_modality}
-                        </p>
-                      </div>
+                  <div className="pop-subcard rounded-2xl p-4 space-y-1.5">
+                    <div className="font-extrabold text-indigo-700 uppercase">
+                      Why Authors Missed It
                     </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {opp.valley_of_death_diagnosis}
+                    </p>
+                  </div>
 
-                    {/* Proposed Solution & 4 Executed Action Steps */}
-                    <div className="glass-subpanel rounded-2xl p-5 text-xs space-y-4">
-                      <div>
-                        <div className="font-bold text-indigo-700 uppercase tracking-wider text-[11px] mb-1">
-                          Revealed Moonshot Solution & Executed Actions
-                        </div>
-                        <p className="text-slate-900 font-semibold text-sm">
-                          {opp.proposed_product_or_therapeutic}
-                        </p>
-                      </div>
+                  <div className="pop-subcard rounded-2xl p-4 space-y-1.5">
+                    <div className="font-extrabold text-rose-700 uppercase">
+                      Live Registry Check
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      <strong>ClinicalTrials.gov:</strong>{' '}
+                      {opp.clinical_trials_check?.whitespace_status}
+                    </p>
+                    <p className="text-slate-700 leading-relaxed">
+                      <strong>ChEMBL / OpenTargets:</strong>{' '}
+                      {opp.opentargets_chembl_check?.tractability_modality}
+                    </p>
+                  </div>
+                </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {opp.validation_roadmap.map((step, i) => {
-                          const key = `${opp.id}_${i}`;
-                          const isRunning = executingStepKey === key;
-                          const stepRes = stepActionResults[key];
-                          const buttonLabels = [
-                            'Run 5-Fold Verification Now',
-                            'Generate Thresholds & Patent Claim',
-                            'Run Live Clinical & ChEMBL Audit',
-                            'Generate Python Script & Dossier',
-                          ];
+                {/* 4 Actionable Validation & Export Buttons */}
+                <div className="space-y-3 pt-2 border-t-2 border-slate-200">
+                  <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                    Take Action on This Discovery
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {opp.validation_roadmap.map((step, i) => {
+                      const key = `${opp.id}_${i}`;
+                      const isRunning = executingStepKey === key;
+                      const stepRes = stepActionResults[key];
+                      const buttonLabels = [
+                        '1. Run 5-Fold Verification',
+                        '2. Generate Patent Claim',
+                        '3. Audit Live Clinical Trials',
+                        '4. Download Python Model & Dossier',
+                      ];
 
-                          return (
-                            <div
-                              key={i}
-                              className="bg-white border border-slate-200/90 rounded-2xl p-4 text-slate-700 flex flex-col justify-between gap-3 shadow-2xs"
-                            >
-                              <div className="flex items-start gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                                <span className="leading-relaxed">{step}</span>
+                      return (
+                        <div
+                          key={i}
+                          className="bg-slate-50 border-2 border-slate-900 rounded-2xl p-4 text-xs flex flex-col justify-between gap-3"
+                        >
+                          <div className="font-medium text-slate-800 leading-relaxed">{step}</div>
+
+                          <button
+                            onClick={() => handleExecuteOpportunityStep(opp.id, i)}
+                            disabled={isRunning}
+                            className="pop-btn self-start px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {isRunning ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                Running...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3.5 h-3.5" />
+                                {buttonLabels[i] || `Run Action ${i + 1}`}
+                              </>
+                            )}
+                          </button>
+
+                          {stepRes && (
+                            <div className="pt-2 border-t border-slate-300 space-y-2 text-[11px]">
+                              <div className="font-extrabold text-blue-800">
+                                {stepRes.action_title}
                               </div>
+                              <p className="text-slate-700">{stepRes.summary}</p>
 
-                              <button
-                                onClick={() => handleExecuteOpportunityStep(opp.id, i)}
-                                disabled={isRunning}
-                                className="self-start px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-semibold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
-                              >
-                                {isRunning ? (
-                                  <>
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                    Executing Step {i + 1}...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-3 h-3" />
-                                    {stepRes ? `Re-Run Step ${i + 1}` : buttonLabels[i] || `Execute Step ${i + 1}`}
-                                  </>
-                                )}
-                              </button>
+                              {stepRes.provisional_patent_claim && (
+                                <div className="bg-white border border-slate-300 rounded-xl p-2.5 font-mono text-[10px] text-slate-900">
+                                  {stepRes.provisional_patent_claim}
+                                </div>
+                              )}
 
-                              {stepRes && (
-                                <div className="mt-1 pt-3 border-t border-slate-200 space-y-2 text-[11px]">
-                                  <div className="font-bold text-blue-700">{stepRes.action_title}</div>
-                                  <p className="text-slate-600">{stepRes.summary}</p>
-
-                                  {stepRes.metrics && (
-                                    <div className="grid grid-cols-2 gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                                      {Object.entries(stepRes.metrics).map(([k, v]) => (
-                                        <div key={k}>
-                                          <span className="text-slate-500">{k}: </span>
-                                          <strong className="text-slate-900">{String(v)}</strong>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {stepRes.provisional_patent_claim && (
-                                    <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-slate-800 font-mono text-[10px]">
-                                      {stepRes.provisional_patent_claim}
-                                    </div>
-                                  )}
-
-                                  {stepRes.live_registry_checks && (
-                                    <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-2.5 space-y-1">
-                                      {Object.entries(stepRes.live_registry_checks).map(([k, v]) => (
-                                        <div key={k}>
-                                          <span className="text-slate-500">{k}: </span>
-                                          <strong className="text-slate-900">{String(v)}</strong>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {stepRes.reproducible_python_code && (
-                                    <div className="flex flex-wrap gap-2 pt-1">
-                                      <button
-                                        onClick={() =>
-                                          downloadTextFile(
-                                            `thesisout_model_opp_${opp.id}.py`,
-                                            stepRes.reproducible_python_code
-                                          )
-                                        }
-                                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
-                                      >
-                                        <Download className="w-3 h-3" /> Download Python Model (.py)
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          downloadTextFile(
-                                            `thesisout_dossier_opp_${opp.id}.md`,
-                                            stepRes.venture_dossier_markdown
-                                          )
-                                        }
-                                        className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
-                                      >
-                                        <Download className="w-3 h-3" /> Download Dossier (.md)
-                                      </button>
-                                    </div>
-                                  )}
+                              {stepRes.reproducible_python_code && (
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  <button
+                                    onClick={() =>
+                                      downloadTextFile(
+                                        `thesisout_model_opp_${opp.id}.py`,
+                                        stepRes.reproducible_python_code
+                                      )
+                                    }
+                                    className="pop-btn px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Download className="w-3 h-3" /> Python Model (.py)
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      downloadTextFile(
+                                        `thesisout_dossier_opp_${opp.id}.md`,
+                                        stepRes.venture_dossier_markdown
+                                      )
+                                    }
+                                    className="pop-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Download className="w-3 h-3" /> Venture Dossier (.md)
+                                  </button>
                                 </div>
                               )}
                             </div>
-                          );
-                        })}
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* =================================================================== */}
+        {/* SECTION 2: THE CLUE BOARD (MODEL SHOWDOWN & LEADERBOARD)            */}
+        {/* =================================================================== */}
+        {activeRun && (
+          <section className="pop-card rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="px-3.5 py-1 rounded-xl leather-badge text-xs font-extrabold">
+                  02. THE CLUE BOARD
+                </span>
+                <span className="text-xs font-bold text-slate-600">
+                  {activeRun.models_tested_count} Cross-Validated Models Tested on{' '}
+                  <code className="px-2 py-0.5 rounded bg-slate-200 text-slate-900 font-bold">
+                    {activeRun.target_column}
+                  </code>
+                </span>
+              </div>
+
+              {activeDataset && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="font-bold text-slate-500">Switch Target:</span>
+                  {activeDataset.column_metadata
+                    .filter((c) => c.role !== 'identifier')
+                    .slice(0, 4)
+                    .map((col) => (
+                      <button
+                        key={col.name}
+                        onClick={() => handleRunCustomTargetColumn(col.name)}
+                        disabled={runningCustomTarget}
+                        className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold border cursor-pointer ${
+                          activeRun.target_column === col.name
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-slate-100 text-slate-700 border-slate-300 hover:border-slate-900'
+                        }`}
+                      >
+                        {col.name}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3-Box Score Showdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="pop-subcard rounded-2xl p-4">
+                <div className="text-xs font-extrabold text-slate-500 uppercase">
+                  Thesis Author Baseline
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 mt-1">
+                  {activeRun.author_baseline_score.toFixed(4)}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Linear Model ({activeRun.primary_metric_name})
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_#2563EB]">
+                <div className="text-xs font-extrabold text-blue-700 uppercase">
+                  Winning Model ({activeRun.best_model_name})
+                </div>
+                <div className="text-3xl font-extrabold text-blue-700 mt-1 flex items-baseline gap-2">
+                  <span>{activeRun.best_score.toFixed(4)}</span>
+                  <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-rose-600 text-white">
+                    +{(activeRun.signal_gain_delta * 100).toFixed(1)}% Gain
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 mt-1">
+                  Out-of-Fold Cross-Validated {activeRun.primary_metric_name}
+                </div>
+              </div>
+
+              <div className="pop-subcard rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs font-extrabold text-indigo-700 uppercase">
+                    5-Stage Deep Verification
+                  </div>
+                  {escalationCache[activeRun.id] ? (
+                    <>
+                      <div className="text-3xl font-extrabold text-indigo-700 mt-1">
+                        {escalationCache[activeRun.id].stage2_super_learner_ensemble.super_learner_score.toFixed(4)}
                       </div>
+                      <div className="text-xs text-slate-600 mt-1">
+                        Super-Learner Stacking • Zero Leakage Verified
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-600 mt-1">
+                      Verify with 5-fold permutation testing & Super-Learner stacking.
+                    </p>
+                  )}
+                </div>
+                {!escalationCache[activeRun.id] && (
+                  <button
+                    onClick={() => handleEscalateDeepInference(activeRun.id)}
+                    disabled={escalatingRunId === activeRun.id}
+                    className="pop-btn mt-2 self-start px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold cursor-pointer"
+                  >
+                    {escalatingRunId === activeRun.id ? 'Verifying...' : 'Run 5-Stage Proof'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Top Hidden Clues (Feature Importance Bars) */}
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Top Predictive Clues Driving <code className="text-blue-700">{activeRun.target_column}</code>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activeRun.top_features.slice(0, 6).map((feat, idx) => (
+                  <div key={idx} className="pop-subcard rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono font-extrabold text-slate-900">
+                        {feat.feature}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {!feat.discussed_by_author && (
+                          <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-extrabold">
+                            Overlooked Clue
+                          </span>
+                        )}
+                        <span className="font-mono font-extrabold text-blue-700">
+                          {(feat.importance * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                      <div
+                        className={`h-full rounded-full ${
+                          !feat.discussed_by_author ? 'bg-rose-600' : 'bg-blue-600'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.max(8, feat.importance * 100))}%` }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
 
-            {/* 3. Supporting Empirical Evidence Section (30-Model Audit + 5-Stage Deep Verification + 9-API Telemetry) */}
-            {activeRun && (
-              <div className="glass-panel rounded-3xl p-6 space-y-5">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
-                  <div>
-                    <div className="text-sm font-extrabold text-slate-900">
-                      Supporting Empirical Evidence & Statistical Verification
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      Backed by {activeRun.models_tested_count} benchmarked models on{' '}
-                      <code>{activeRun.target_column}</code>{' '}
-                      {activeDataset ? `(${activeDataset.name}, ${activeDataset.row_count} rows)` : ''}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowAllModels(!showAllModels)}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold cursor-pointer"
-                  >
-                    {showAllModels ? 'Hide Full 30-Model Table' : 'Show Full 30-Model Leaderboard'}
-                  </button>
+            {/* Cross-Validated Model Leaderboard Table */}
+            <div className="space-y-3 pt-2 border-t-2 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                  Cross-Validated Model Benchmark ({activeRun.leaderboard.length} Architectures)
                 </div>
+                <button
+                  onClick={() => setShowAllModels(!showAllModels)}
+                  className="px-3 py-1 rounded-xl bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-1 cursor-pointer"
+                >
+                  {showAllModels ? (
+                    <>
+                      Hide Table <ChevronUp className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      Show All {activeRun.leaderboard.length} Models <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="glass-subpanel rounded-2xl p-4">
-                    <div className="text-slate-500 font-semibold">Classical Baseline</div>
-                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
-                      {activeRun.author_baseline_score}
-                    </div>
-                    <div className="text-slate-500 mt-0.5">{activeRun.primary_metric_name}</div>
-                  </div>
-
-                  <div className="glass-subpanel rounded-2xl p-4 border-blue-300">
-                    <div className="text-blue-700 font-bold">
-                      Winning Model ({activeRun.best_model_name})
-                    </div>
-                    <div className="text-2xl font-extrabold text-blue-700 mt-1">
-                      {activeRun.best_score}{' '}
-                      <span className="text-xs font-bold text-indigo-600">
-                        (+{(activeRun.signal_gain_delta * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                    <div className="text-slate-500 mt-0.5">
-                      Top Clues: {activeRun.top_features.slice(0, 3).map((f) => f.feature).join(', ')}
-                    </div>
-                  </div>
-
-                  <div className="glass-subpanel rounded-2xl p-4">
-                    <div className="text-indigo-700 font-bold">5-Stage Deep Verification</div>
-                    {escalationCache[activeRun.id] ? (
-                      <>
-                        <div className="text-2xl font-extrabold text-indigo-700 mt-1">
-                          {escalationCache[activeRun.id].stage2_super_learner_ensemble.super_learner_score}
-                        </div>
-                        <div className="text-slate-500 mt-0.5">
-                          Super-Learner Stacking • Permutation Verified
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleEscalateDeepInference(activeRun.id)}
-                        className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold cursor-pointer"
-                      >
-                        {escalatingRunId === activeRun.id ? 'Verifying...' : 'Run 5-Stage Verification'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {showDeepCheck && escalationCache[activeRun.id] && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-3.5">
-                      <div className="font-bold text-blue-700 mb-1">Permutation & Leakage Audit</div>
-                      <p className="text-slate-600">
-                        {escalationCache[activeRun.id].stage1_leakage_and_permutation_audit.audit_interpretation}
-                      </p>
-                    </div>
-                    <div className="bg-white border border-slate-200 rounded-2xl p-3.5">
-                      <div className="font-bold text-indigo-700 mb-1">Mechanistic Regime Thresholds</div>
-                      <p className="text-slate-600">
-                        {escalationCache[activeRun.id].stage3_mechanistic_regime_discovery.synergy_conclusion}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {showAllModels && (
-                  <div className="overflow-x-auto max-h-72 border-t border-slate-200 pt-3">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-slate-600 font-semibold">
-                          <th className="py-2 px-3">Rank</th>
-                          {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
-                            <th key={col} className="py-2 px-3">
-                              {col}
-                            </th>
+              {showAllModels && (
+                <div className="overflow-x-auto max-h-80 rounded-2xl border-2 border-slate-900">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-900 text-white font-bold">
+                        <th className="py-2.5 px-3">Rank</th>
+                        {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
+                          <th key={col} className="py-2.5 px-3">
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-mono bg-white">
+                      {activeRun.leaderboard.map((row, idx) => (
+                        <tr
+                          key={idx}
+                          className={
+                            idx === 0
+                              ? 'bg-blue-50 font-extrabold text-blue-950'
+                              : 'text-slate-800 hover:bg-slate-50'
+                          }
+                        >
+                          <td className="py-2 px-3">#{idx + 1}</td>
+                          {Object.entries(row).map(([k, val]) => (
+                            <td key={k} className="py-2 px-3">
+                              {val === null
+                                ? '-'
+                                : typeof val === 'number'
+                                ? val.toFixed(4)
+                                : String(val)}
+                            </td>
                           ))}
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-mono">
-                        {activeRun.leaderboard.map((row, idx) => (
-                          <tr
-                            key={idx}
-                            className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
-                          >
-                            <td className="py-2 px-3">#{idx + 1}</td>
-                            {Object.entries(row).map(([k, val]) => (
-                              <td key={k} className="py-2 px-3">
-                                {val === null ? '-' : typeof val === 'number' ? val.toFixed(4) : String(val)}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* =================================================================== */}
+        {/* SECTION 3: THE EVIDENCE LOCKER (SOURCE THESIS & LIVE REGISTRIES)    */}
+        {/* =================================================================== */}
+        {selectedDiss && (
+          <section className="pop-card rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="px-3.5 py-1 rounded-xl leather-badge text-xs font-extrabold">
+                03. THE EVIDENCE LOCKER
+              </span>
+              <span className="text-xs font-bold text-slate-600">
+                Real University Thesis + Open Zenodo Dataset + Live Registry Verification
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Source Thesis Card */}
+              <div className="pop-subcard rounded-2xl p-4 space-y-2">
+                <div className="font-extrabold text-blue-700 uppercase">
+                  Source Dissertation ({selectedDiss.university}, {selectedDiss.publication_year})
+                </div>
+                <div className="text-sm font-extrabold text-slate-900 leading-snug">
+                  {selectedDiss.title}
+                </div>
+                <div className="text-slate-600">Authors: {selectedDiss.authors}</div>
+                {selectedDiss.source_url && (
+                  <a
+                    href={selectedDiss.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-blue-600 hover:underline pt-1"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" /> View Original Publication{' '}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 )}
               </div>
-            )}
 
-            {/* 4. Supporting 9-API Live Scientific Telemetry */}
-            {probeData && (
-              <div className="glass-panel rounded-3xl p-6 space-y-3 text-xs">
-                <div className="font-extrabold text-slate-900 text-sm">
-                  Supporting 9-Database Live Scientific Telemetry ("{probeData.query}")
+              {/* Real Dataset Card */}
+              {activeDataset && (
+                <div className="pop-subcard rounded-2xl p-4 space-y-2">
+                  <div className="font-extrabold text-indigo-700 uppercase">
+                    Audited Open Dataset ({activeDataset.source_type})
+                  </div>
+                  <div className="text-sm font-extrabold text-slate-900">
+                    {activeDataset.name}
+                  </div>
+                  <div className="text-slate-600 font-mono">
+                    {activeDataset.row_count} real rows × {activeDataset.col_count} columns
+                  </div>
+                  {activeDataset.source_url && (
+                    <a
+                      href={activeDataset.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:underline pt-1"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Inspect Raw Dataset on Zenodo{' '}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="glass-subpanel rounded-2xl p-3.5">
-                    <div className="font-bold text-blue-700">OpenTargets GraphQL v4</div>
-                    <div className="text-slate-700 mt-1">
-                      Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} • Known Drugs:{' '}
-                      {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
-                    </div>
-                  </div>
-                  <div className="glass-subpanel rounded-2xl p-3.5">
-                    <div className="font-bold text-indigo-700">ChEMBL EBI REST API</div>
-                    <div className="text-slate-700 mt-1">
-                      Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Max Clinical Phase:{' '}
-                      {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
-                    </div>
-                  </div>
-                  <div className="glass-subpanel rounded-2xl p-3.5">
-                    <div className="font-bold text-rose-700">ClinicalTrials.gov v2 & openFDA</div>
-                    <div className="text-slate-700 mt-1">
-                      Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} • FAERS Reports:{' '}
-                      {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* 5. Follow-Up Conversation with Gemini */}
-            <div className="glass-panel rounded-3xl p-6 space-y-4">
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-blue-600" />
-                Continue Conversing with Gemini or Launch a New Investigation
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask a follow-up question about this moonshot, or enter a new topic to run..."
-                  className="flex-1 bg-white border border-slate-300 focus:border-blue-600 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleFollowUpChat()}
-                  disabled={chatLoading || !chatInput.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs cursor-pointer"
-                >
-                  {chatLoading ? 'Thinking...' : 'Ask Follow-Up on This Study'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRunAutonomousGeminiWorkflow()}
-                  disabled={harvesting || !chatInput.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-xs cursor-pointer"
-                >
-                  Run Full Workflow on New Topic
-                </button>
-              </div>
-
+            {/* Follow-up Conversational Bar */}
+            <div className="pt-3 border-t border-slate-200 space-y-3">
               {chatMessages.length > 0 && (
-                <div className="space-y-2.5 max-h-60 overflow-y-auto pt-2">
-                  {chatMessages.slice(-4).map((m, idx) => (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {chatMessages.slice(-2).map((msg, i) => (
                     <div
-                      key={idx}
+                      key={i}
                       className={`p-3.5 rounded-2xl text-xs ${
-                        m.role === 'user'
-                          ? 'bg-blue-600 text-white ml-12'
-                          : 'glass-subpanel text-slate-800 mr-6'
+                        msg.role === 'user'
+                          ? 'bg-slate-900 text-white font-bold ml-auto max-w-xl'
+                          : 'bg-blue-50 border-2 border-slate-900 text-slate-900'
                       }`}
                     >
-                      <div className="font-bold text-[10px] uppercase opacity-75 mb-1">
-                        {m.role === 'user' ? 'You' : m.model_used || 'Gemini'}
-                      </div>
-                      <div className="whitespace-pre-line leading-relaxed">{m.content}</div>
-                      {m.suggested_actions && m.suggested_actions.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {m.suggested_actions.map((act, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleCopilotActionClick(act)}
-                              className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-semibold cursor-pointer"
-                            >
-                              {act.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
                     </div>
                   ))}
                 </div>
               )}
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleFollowUpChat();
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={followUpInput}
+                  onChange={(e) => setFollowUpInput(e.target.value)}
+                  placeholder="Ask a follow-up question about this moonshot or dataset"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-900 text-xs font-medium"
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading || !followUpInput.trim()}
+                  className="pop-btn px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  {chatLoading ? 'Working' : 'Ask Follow-Up'}
+                </button>
+              </form>
             </div>
-          </div>
+          </section>
         )}
       </main>
     </div>

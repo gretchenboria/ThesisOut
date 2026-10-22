@@ -43,6 +43,20 @@ def test_real_data_only_pipeline():
         assert diss["datasets"][0]["row_count"] == 569
         assert len(diss["datasets"][0]["lazy_runs"]) >= 2
 
+        # 3b. Verify leaderboard statistical rigor: zero 1.0 degeneracy & distinct Precision/Recall/F1/ROC-AUC/Accuracy
+        first_run = diss["datasets"][0]["lazy_runs"][0]
+        lb = first_run["leaderboard"]
+        assert len(lb) >= 15
+        for row in lb[:10]:
+            if first_run["task_type"] == "classification":
+                assert row["ROC AUC"] < 1.0
+                assert row["Accuracy"] < 1.0
+                assert row["Recall"] != row["Accuracy"] or row["Precision"] != row["Accuracy"]
+                assert row["ROC AUC"] != row["Balanced Accuracy"]
+            else:
+                assert row["R-Squared"] < 1.0
+            assert "95% CI" in row and not row["95% CI"].endswith("1.0000]")
+
         # 4. Verify Stage-2 Deep Inference Escalation on the real clinical dataset
         lazy_run_id = diss["datasets"][0]["lazy_runs"][0]["id"]
         r_esc = client.post(f"/api/lazypredict/{lazy_run_id}/escalate")
