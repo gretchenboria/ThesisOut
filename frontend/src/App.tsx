@@ -198,6 +198,8 @@ export function App() {
   // Stage-2 Deep Verification state
   const [escalationCache, setEscalationCache] = useState<Record<number, DeepInferenceResult>>({});
   const [escalatingRunId, setEscalatingRunId] = useState<number | null>(null);
+  const [stepActionResults, setStepActionResults] = useState<Record<string, any>>({});
+  const [executingStepKey, setExecutingStepKey] = useState<string | null>(null);
 
   // Custom Target Rotation state
   const [customTargetCol, setCustomTargetCol] = useState<string>('');
@@ -426,6 +428,32 @@ export function App() {
     } finally {
       setProbing(false);
     }
+  };
+
+  const handleExecuteOpportunityStep = async (oppId: number, stepIdx: number) => {
+    const key = `${oppId}_${stepIdx}`;
+    setExecutingStepKey(key);
+    try {
+      const res = await fetch(`/api/opportunities/${oppId}/execute-step?step_index=${stepIdx}`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStepActionResults((prev) => ({ ...prev, [key]: data }));
+      }
+    } finally {
+      setExecutingStepKey(null);
+    }
+  };
+
+  const downloadTextFile = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -1489,24 +1517,119 @@ export function App() {
                       </div>
                     </div>
 
-                    {/* Proposed Solution & 4-Step Action Plan */}
-                    <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 text-xs">
-                      <div className="font-bold text-emerald-800 uppercase tracking-wider text-[11px] mb-1">
-                        Recommended Real-World Solution & Next Steps
+                    {/* Proposed Solution & Interactive 4-Step Action Plan */}
+                    <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 text-xs space-y-4">
+                      <div>
+                        <div className="font-bold text-emerald-800 uppercase tracking-wider text-[11px] mb-1">
+                          Recommended Real-World Solution & Interactive Action Steps (Click Any Step to Execute)
+                        </div>
+                        <p className="text-slate-800 font-semibold text-sm">
+                          {opp.proposed_product_or_therapeutic}
+                        </p>
                       </div>
-                      <p className="text-slate-800 font-semibold text-sm mb-3">
-                        {opp.proposed_product_or_therapeutic}
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {opp.validation_roadmap.map((step, i) => (
-                          <div
-                            key={i}
-                            className="bg-white border border-emerald-200 rounded-xl p-3 text-slate-700 flex items-start gap-2"
-                          >
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                            <span>{step}</span>
-                          </div>
-                        ))}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {opp.validation_roadmap.map((step, i) => {
+                          const key = `${opp.id}_${i}`;
+                          const isRunning = executingStepKey === key;
+                          const stepRes = stepActionResults[key];
+                          const buttonLabels = [
+                            '▶ Run 5-Fold Verification Now',
+                            '▶ Generate Thresholds & Patent Claim',
+                            '▶ Run Live Clinical & ChEMBL Audit',
+                            '▶ Generate Python Script & Dossier',
+                          ];
+
+                          return (
+                            <div
+                              key={i}
+                              className="bg-white border-2 border-emerald-200 rounded-2xl p-4 text-slate-700 flex flex-col justify-between gap-3"
+                            >
+                              <div className="flex items-start gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                <span className="leading-relaxed">{step}</span>
+                              </div>
+
+                              <button
+                                onClick={() => handleExecuteOpportunityStep(opp.id, i)}
+                                disabled={isRunning}
+                                className="self-start px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                              >
+                                {isRunning ? (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    Executing Step {i + 1}...
+                                  </>
+                                ) : (
+                                  buttonLabels[i] || `▶ Execute Step ${i + 1}`
+                                )}
+                              </button>
+
+                              {/* Live Action Result Box */}
+                              {stepRes && (
+                                <div className="mt-1 pt-3 border-t border-emerald-100 space-y-2 text-[11px]">
+                                  <div className="font-bold text-emerald-800">{stepRes.action_title}</div>
+                                  <p className="text-slate-600">{stepRes.summary}</p>
+
+                                  {stepRes.metrics && (
+                                    <div className="grid grid-cols-2 gap-1.5 bg-emerald-50/70 p-2.5 rounded-xl">
+                                      {Object.entries(stepRes.metrics).map(([k, v]) => (
+                                        <div key={k}>
+                                          <span className="text-slate-500">{k}: </span>
+                                          <strong className="text-slate-800">{String(v)}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {stepRes.provisional_patent_claim && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-slate-700 font-mono text-[10px]">
+                                      {stepRes.provisional_patent_claim}
+                                    </div>
+                                  )}
+
+                                  {stepRes.live_registry_checks && (
+                                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 space-y-1">
+                                      {Object.entries(stepRes.live_registry_checks).map(([k, v]) => (
+                                        <div key={k}>
+                                          <span className="text-slate-500">{k}: </span>
+                                          <strong className="text-slate-800">{String(v)}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {stepRes.reproducible_python_code && (
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                      <button
+                                        onClick={() =>
+                                          downloadTextFile(
+                                            `thesisout_model_opp_${opp.id}.py`,
+                                            stepRes.reproducible_python_code
+                                          )
+                                        }
+                                        className="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold cursor-pointer"
+                                      >
+                                        ⬇ Download Python Model (.py)
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          downloadTextFile(
+                                            `thesisout_dossier_opp_${opp.id}.md`,
+                                            stepRes.venture_dossier_markdown
+                                          )
+                                        }
+                                        className="px-3 py-1.5 rounded-lg bg-purple-600 text-white font-bold cursor-pointer"
+                                      >
+                                        ⬇ Download Venture Dossier (.md)
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

@@ -52,6 +52,13 @@ def test_real_data_only_pipeline():
         assert "stage2_super_learner_ensemble" in esc
         assert esc["stage2_super_learner_ensemble"]["super_learner_score"] > 0.90
 
+        # 4b. Verify all 4 interactive Actionable Steps on the Market Opportunity
+        opp_id = diss["opportunities"][0]["id"]
+        for s_idx in range(4):
+            r_step = client.post(f"/api/opportunities/{opp_id}/execute-step?step_index={s_idx}")
+            assert r_step.status_code == 200
+            assert r_step.json()["step_index"] == s_idx
+
         # 5. Test live scientific integrations probe (OpenTargets, ChEMBL, ClinicalTrials, openFDA, EuropePMC, arXiv, HuggingFace)
         r_probe = client.get("/api/integrations/probe?query=EGFR")
         assert r_probe.status_code == 200
