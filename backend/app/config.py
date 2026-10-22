@@ -14,11 +14,18 @@ class Settings(BaseSettings):
     DATASET_DIR: Path = STORAGE_DIR / "datasets"
     DB_PATH: Path = STORAGE_DIR / "thesisout.db"
 
-    # LLM Router Configuration: Gemini 3.8 Flash (Primary)
-    PRIMARY_LLM_MODEL: str = "gemini-3.8-flash"
-    FALLBACK_LLM_MODEL: str = "claude-opus-5-5"
+    # LLM Router Configuration: Gemini 4 Argon (Primary) with Rate & Token Budget Limits
+    PRIMARY_LLM_MODEL: str = "gemini-4-argon"
+    FALLBACK_LLM_MODEL: str = "gemini-3.8-flash"
     GEMINI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
+
+    # Gemini 4 Argon Cost & Rate Guardrails
+    GEMINI_ARGON_MAX_OUTPUT_TOKENS: int = 1024
+    GEMINI_ARGON_MAX_INPUT_CHARS: int = 12000
+    GEMINI_ARGON_RPM_LIMIT: int = 10
+    GEMINI_ARGON_DAILY_CALL_BUDGET: int = 200
+    GEMINI_ARGON_MAX_CONCURRENT: int = 2
 
     # Top-Science Quality Gates
     MIN_INSTITUTION_TIER_SCORE: float = 0.75  # Strict R1 / Top Global Research Institution filter

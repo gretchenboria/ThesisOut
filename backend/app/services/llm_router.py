@@ -4,10 +4,15 @@ Integrates live Google Gemini API (generativelanguage.googleapis.com + Vertex AI
 with automatic credential resolution (GEMINI_API_KEY, Cloud Run Metadata Server ADC, or gcloud CLI ADC)
 and Claude fallback.
 """
+import asyncio
+from collections import OrderedDict, deque
+from datetime import date
+import hashlib
 import json
 import logging
 import os
 import subprocess
+import time
 from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
@@ -21,6 +26,70 @@ class LLMRouter:
         self.fallback_model = settings.FALLBACK_LLM_MODEL
         self.gcp_project = os.getenv("GOOGLE_CLOUD_PROJECT", "gen-lang-client-0221638641")
         self.gcp_location = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+
+        # Gemini 4 Argon Rate, Concurrency, Daily Budget & Cache Guardrails
+        self._semaphore = asyncio.Semaphore(settings.GEMINI_ARGON_MAX_CONCURRENT)
+        self._recent_timestamps: deque[float] = deque()
+        self._budget_date: date = date.today()
+        self._daily_calls_used: int = 0
+        self._cache_hits: int = 0
+        self._response_cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
+        self._max_cache_size: int = 256
+
+    def _check_and_consume_argon_budget(self) -> bool:
+        """
+        Enforces sliding-window RPM limit (10 req/min) and daily call budget (200 calls/day)
+        for Gemini 4 Argon so API usage never spikes unexpectedly.
+        """
+        today = date.today()
+        if today != self._budget_date:
+            self._budget_date = today
+            self._daily_calls_used = 0
+
+        if self._daily_calls_used >= settings.GEMINI_ARGON_DAILY_CALL_BUDGET:
+            logger.warning(
+                "Gemini 4 Argon daily budget reached (%d/%d); routing to fallback.",
+                self._daily_calls_used,
+                settings.GEMINI_ARGON_DAILY_CALL_BUDGET,
+            )
+            return False
+
+        now = time.monotonic()
+        while self._recent_timestamps and (now - self._recent_timestamps[0]) > 60.0:
+            self._recent_timestamps.popleft()
+
+        if len(self._recent_timestamps) >= settings.GEMINI_ARGON_RPM_LIMIT:
+            logger.warning(
+                "Gemini 4 Argon RPM limit reached (%d req/min); routing to fallback.",
+                settings.GEMINI_ARGON_RPM_LIMIT,
+            )
+            return False
+
+        self._recent_timestamps.append(now)
+        self._daily_calls_used += 1
+        return True
+
+    def get_quota_status(self) -> Dict[str, Any]:
+        today = date.today()
+        if today != self._budget_date:
+            self._budget_date = today
+            self._daily_calls_used = 0
+        now = time.monotonic()
+        while self._recent_timestamps and (now - self._recent_timestamps[0]) > 60.0:
+            self._recent_timestamps.popleft()
+        return {
+            "primary_model": self.primary_model,
+            "fallback_model": self.fallback_model,
+            "max_output_tokens": settings.GEMINI_ARGON_MAX_OUTPUT_TOKENS,
+            "max_input_chars": settings.GEMINI_ARGON_MAX_INPUT_CHARS,
+            "rpm_limit": settings.GEMINI_ARGON_RPM_LIMIT,
+            "rpm_current_window": len(self._recent_timestamps),
+            "daily_call_budget": settings.GEMINI_ARGON_DAILY_CALL_BUDGET,
+            "daily_calls_used": self._daily_calls_used,
+            "daily_calls_remaining": max(0, settings.GEMINI_ARGON_DAILY_CALL_BUDGET - self._daily_calls_used),
+            "max_concurrent_requests": settings.GEMINI_ARGON_MAX_CONCURRENT,
+            "cache_hits": self._cache_hits,
+        }
 
     def _get_gemini_key(self) -> str:
         return (
@@ -69,7 +138,7 @@ class LLMRouter:
         try:
             res = await self._call_gemini_json(system_prompt, user_prompt)
             if res and isinstance(res, dict):
-                return res, "Gemini 3.8 Flash"
+                return res, "Gemini 4 Argon"
         except Exception as exc:
             logger.warning("Live Gemini JSON synthesis failed: %s", exc)
 
@@ -136,7 +205,7 @@ class LLMRouter:
         try:
             res = await self._call_gemini_json(system_prompt, user_prompt)
             if res and isinstance(res, dict) and res.get("reply"):
-                res["model_used"] = "Gemini 3.8 Flash"
+                res["model_used"] = "Gemini 4 Argon"
                 return res
         except Exception as exc:
             logger.warning("Gemini Copilot live call error: %s", exc)
@@ -309,43 +378,70 @@ class LLMRouter:
 
 
     async def _call_gemini_json(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
+        capped_system = system_prompt[:4000]
+        capped_user = user_prompt[: settings.GEMINI_ARGON_MAX_INPUT_CHARS]
+
+        cache_key = hashlib.sha256(f"{capped_system}\n---\n{capped_user}".encode("utf-8")).hexdigest()
+        if cache_key in self._response_cache:
+            self._cache_hits += 1
+            self._response_cache.move_to_end(cache_key)
+            return self._response_cache[cache_key]
+
+        if not self._check_and_consume_argon_budget():
+            return None
+
         payload = {
-            "systemInstruction": {"role": "system", "parts": [{"text": system_prompt}]},
-            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-            "generationConfig": {"responseMimeType": "application/json", "temperature": 0.25},
+            "systemInstruction": {"role": "system", "parts": [{"text": capped_system}]},
+            "contents": [{"role": "user", "parts": [{"text": capped_user}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.2,
+                "maxOutputTokens": settings.GEMINI_ARGON_MAX_OUTPUT_TOKENS,
+            },
         }
 
-        # 1. Try GEMINI_API_KEY via generativelanguage.googleapis.com
-        api_key = self._get_gemini_key()
-        if api_key:
-            for model_name in ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"]:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                async with httpx.AsyncClient(timeout=25.0) as client:
-                    resp = await client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data["candidates"][0]["content"]["parts"][0]["text"]
-                        return json.loads(text)
+        model_cascade = ["gemini-4-argon", "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"]
 
-        # 2. Try Google Cloud ADC / Cloud Run Service Account via Vertex AI
-        token = await self._get_gcp_access_token()
-        if token:
-            for model_name in ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-001"]:
-                url = (
-                    f"https://{self.gcp_location}-aiplatform.googleapis.com/v1/projects/"
-                    f"{self.gcp_project}/locations/{self.gcp_location}/publishers/google/models/"
-                    f"{model_name}:generateContent"
-                )
-                async with httpx.AsyncClient(timeout=25.0) as client:
-                    resp = await client.post(
-                        url,
-                        headers={"Authorization": f"Bearer {token}"},
-                        json=payload,
+        async with self._semaphore:
+            # 1. Try GEMINI_API_KEY via generativelanguage.googleapis.com
+            api_key = self._get_gemini_key()
+            if api_key:
+                for model_name in model_cascade:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                    async with httpx.AsyncClient(timeout=20.0) as client:
+                        resp = await client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            parsed = json.loads(text)
+                            self._response_cache[cache_key] = parsed
+                            if len(self._response_cache) > self._max_cache_size:
+                                self._response_cache.popitem(last=False)
+                            return parsed
+
+            # 2. Try Google Cloud ADC / Cloud Run Service Account via Vertex AI
+            token = await self._get_gcp_access_token()
+            if token:
+                for model_name in model_cascade:
+                    url = (
+                        f"https://{self.gcp_location}-aiplatform.googleapis.com/v1/projects/"
+                        f"{self.gcp_project}/locations/{self.gcp_location}/publishers/google/models/"
+                        f"{model_name}:generateContent"
                     )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data["candidates"][0]["content"]["parts"][0]["text"]
-                        return json.loads(text)
+                    async with httpx.AsyncClient(timeout=20.0) as client:
+                        resp = await client.post(
+                            url,
+                            headers={"Authorization": f"Bearer {token}"},
+                            json=payload,
+                        )
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            parsed = json.loads(text)
+                            self._response_cache[cache_key] = parsed
+                            if len(self._response_cache) > self._max_cache_size:
+                                self._response_cache.popitem(last=False)
+                            return parsed
 
         return None
 

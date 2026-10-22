@@ -1141,7 +1141,7 @@ export function App() {
                       9-API Regulatory Audit &amp; Code Export
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
-                      Cross-checks ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA FAERS, synthesizes the Translation Opportunity Score (TOS) via Gemini 3.8 Flash, and exports standalone Python code.
+                      Cross-checks ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA FAERS, synthesizes the Translation Opportunity Score (TOS) via Gemini 4 Argon (budget-capped at 10 RPM / 200 calls/day, with Gemini 3.8 Flash fallback), and exports standalone Python code.
                     </div>
                   </div>
                 </div>
@@ -1156,7 +1156,8 @@ export function App() {
                       </div>
                       <div className="flex flex-wrap gap-1.5 font-mono text-[11px] font-bold">
                         {[
-                          'Gemini 3.8 Flash',
+                          'Gemini 4 Argon (10 RPM / 200/day Cap)',
+                          'Gemini 3.8 Flash (Fallback)',
                           'LazyPredict (30 Models)',
                           'ExtraTrees / RandomForest',
                           'XGBoost',

@@ -23,6 +23,7 @@ from app.models import (
     RegisteredAgent,
     SavedItem,
 )
+from app.services.llm_router import llm_router
 from app.services.scientific_integrations import scientific_integrations
 from app.schemas import (
     CustomLazyPredictRequest,
@@ -71,6 +72,7 @@ def get_platform_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "primary_model": settings.PRIMARY_LLM_MODEL,
             "fallback_model": settings.FALLBACK_LLM_MODEL,
             "quality_gate": "Tier-1 Top-Science Institutions Only",
+            "quota_guardrails": llm_router.get_quota_status(),
         },
     }
 
