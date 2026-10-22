@@ -70,6 +70,26 @@ def test_real_data_only_pipeline():
         assert "europepmc_rest" in probe["live_integrations"]
         assert "arxiv_atom_api" in probe["live_integrations"]
 
+        # 5b. Test Gemini Discovery & Downstream Inference Co-Pilot Chat
+        r_chat = client.post(
+            "/api/copilot/chat",
+            json={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Which morphometric variables in this biopsy dataset drive nonlinear separation and what column should we test next?",
+                    }
+                ],
+                "dissertation_id": diss["id"],
+                "lazy_run_id": lazy_run_id,
+            },
+        )
+        assert r_chat.status_code == 200
+        chat_data = r_chat.json()
+        assert "reply" in chat_data and len(chat_data["reply"]) > 20
+        assert "suggested_actions" in chat_data and len(chat_data["suggested_actions"]) > 0
+
+
         # 6. Reset workspace so DB remains completely clean
         r_reset = client.delete("/api/workspace/reset")
         assert r_reset.status_code == 200

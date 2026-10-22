@@ -10,9 +10,11 @@ import {
   Download,
   ExternalLink,
   FileText,
+  MessageSquare,
   Play,
   RefreshCw,
   Search,
+  Send,
   ShieldCheck,
   Upload,
 } from 'lucide-react';
@@ -175,9 +177,49 @@ interface DeepInferenceResult {
   };
 }
 
+interface CopilotAction {
+  action_type:
+    | 'harvest_stream'
+    | 'probe_apis'
+    | 'run_lazypredict_column'
+    | 'run_deep_verification'
+    | 'follow_up_prompt';
+  label: string;
+  query_or_column: string;
+  domain?: string;
+}
+
+interface CopilotMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  hypothesis_formulation?: string;
+  downstream_inference_plan?: string[];
+  suggested_actions?: CopilotAction[];
+  model_used?: string;
+}
+
+function inferDomainFromText(text: string): string {
+  const lower = text.toLowerCase();
+  const csKeywords = [
+    'transformer',
+    'battery',
+    'neural',
+    'compiler',
+    'quantum',
+    'robotics',
+    'silicon',
+    'algorithm',
+    'latency',
+    'gpu',
+    'semiconductor',
+    'grid',
+  ];
+  return csKeywords.some((k) => lower.includes(k)) ? 'cs_ai' : 'biomedical';
+}
+
 export function App() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [step1Mode, setStep1Mode] = useState<'search' | 'upload' | 'saved'>('search');
+  const [step1Mode, setStep1Mode] = useState<'copilot' | 'upload' | 'saved'>('copilot');
 
   const [showAllModels, setShowAllModels] = useState<boolean>(false);
   const [showDeepCheck, setShowDeepCheck] = useState<boolean>(false);
@@ -203,15 +245,25 @@ export function App() {
   const [attachingData, setAttachingData] = useState<boolean>(false);
 
   const [harvestQuery, setHarvestQuery] = useState<string>('');
-  const [harvestDomain, setHarvestDomain] = useState<string>('biomedical');
   const [harvesting, setHarvesting] = useState<boolean>(false);
   const [streamEvents, setStreamEvents] = useState<string[]>([]);
   const [probeData, setProbeData] = useState<any>(null);
   const [probing, setProbing] = useState<boolean>(false);
 
+  // Gemini Discovery & Downstream Inference Co-Pilot state
+  const [chatInput, setChatInput] = useState<string>('');
+  const [chatLoading, setChatLoading] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([
+    {
+      role: 'assistant',
+      content:
+        'Describe the phenomenon, biological mechanism, dataset anomaly, or engineering bottleneck you want to investigate. I will help formulate the hypothesis, identify what empirical signals to look for, and stream live dissertations, datasets, and 30-model audits based on our dialogue.',
+      model_used: 'Gemini Discovery Co-Pilot',
+    },
+  ]);
+
   const [uploadTitle, setUploadTitle] = useState<string>('');
   const [uploadUni, setUploadUni] = useState<string>('');
-  const [uploadDomain, setUploadDomain] = useState<string>('biomedical');
   const [uploadTarget, setUploadTarget] = useState<string>('');
   const [uploadPdf, setUploadPdf] = useState<File | null>(null);
   const [uploadCsv, setUploadCsv] = useState<File | null>(null);
@@ -283,8 +335,8 @@ export function App() {
     }
   };
 
-  const handleRunCustomTarget = async () => {
-    if (!activeDataset || !customTargetCol) return;
+  const handleRunCustomTargetColumn = async (colName: string) => {
+    if (!activeDataset || !colName) return;
     setRunningCustomTarget(true);
     setErrorMsg(null);
     try {
@@ -293,9 +345,9 @@ export function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dataset_id: activeDataset.id,
-          target_column: customTargetCol,
+          target_column: colName,
           is_author_primary_target: false,
-          target_rationale: `Investigating column ${customTargetCol}`,
+          target_rationale: `Investigating column ${colName} via Gemini Co-Pilot`,
         }),
       });
       if (res.ok) {
@@ -303,6 +355,7 @@ export function App() {
         await fetchAllData();
         setSelectedRunId(newRun.id);
         setShowMoreDataTools(false);
+        setCurrentStep(2);
       }
     } catch (err) {
       setErrorMsg('Could not run LazyPredict on that column.');
@@ -358,14 +411,16 @@ export function App() {
     }
   };
 
-  const handleLiveHarvest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!harvestQuery.trim()) return;
+  const executeLiveStreamHarvest = (queryStr: string, explicitDomain?: string) => {
+    const cleanQ = queryStr.trim();
+    if (!cleanQ) return;
+    const domain = explicitDomain || inferDomainFromText(cleanQ);
+    setHarvestQuery(cleanQ);
     setHarvesting(true);
     setErrorMsg(null);
-    setStreamEvents(['Connecting to live OpenAlex, ClinicalTrials.gov, and Zenodo streams...']);
+    setStreamEvents([`Connecting to live OpenAlex, ClinicalTrials.gov, and Zenodo streams for "${cleanQ}"...`]);
 
-    const url = `/api/harvest/stream?query=${encodeURIComponent(harvestQuery.trim())}&domain=${encodeURIComponent(harvestDomain)}&min_year=2018&max_results=3`;
+    const url = `/api/harvest/stream?query=${encodeURIComponent(cleanQ)}&domain=${encodeURIComponent(domain)}&min_year=2018&max_results=3`;
     const evtSource = new EventSource(url);
 
     evtSource.onmessage = async (event) => {
@@ -396,6 +451,69 @@ export function App() {
     };
   };
 
+  const handleLiveHarvest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeLiveStreamHarvest(harvestQuery);
+  };
+
+  const handleSendCopilotMessage = async (customPrompt?: string) => {
+    const text = (customPrompt ?? chatInput).trim();
+    if (!text || chatLoading) return;
+
+    const updatedHistory: CopilotMessage[] = [...chatMessages, { role: 'user', content: text }];
+    setChatMessages(updatedHistory);
+    if (!customPrompt) setChatInput('');
+    setChatLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('/api/copilot/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: updatedHistory.map((m) => ({ role: m.role, content: m.content })),
+          dissertation_id: selectedDiss?.id ?? null,
+          lazy_run_id: activeRun?.id ?? null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.reply || 'Analysis complete.',
+            hypothesis_formulation: data.hypothesis_formulation,
+            downstream_inference_plan: data.downstream_inference_plan,
+            suggested_actions: data.suggested_actions,
+            model_used: data.model_used || 'Gemini 2.5 (Live API)',
+          },
+        ]);
+      } else {
+        setErrorMsg('Gemini Co-Pilot request encountered an error.');
+      }
+    } catch (err) {
+      setErrorMsg('Failed to reach Gemini Co-Pilot endpoint.');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleCopilotActionClick = (action: CopilotAction) => {
+    if (action.action_type === 'harvest_stream') {
+      executeLiveStreamHarvest(action.query_or_column, action.domain);
+    } else if (action.action_type === 'probe_apis') {
+      handleRunLiveProbe(action.query_or_column);
+    } else if (action.action_type === 'run_lazypredict_column') {
+      handleRunCustomTargetColumn(action.query_or_column);
+    } else if (action.action_type === 'run_deep_verification' && activeRun) {
+      setCurrentStep(2);
+      handleEscalateDeepInference(activeRun.id);
+    } else if (action.action_type === 'follow_up_prompt') {
+      handleSendCopilotMessage(action.query_or_column);
+    }
+  };
+
   const handleResetWorkspace = async () => {
     await fetch('/api/workspace/reset', { method: 'DELETE' });
     setDissertations([]);
@@ -409,7 +527,7 @@ export function App() {
   };
 
   const handleRunLiveProbe = async (q: string) => {
-    const targetQ = q.trim() || 'EGFR';
+    const targetQ = q.trim() || harvestQuery.trim() || selectedDiss?.title?.split(' ')[0] || 'EGFR';
     setProbing(true);
     try {
       const res = await fetch(`/api/integrations/probe?query=${encodeURIComponent(targetQ)}`);
@@ -456,7 +574,7 @@ export function App() {
       const formData = new FormData();
       formData.append('title', uploadTitle);
       formData.append('university', uploadUni || 'Research University');
-      formData.append('domain', uploadDomain);
+      formData.append('domain', inferDomainFromText(uploadTitle));
       if (uploadTarget) formData.append('author_primary_target', uploadTarget);
       if (uploadPdf) formData.append('pdf_file', uploadPdf);
       if (uploadCsv) formData.append('dataset_file', uploadCsv);
@@ -503,7 +621,7 @@ export function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-600 font-medium">
-                Uncovering overlooked empirical signals in dissertations and translating them into verified market solutions
+                Conversational Gemini reasoning paired with 30-model empirical screening and 9 live scientific APIs
               </p>
             </div>
           </div>
@@ -519,7 +637,7 @@ export function App() {
             )}
             <span className="px-3 py-1.5 bg-slate-900 text-amber-400 border border-slate-900 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Search className="w-3.5 h-3.5 text-amber-400" />
-              Gemini 4 Argon + Opus 5.5
+              Gemini Live API Active
             </span>
           </div>
         </div>
@@ -546,14 +664,14 @@ export function App() {
               </div>
               <div>
                 <div className="text-xs font-extrabold uppercase tracking-wider">
-                  Select or Ingest Case
+                  Gemini Discovery Dialogue
                 </div>
                 <div
                   className={`text-[11px] ${
                     currentStep === 1 ? 'text-slate-300' : 'text-slate-500'
                   }`}
                 >
-                  Query live repositories or upload files
+                  Chat to formulate hypotheses & stream data
                 </div>
               </div>
             </button>
@@ -584,7 +702,7 @@ export function App() {
                     currentStep === 2 ? 'text-slate-300' : 'text-slate-500'
                   }`}
                 >
-                  Inspect overlooked patterns and confidence
+                  Inspect empirical patterns & steer inference
                 </div>
               </div>
             </button>
@@ -615,7 +733,7 @@ export function App() {
                     currentStep === 3 ? 'text-slate-300' : 'text-slate-500'
                   }`}
                 >
-                  Execute verification steps and export code
+                  Execute verification steps & export code
                 </div>
               </div>
             </button>
@@ -635,7 +753,7 @@ export function App() {
         )}
 
         {/* Active Case File Context Banner */}
-        {selectedDiss && currentStep > 1 && (
+        {selectedDiss && (
           <div className="mb-6 bg-white border-2 border-slate-900 px-5 py-4 flex flex-wrap items-center justify-between gap-3 shadow-[3px_3px_0px_#0F172A]">
             <div className="flex items-center gap-3">
               <span className="px-2.5 py-1 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
@@ -689,36 +807,36 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 1: SELECT OR INGEST CASE */}
+        {/* STEP 1: CONVERSATIONAL GEMINI DISCOVERY & EVIDENCE ACQUISITION */}
         {/* ===================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            <div className="text-center max-w-xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold uppercase tracking-wider mb-2">
                 <Search className="w-3.5 h-3.5" />
-                Stage 01 | Evidence Acquisition
+                Stage 01 | Conversational Hypothesis & Evidence Formulation
               </span>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                Select or Ingest a Dissertation & Dataset
+                Collaborate with Gemini to Guide Discovery & Downstream Inference
               </h1>
-              <p className="text-sm text-slate-600 mt-1">
-                Search live scientific repositories for doctoral theses and open research datasets, or upload your own files for automated 30-model inspection.
+              <p className="text-xs text-slate-600 mt-1">
+                Discuss what you believe is happening in a biological or engineering system. Gemini will help structure the hypothesis, recommend what empirical evidence to stream, and configure downstream 30-model inference.
               </p>
             </div>
 
-            {/* 3-Option Mode Switcher */}
+            {/* Mode Switcher */}
             <div className="flex justify-center">
               <div className="inline-flex bg-white p-1 border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A] gap-1">
                 <button
-                  onClick={() => setStep1Mode('search')}
+                  onClick={() => setStep1Mode('copilot')}
                   className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
-                    step1Mode === 'search'
+                    step1Mode === 'copilot'
                       ? 'bg-slate-900 text-amber-400'
                       : 'text-slate-700 hover:bg-stone-100'
                   }`}
                 >
-                  <Search className="w-3.5 h-3.5" />
-                  Search Repositories (OpenAlex + Zenodo)
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Gemini Discovery Co-Pilot & Live Stream
                 </button>
                 <button
                   onClick={() => setStep1Mode('upload')}
@@ -729,7 +847,7 @@ export function App() {
                   }`}
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  Upload PDF / CSV
+                  Upload Own PDF / CSV
                 </button>
                 {dissertations.length > 0 && (
                   <button
@@ -747,178 +865,238 @@ export function App() {
               </div>
             </div>
 
-            {/* MODE A: Search Online */}
-            {step1Mode === 'search' && (
-              <div className="dossier-card p-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 text-slate-900 font-black text-base uppercase tracking-tight mb-1">
-                  <Search className="w-5 h-5 text-red-700" />
-                  Live Repository & Open Dataset Investigation
-                </div>
-                <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-                  Enter a research topic or select a preset domain below. The engine streams live dissertations from OpenAlex, matches open tabular datasets from Zenodo, and runs 30+ machine learning models automatically.
-                </p>
-
-                {/* Quick Topic Presets (No Emojis) */}
-                <div className="flex flex-wrap items-center gap-2 mb-5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Quick Topics:
-                  </span>
-                  {[
-                    { label: 'Breast Cancer', q: 'breast cancer', dom: 'biomedical' },
-                    { label: 'Sepsis Biomarkers', q: 'sepsis', dom: 'biomedical' },
-                    { label: 'CRISPR Delivery', q: 'CRISPR delivery', dom: 'biomedical' },
-                    { label: 'Battery Degradation', q: 'battery degradation', dom: 'cs_ai' },
-                    { label: 'Transformer Inference', q: 'transformer attention', dom: 'cs_ai' },
-                  ].map((chip) => (
-                    <button
-                      key={chip.label}
-                      type="button"
-                      onClick={() => {
-                        setHarvestQuery(chip.q);
-                        setHarvestDomain(chip.dom);
-                      }}
-                      className="px-3 py-1 bg-stone-100 hover:bg-amber-100 text-slate-900 border border-slate-900 text-xs font-bold transition cursor-pointer"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-
-                <form onSubmit={handleLiveHarvest} className="space-y-4 text-xs">
+            {/* MODE A: Conversational Gemini Discovery Co-Pilot + Open-Ended Live Stream */}
+            {step1Mode === 'copilot' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left 7 Columns: Conversational Gemini Co-Pilot */}
+                <div className="lg:col-span-7 dossier-card p-6 flex flex-col justify-between space-y-4">
                   <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
-                      Investigation Query
-                    </label>
+                    <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
+                      <div className="flex items-center gap-2 text-slate-900 font-black text-sm uppercase tracking-wider">
+                        <MessageSquare className="w-4 h-4 text-red-700" />
+                        Gemini Scientific Discovery & Inference Dialogue
+                      </div>
+                      <span className="px-2 py-0.5 bg-amber-400 text-slate-950 border border-slate-900 text-[10px] font-bold uppercase">
+                        Context-Aware
+                      </span>
+                    </div>
+
+                    {/* Chat Transcript */}
+                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+                      {chatMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-4 border-2 text-xs space-y-3 ${
+                            msg.role === 'user'
+                              ? 'bg-slate-900 text-white border-slate-900 ml-8'
+                              : 'bg-stone-50 text-slate-900 border-slate-900 mr-4'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-75">
+                            <span>{msg.role === 'user' ? 'Investigator' : msg.model_used || 'Gemini Co-Pilot'}</span>
+                          </div>
+
+                          <div className="leading-relaxed whitespace-pre-line">{msg.content}</div>
+
+                          {msg.hypothesis_formulation && (
+                            <div className="bg-amber-50 border border-slate-900 p-2.5 text-slate-900">
+                              <div className="font-black uppercase tracking-wider text-[10px] text-amber-900">
+                                Formulated Hypothesis
+                              </div>
+                              <div className="mt-0.5 font-medium">{msg.hypothesis_formulation}</div>
+                            </div>
+                          )}
+
+                          {msg.downstream_inference_plan && msg.downstream_inference_plan.length > 0 && (
+                            <div className="bg-white border border-slate-900 p-2.5 text-slate-900 space-y-1">
+                              <div className="font-black uppercase tracking-wider text-[10px] text-slate-700">
+                                Downstream Inference Strategy
+                              </div>
+                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-700">
+                                {msg.downstream_inference_plan.map((step, sIdx) => (
+                                  <li key={sIdx}>{step}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {msg.suggested_actions && msg.suggested_actions.length > 0 && (
+                            <div className="pt-1 space-y-1.5">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-red-700">
+                                Recommended Actions (Click to Execute):
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {msg.suggested_actions.map((act, aIdx) => (
+                                  <button
+                                    key={aIdx}
+                                    type="button"
+                                    onClick={() => handleCopilotActionClick(act)}
+                                    disabled={harvesting || probing || runningCustomTarget}
+                                    className="px-3 py-1.5 bg-slate-900 hover:bg-red-700 text-amber-400 hover:text-white border border-slate-900 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <Play className="w-3 h-3" />
+                                    {act.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {chatLoading && (
+                        <div className="p-4 bg-stone-50 border-2 border-slate-900 text-xs flex items-center gap-2 text-slate-700">
+                          <RefreshCw className="w-4 h-4 animate-spin text-red-700" />
+                          Gemini is analyzing your hypothesis and workspace state...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chat Input Box */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendCopilotMessage();
+                    }}
+                    className="pt-3 border-t-2 border-slate-900 flex gap-2"
+                  >
                     <input
                       type="text"
-                      value={harvestQuery}
-                      onChange={(e) => setHarvestQuery(e.target.value)}
-                      placeholder="e.g., breast cancer, Alzheimer's, solid-state battery..."
-                      className="w-full bg-white border-2 border-slate-900 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:bg-amber-50/30"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask Gemini about a hypothesis, mechanism, or which variables to test next..."
+                      className="flex-1 bg-white border-2 border-slate-900 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
-                      Scientific Domain
-                    </label>
-                    <select
-                      value={harvestDomain}
-                      onChange={(e) => setHarvestDomain(e.target.value)}
-                      className="w-full bg-white border-2 border-slate-900 px-4 py-3 text-sm text-slate-900 focus:outline-none"
-                    >
-                      <option value="biomedical">Biomedical, Life Sciences & Clinical</option>
-                      <option value="cs_ai">Computer Science, AI & Engineering</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 pt-1">
                     <button
                       type="submit"
-                      disabled={harvesting || !harvestQuery.trim()}
-                      className="flex-1 py-3.5 px-6 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer"
+                      disabled={chatLoading || !chatInput.trim()}
+                      className="px-4 py-2.5 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-1.5 cursor-pointer"
                     >
-                      {harvesting ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Streaming OpenAlex, EuropePMC, arXiv, ClinicalTrials & Zenodo...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="w-4 h-4" />
-                          Investigate Live Repositories & Audit Data
-                        </>
-                      )}
+                      <Send className="w-3.5 h-3.5" />
+                      Send
                     </button>
+                  </form>
+                </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRunLiveProbe(harvestQuery || 'EGFR')}
-                      disabled={probing}
-                      className="py-3.5 px-4 bg-amber-400 hover:bg-amber-500 text-slate-950 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer shrink-0"
-                    >
-                      {probing ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4" />
-                      )}
-                      Probe 9 Live Science APIs
-                    </button>
-                  </div>
-                </form>
+                {/* Right 5 Columns: Direct Live Repository Stream & 9-API Telemetry */}
+                <div className="lg:col-span-5 dossier-card p-6 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="border-b-2 border-slate-900 pb-3">
+                      <div className="flex items-center gap-2 text-slate-900 font-black text-sm uppercase tracking-wider">
+                        <Search className="w-4 h-4 text-red-700" />
+                        Direct Multi-Repository Stream
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                        Or enter any free-form scientific query directly. Domain classification, dataset matching (OpenAlex + Zenodo), and 30-model LazyPredict screening run automatically without rigid presets.
+                      </p>
+                    </div>
 
-                {/* Live SSE Stream Progress Log */}
-                {streamEvents.length > 0 && (
-                  <div className="mt-5 bg-stone-100 border-2 border-slate-900 p-4 space-y-1.5 text-xs font-mono">
-                    <div className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">
-                      Live Multi-Repository Investigation Log
-                    </div>
-                    {streamEvents.map((msg, i) => (
-                      <div key={i} className="flex items-center gap-2 text-slate-800">
-                        <span className="w-2 h-2 bg-red-700 shrink-0" />
-                        <span>{msg}</span>
+                    <form onSubmit={handleLiveHarvest} className="space-y-3 text-xs">
+                      <div>
+                        <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
+                          Free-Form Scientific Query
+                        </label>
+                        <input
+                          type="text"
+                          value={harvestQuery}
+                          onChange={(e) => setHarvestQuery(e.target.value)}
+                          placeholder="Enter any mechanism, target, disease, or system..."
+                          className="w-full bg-white border-2 border-slate-900 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
+                        />
                       </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* Live Multi-Database Integration Telemetry Drawer */}
-                {probeData && (
-                  <div className="mt-5 bg-stone-100 border-2 border-slate-900 p-4 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-black uppercase tracking-wider text-slate-900">
-                        Live 9-Database Telemetry for "{probeData.query}"
-                      </span>
-                      <button
-                        onClick={() => setProbeData(null)}
-                        className="text-red-700 font-bold underline cursor-pointer"
-                      >
-                        Close
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div className="bg-white border border-slate-900 p-3">
-                        <div className="font-bold text-red-700">OpenTargets GraphQL v4</div>
-                        <div className="text-slate-800 mt-0.5">
-                          Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} (
-                          {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.ensembl_id || 'Live Hit'})
+                      <div className="flex flex-col gap-2.5 pt-1">
+                        <button
+                          type="submit"
+                          disabled={harvesting || !harvestQuery.trim()}
+                          className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#D97706] transition cursor-pointer"
+                        >
+                          {harvesting ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Streaming Live Repositories...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="w-4 h-4" />
+                              Stream Theses & Auto-Audit Datasets
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRunLiveProbe(harvestQuery)}
+                          disabled={probing || !harvestQuery.trim()}
+                          className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-slate-950 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        >
+                          {probing ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4" />
+                          )}
+                          Probe 9 Live Science APIs for Query
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Live SSE Stream Progress Log */}
+                    {streamEvents.length > 0 && (
+                      <div className="bg-stone-100 border-2 border-slate-900 p-3.5 space-y-1.5 text-[11px] font-mono">
+                        <div className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">
+                          Live Multi-Repository Stream Telemetry
                         </div>
-                        <div className="text-slate-600 text-[11px]">
-                          Known Drugs: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
+                        {streamEvents.map((msg, i) => (
+                          <div key={i} className="flex items-start gap-2 text-slate-800">
+                            <span className="w-2 h-2 bg-red-700 shrink-0 mt-1" />
+                            <span>{msg}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Live Multi-Database Integration Telemetry Drawer */}
+                    {probeData && (
+                      <div className="bg-stone-100 border-2 border-slate-900 p-3.5 space-y-2.5 text-[11px]">
+                        <div className="flex items-center justify-between">
+                          <span className="font-black uppercase tracking-wider text-slate-900">
+                            9-API Telemetry: "{probeData.query}"
+                          </span>
+                          <button
+                            onClick={() => setProbeData(null)}
+                            className="text-red-700 font-bold underline cursor-pointer"
+                          >
+                            Close
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="bg-white border border-slate-900 p-2.5">
+                            <div className="font-bold text-red-700">OpenTargets GraphQL v4</div>
+                            <div className="text-slate-800">
+                              Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} | Known Drugs:{' '}
+                              {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
+                            </div>
+                          </div>
+                          <div className="bg-white border border-slate-900 p-2.5">
+                            <div className="font-bold text-emerald-800">ChEMBL EBI REST API</div>
+                            <div className="text-slate-800">
+                              Targets: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} | Max Phase:{' '}
+                              {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
+                            </div>
+                          </div>
+                          <div className="bg-white border border-slate-900 p-2.5">
+                            <div className="font-bold text-blue-800">ClinicalTrials.gov v2 & openFDA</div>
+                            <div className="text-slate-800">
+                              Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} | FAERS Reports:{' '}
+                              {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="bg-white border border-slate-900 p-3">
-                        <div className="font-bold text-emerald-800">ChEMBL EBI REST API</div>
-                        <div className="text-slate-800 mt-0.5">
-                          Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} | Molecules:{' '}
-                          {probeData.live_integrations?.chembl_ebi_rest?.molecules_found?.length || 0}
-                        </div>
-                        <div className="text-slate-600 text-[11px]">
-                          Max Clinical Phase: {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
-                        </div>
-                      </div>
-                      <div className="bg-white border border-slate-900 p-3">
-                        <div className="font-bold text-blue-800">ClinicalTrials.gov API v2 & openFDA</div>
-                        <div className="text-slate-800 mt-0.5">
-                          Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0}
-                        </div>
-                        <div className="text-slate-600 text-[11px]">
-                          openFDA FAERS Reports: {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
-                        </div>
-                      </div>
-                      <div className="bg-white border border-slate-900 p-3">
-                        <div className="font-bold text-amber-800">EuropePMC, arXiv & HuggingFace</div>
-                        <div className="text-slate-800 mt-0.5">
-                          EuropePMC Hits: {probeData.live_integrations?.europepmc_rest?.length || 0} | arXiv:{' '}
-                          {probeData.live_integrations?.arxiv_atom_api?.length || 0}
-                        </div>
-                        <div className="text-slate-600 text-[11px]">
-                          HF Datasets: {probeData.live_integrations?.huggingface_hub_datasets?.length || 0}
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -948,32 +1126,17 @@ export function App() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
-                        Institution (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={uploadUni}
-                        onChange={(e) => setUploadUni(e.target.value)}
-                        placeholder="e.g., MIT, Stanford"
-                        className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
-                        Scientific Domain
-                      </label>
-                      <select
-                        value={uploadDomain}
-                        onChange={(e) => setUploadDomain(e.target.value)}
-                        className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
-                      >
-                        <option value="biomedical">Biomedical & Healthcare</option>
-                        <option value="cs_ai">CS, AI & Engineering</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                      Institution (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadUni}
+                      onChange={(e) => setUploadUni(e.target.value)}
+                      placeholder="e.g., MIT, Stanford"
+                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -1089,7 +1252,7 @@ export function App() {
                   No Active Case Selected
                 </h3>
                 <p className="text-xs text-slate-600 mt-1 mb-5">
-                  Return to Stage 01 to query live repositories or upload a dataset.
+                  Return to Stage 01 to converse with Gemini or stream a live dissertation dataset.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
@@ -1212,6 +1375,65 @@ export function App() {
                           {run.target_column} ({run.best_score})
                         </button>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Inline Gemini Downstream Inference Bar inside Stage 02 */}
+                <div className="dossier-card p-5 bg-stone-50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900">
+                      <MessageSquare className="w-4 h-4 text-red-700" />
+                      Ask Gemini Co-Pilot About This 30-Model Audit & Downstream Inference
+                    </div>
+                    <span className="text-[10px] font-bold uppercase text-slate-500">
+                      Has full visibility into {activeDataset?.name} & leaderboard
+                    </span>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendCopilotMessage();
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={`Ask why ${activeRun.best_model_name} won, which confounder to ablate, or which column in ${activeDataset?.name} to test next...`}
+                      className="flex-1 bg-white border-2 border-slate-900 px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={chatLoading || !chatInput.trim()}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 border-2 border-slate-900 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {chatLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      Ask Gemini
+                    </button>
+                  </form>
+                  {chatMessages.length > 1 && (
+                    <div className="bg-white border-2 border-slate-900 p-3.5 text-xs space-y-2">
+                      <div className="font-bold text-slate-900">
+                        {chatMessages[chatMessages.length - 1].model_used || 'Gemini Co-Pilot'}:
+                      </div>
+                      <p className="text-slate-800 whitespace-pre-line leading-relaxed">
+                        {chatMessages[chatMessages.length - 1].content}
+                      </p>
+                      {chatMessages[chatMessages.length - 1].suggested_actions && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {chatMessages[chatMessages.length - 1].suggested_actions?.map((act, i) => (
+                            <button
+                              key={i}
+                              onClick={() => handleCopilotActionClick(act)}
+                              className="px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Play className="w-3 h-3" /> {act.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1449,7 +1671,7 @@ export function App() {
                               ))}
                           </select>
                           <button
-                            onClick={handleRunCustomTarget}
+                            onClick={() => handleRunCustomTargetColumn(customTargetCol)}
                             disabled={!customTargetCol || runningCustomTarget}
                             className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
                           >

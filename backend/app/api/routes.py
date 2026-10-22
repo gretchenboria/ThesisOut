@@ -587,3 +587,92 @@ async def probe_live_scientific_integrations(
             "huggingface_hub_datasets": hf,
         },
     }
+
+
+@router.post("/copilot/chat")
+async def chat_with_gemini_discovery_copilot(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Conversational Gemini Discovery & Downstream Inference Co-Pilot.
+    Lets the investigator chat naturally about hypotheses, datasets, target variables,
+    and downstream inference without hardcoded or forceful presets.
+    """
+    from app.services.llm_router import llm_router
+
+    messages = payload.get("messages", [])
+    diss_id = payload.get("dissertation_id")
+    run_id = payload.get("lazy_run_id")
+
+    diss = None
+    if diss_id:
+        diss = db.query(Dissertation).filter(Dissertation.id == int(diss_id)).first()
+    if not diss:
+        diss = db.query(Dissertation).order_by(Dissertation.id.desc()).first()
+
+    lazy_run = None
+    if run_id:
+        lazy_run = db.query(LazyPredictRun).filter(LazyPredictRun.id == int(run_id)).first()
+    elif diss and diss.datasets:
+        for ds in diss.datasets:
+            if ds.lazy_runs:
+                lazy_run = ds.lazy_runs[0]
+                break
+
+    available_cols = []
+    dataset_meta = None
+    if diss and diss.datasets:
+        ds0 = diss.datasets[0]
+        available_cols = [
+            c.get("name")
+            for c in (ds0.column_metadata or [])
+            if c.get("role") != "identifier" and c.get("name")
+        ]
+        dataset_meta = {
+            "id": ds0.id,
+            "name": ds0.name,
+            "source_type": ds0.source_type,
+            "row_count": ds0.row_count,
+            "col_count": ds0.col_count,
+            "columns": ds0.column_metadata[:25] if ds0.column_metadata else [],
+        }
+
+    workspace_context = {
+        "total_dissertations_in_workspace": db.query(Dissertation).count(),
+        "active_dissertation": {
+            "id": diss.id,
+            "title": diss.title,
+            "university": diss.university,
+            "publication_year": diss.publication_year,
+            "domain": diss.domain,
+            "abstract": (diss.abstract or "")[:800],
+            "extracted_claims": diss.extracted_claims or [],
+        }
+        if diss
+        else None,
+        "active_dataset": dataset_meta,
+        "available_columns": available_cols,
+        "active_lazy_run": {
+            "id": lazy_run.id,
+            "target_column": lazy_run.target_column,
+            "task_type": lazy_run.task_type,
+            "models_tested_count": lazy_run.models_tested_count,
+            "best_model_name": lazy_run.best_model_name,
+            "primary_metric_name": lazy_run.primary_metric_name,
+            "best_score": lazy_run.best_score,
+            "author_baseline_score": lazy_run.author_baseline_score,
+            "signal_gain_delta": lazy_run.signal_gain_delta,
+            "top_features": lazy_run.top_features or [],
+            "top_5_leaderboard": (lazy_run.leaderboard or [])[:5],
+            "overlooked_signal_summary": lazy_run.overlooked_signal_summary,
+        }
+        if lazy_run
+        else None,
+    }
+
+    return await llm_router.chat_with_discovery_copilot(
+        messages=messages,
+        workspace_context=workspace_context,
+    )
+
