@@ -123,7 +123,9 @@ def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
         or cl.endswith("_text")
         or cl.endswith("_url")
         or cl.endswith("_name")
-        or re.match(r"^v\d+$", cl)
+        or re.match(r"^(sample|subject|patient|donor|cell|rep|replicate|col|var|v|feature|x|dim|pc|umap|tsne)[_\-\s]*\d+$", cl)
+        or re.search(r"(lfq\.intensity|intensity|sample|subject|patient)[._\-]+\d+", cl)
+        or re.match(r"^\d+$", cl)
     ):
         return True
 

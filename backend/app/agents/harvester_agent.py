@@ -86,7 +86,6 @@ class HarvesterAgent:
             "search": query,
             "filter": f"type:dissertation,from_publication_date:{min_year}-01-01",
             "per-page": max(25, max_results * 5),
-            "sort": "cited_by_count:desc",
         }
         results: List[Dict[str, Any]] = []
         async with httpx.AsyncClient(timeout=20.0) as client:

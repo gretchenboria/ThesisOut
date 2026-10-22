@@ -894,32 +894,26 @@ export function App() {
             </button>
           </form>
 
-          {/* 3 Playful One-Click Prompts */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-xs font-extrabold text-slate-700">Try a 1-click hunt:</span>
-            {[
-              {
-                label: 'Hunt Sepsis Survival Clues',
-                prompt: 'Find overlooked patient biomarkers predicting ICU sepsis survival and drug response',
-              },
-              {
-                label: 'Uncover CRISPR Off-Target Signals',
-                prompt: 'Discover non-linear sequence features driving CRISPR gene editing efficiency and off-target toxicity',
-              },
-              {
-                label: 'Find Solid-State Battery Anomalies',
-                prompt: 'Identify hidden cycle-life degradation patterns in solid-state lithium battery datasets',
-              },
-            ].map((item, i) => (
-              <button
-                key={i}
-                onClick={() => handleRunAutonomousGeminiWorkflow(item.prompt)}
-                disabled={harvesting}
-                className="pop-btn px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-950 text-xs font-bold cursor-pointer"
-              >
-                {item.label}
-              </button>
-            ))}
+          {/* Practical Query Guidance (replaces canned buttons) */}
+          <div className="pop-subcard rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <div className="font-extrabold text-slate-900">1. Name the Condition or System</div>
+              <p className="text-slate-600 mt-0.5 leading-relaxed">
+                Specify the exact disease, biological pathway, or engineering material (such as bacterial sepsis, CAR-T exhaustion, or solid-state lithium anodes).
+              </p>
+            </div>
+            <div>
+              <div className="font-extrabold text-slate-900">2. State the Target Outcome</div>
+              <p className="text-slate-600 mt-0.5 leading-relaxed">
+                Include the measurable endpoint you want the 30 models to predict (such as ICU survival, IC50 drug response, or cycle-life degradation).
+              </p>
+            </div>
+            <div>
+              <div className="font-extrabold text-slate-900">3. Or Upload Your Own CSV</div>
+              <p className="text-slate-600 mt-0.5 leading-relaxed">
+                Have a raw lab spreadsheet or thesis PDF ready? Click Upload Thesis CSV in the top right to audit your own file directly.
+              </p>
+            </div>
           </div>
 
           {/* Live Stream Progress Banner When Running */}

@@ -231,18 +231,27 @@ class LLMRouter:
             logger.warning("Gemini plan extraction fallback: %s", exc)
 
         lower = user_prompt.lower()
-        cs_terms = ["battery", "transformer", "neural", "compiler", "quantum", "silicon", "gpu", "robotics"]
+        cs_terms = ["battery", "transformer", "neural", "compiler", "quantum", "silicon", "gpu", "robotics", "lithium"]
         domain = "cs_ai" if any(k in lower for k in cs_terms) else "biomedical"
-        stop_words = {"find", "what", "how", "can", "you", "the", "for", "and", "with", "about", "moonshot", "help", "discover", "in", "on", "to", "a", "an", "is", "are", "please", "run", "test"}
-        words = [w.strip(".,?!:;\"'()") for w in user_prompt.split() if len(w.strip(".,?!:;\"'()")) > 2]
+        stop_words = {
+            "find", "what", "how", "can", "you", "the", "for", "and", "with", "about", "moonshot",
+            "help", "discover", "in", "on", "to", "a", "an", "is", "are", "please", "run", "test",
+            "overlooked", "patient", "patients", "biomarkers", "biomarker", "predicting", "predict",
+            "predictors", "uncover", "hidden", "non-linear", "nonlinear", "sequence", "features",
+            "feature", "driving", "identify", "patterns", "pattern", "datasets", "dataset", "clues",
+            "signals", "signal", "anomalies", "hunt", "study", "studies", "data", "thesis", "theses",
+            "dissertation", "factors", "variables", "outcomes", "outcome", "using", "from", "that",
+            "which", "show", "me", "look", "into", "new", "novel", "clinical", "trial", "trials",
+        }
+        words = [w.strip(".,?!:;\"'()") for w in user_prompt.split() if len(w.strip(".,?!:;\"'()")) >= 2]
         core_words = [w for w in words if w.lower() not in stop_words]
         search_q = " ".join(core_words[:4]) if core_words else user_prompt.strip()[:40]
-        probe_ent = core_words[0] if core_words else ("transformer" if domain == "cs_ai" else "EGFR")
+        probe_ent = next((w for w in core_words if len(w) >= 4), core_words[0] if core_words else ("lithium" if domain == "cs_ai" else "EGFR"))
         return {
             "search_query": search_q,
             "probe_entity": probe_ent,
             "domain": domain,
-            "hypothesis": f"High-order nonlinear interactions among secondary covariates explain the unmodeled variance in {search_q}.",
+            "hypothesis": f"Multi-variable interactions explain the unmodeled outcome variance in {search_q}.",
         }
 
     async def synthesize_autonomous_executive_summary(
@@ -300,8 +309,8 @@ class LLMRouter:
 
     async def _call_gemini_json(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
         payload = {
-            "systemInstruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"parts": [{"text": user_prompt}]}],
+            "systemInstruction": {"role": "system", "parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
             "generationConfig": {"responseMimeType": "application/json", "temperature": 0.25},
         }
 
