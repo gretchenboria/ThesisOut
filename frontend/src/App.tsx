@@ -507,6 +507,18 @@ export function App() {
           fill="none"
           preserveAspectRatio="xMidYMid slice"
         >
+          <defs>
+            <clipPath id="lensClip1">
+              <circle cx="240" cy="210" r="82" />
+            </clipPath>
+            <clipPath id="lensClip2">
+              <circle cx="1190" cy="360" r="94" />
+            </clipPath>
+            <clipPath id="lensClip3">
+              <circle cx="310" cy="720" r="66" />
+            </clipPath>
+          </defs>
+
           {/* Fast Animated Trajectory Dash Lines */}
           <path
             d="M -60 220 C 300 40, 660 400, 1040 160 C 1240 60, 1380 240, 1520 120"
@@ -530,35 +542,40 @@ export function App() {
             className="trajectory-dash"
           />
 
-          {/* Flowing Binary Code Streams Along Trajectories */}
-          <g className="binary-drift" opacity="0.55">
-            <text x="80" y="155" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="3">
-              01101101 10100110 01001110
+          {/* Continuous Horizontal Scrolling Binary Streams (Seamless Loop 0 -> -1440px) */}
+          <g className="binary-scroll-left" opacity="0.48">
+            <text x="0" y="135" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="4">
+              01101101 10100110 01001110 10110010 01011010 11001010 01000001 11010010 01110100 01101101 10100110 01001110 10110010 01011010 11001010 01000001 11010010 01110100
             </text>
-            <text x="540" y="265" fill="#4F46E5" fontSize="13" fontWeight="700" letterSpacing="3">
-              10110010 01011010 11001010
+            <text x="0" y="485" fill="#54250E" fontSize="14" fontWeight="700" letterSpacing="4">
+              10110010 01011010 11001010 01101101 10100110 01001110 11010110 00101101 10111001 10110010 01011010 11001010 01101101 10100110 01001110 11010110 00101101 10111001
             </text>
-            <text x="1020" y="135" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="3">
-              01000001 11010010 01110100
+            <text x="0" y="845" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="4">
+              01110010 10101100 11000110 01011100 10010110 01100011 10011010 01101101 00110101 01110010 10101100 11000110 01011100 10010110 01100011 10011010 01101101 00110101
             </text>
           </g>
 
-          <g className="binary-pulse" opacity="0.5">
-            <text x="110" y="540" fill="#7C3AED" fontSize="14" fontWeight="700" letterSpacing="3">
-              11010110 00101101 10111001
+          <g className="binary-scroll-right" opacity="0.44">
+            <text x="0" y="295" fill="#4F46E5" fontSize="14" fontWeight="700" letterSpacing="4">
+              11010110 00101101 10111001 01011100 10010110 01100011 10011010 01101101 00110101 11010110 00101101 10111001 01011100 10010110 01100011 10011010 01101101 00110101
             </text>
-            <text x="680" y="610" fill="#2563EB" fontSize="15" fontWeight="700" letterSpacing="3">
-              01011100 10010110 01100011
+            <text x="0" y="665" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="4">
+              01000001 11010010 01110100 11001011 01010010 10011101 01101101 10100110 01001110 01000001 11010010 01110100 11001011 01010010 10011101 01101101 10100110 01001110
             </text>
-            <text x="1080" y="420" fill="#4F46E5" fontSize="14" fontWeight="700" letterSpacing="3">
-              10011010 01101101 00110101
-            </text>
-            <text x="290" y="830" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="3">
-              01110010 10101100 11000110
-            </text>
-            <text x="980" y="760" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="3">
-              11001011 01010010 10011101
-            </text>
+          </g>
+
+          {/* Continuous Vertical Scrolling Binary Columns on Margins */}
+          <g className="binary-scroll-vert" opacity="0.34">
+            {[0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320, 1440, 1560, 1680, 1800].map((yPos, idx) => (
+              <g key={idx}>
+                <text x="24" y={yPos} fill="#54250E" fontSize="12" fontWeight="700" letterSpacing="2">
+                  {idx % 2 === 0 ? '01101' : '10110'}
+                </text>
+                <text x="1384" y={yPos} fill="#2563EB" fontSize="12" fontWeight="700" letterSpacing="2">
+                  {idx % 2 === 0 ? '10011' : '01101'}
+                </text>
+              </g>
+            ))}
           </g>
 
           {/* Trajectory Waypoint Nodes */}
@@ -567,33 +584,21 @@ export function App() {
           <circle cx="1040" cy="160" r="8" fill="#4F46E5" fillOpacity="0.65" />
           <circle cx="1140" cy="440" r="7" fill="#E11D48" fillOpacity="0.65" />
 
-          {/* MAGNIFYING GLASS 1 (Top-Left Scanning Lens with Magnified Binary Inside) */}
-          <g className="lens-float-1" opacity="0.52">
+          {/* MAGNIFYING GLASS 1 (Top-Left Scanning Lens with Scrolling Binary Inside) */}
+          <g className="lens-float-1" opacity="0.56">
             {/* Lens Glass Fill */}
-            <circle cx="240" cy="210" r="92" fill="#DBEAFE" fillOpacity="0.55" />
-            {/* Magnified Binary Stream Inside Lens 1 */}
-            <text
-              x="172"
-              y="198"
-              fill="#1D4ED8"
-              fontSize="16"
-              fontWeight="800"
-              letterSpacing="2"
-              fontFamily="Google Sans Mono, monospace"
-            >
-              01101001 1101
-            </text>
-            <text
-              x="178"
-              y="224"
-              fill="#E11D48"
-              fontSize="15"
-              fontWeight="800"
-              letterSpacing="2"
-              fontFamily="Google Sans Mono, monospace"
-            >
-              101101 → CLUE
-            </text>
+            <circle cx="240" cy="210" r="92" fill="#DBEAFE" fillOpacity="0.58" />
+            {/* Scrolling Magnified Binary Stream Clipped Inside Lens 1 */}
+            <g clipPath="url(#lensClip1)">
+              <g className="binary-scroll-lens">
+                <text x="140" y="196" fill="#1D4ED8" fontSize="16" fontWeight="800" letterSpacing="2">
+                  01101001 11010010 01011011 01101001 11010010 01011011
+                </text>
+                <text x="140" y="224" fill="#E11D48" fontSize="15" fontWeight="800" letterSpacing="2">
+                  101101 → CLUE → 011010 → CLUE → 101101 → CLUE
+                </text>
+              </g>
+            </g>
             {/* Outer Rim & Inner Dashed Ring */}
             <circle cx="240" cy="210" r="92" stroke="#3B1A08" strokeWidth="7" />
             <circle cx="240" cy="210" r="84" stroke="#2563EB" strokeWidth="3" />
@@ -636,31 +641,19 @@ export function App() {
             />
           </g>
 
-          {/* MAGNIFYING GLASS 2 (Right-Center Scanning Lens with Magnified Binary Inside) */}
-          <g className="lens-float-2" opacity="0.48">
-            <circle cx="1190" cy="360" r="105" fill="#EDE9FE" fillOpacity="0.55" />
-            <text
-              x="1110"
-              y="348"
-              fill="#4F46E5"
-              fontSize="17"
-              fontWeight="800"
-              letterSpacing="2"
-              fontFamily="Google Sans Mono, monospace"
-            >
-              10101100 0110
-            </text>
-            <text
-              x="1116"
-              y="376"
-              fill="#2563EB"
-              fontSize="15"
-              fontWeight="800"
-              letterSpacing="2"
-              fontFamily="Google Sans Mono, monospace"
-            >
-              010110 → SIGNAL
-            </text>
+          {/* MAGNIFYING GLASS 2 (Right-Center Scanning Lens with Scrolling Binary Inside) */}
+          <g className="lens-float-2" opacity="0.52">
+            <circle cx="1190" cy="360" r="105" fill="#EDE9FE" fillOpacity="0.58" />
+            <g clipPath="url(#lensClip2)">
+              <g className="binary-scroll-lens">
+                <text x="1080" y="346" fill="#4F46E5" fontSize="17" fontWeight="800" letterSpacing="2">
+                  10101100 01101001 11001010 10101100 01101001 11001010
+                </text>
+                <text x="1080" y="376" fill="#2563EB" fontSize="15" fontWeight="800" letterSpacing="2">
+                  010110 → SIGNAL → 101100 → SIGNAL → 010110 → SIGNAL
+                </text>
+              </g>
+            </g>
             <circle cx="1190" cy="360" r="105" stroke="#3B1A08" strokeWidth="7" />
             <circle cx="1190" cy="360" r="96" stroke="#7C3AED" strokeWidth="3" />
             <circle cx="1190" cy="360" r="76" stroke="#6B3410" strokeWidth="2" strokeDasharray="10 8" />
@@ -700,20 +693,16 @@ export function App() {
             />
           </g>
 
-          {/* MAGNIFYING GLASS 3 (Bottom-Left Scanning Lens) */}
-          <g className="lens-float-3" opacity="0.44">
-            <circle cx="310" cy="720" r="76" fill="#FFE4E6" fillOpacity="0.5" />
-            <text
-              x="252"
-              y="718"
-              fill="#E11D48"
-              fontSize="14"
-              fontWeight="800"
-              letterSpacing="2"
-              fontFamily="Google Sans Mono, monospace"
-            >
-              01100101 1011
-            </text>
+          {/* MAGNIFYING GLASS 3 (Bottom-Left Scanning Lens with Scrolling Binary Inside) */}
+          <g className="lens-float-3" opacity="0.48">
+            <circle cx="310" cy="720" r="76" fill="#FFE4E6" fillOpacity="0.55" />
+            <g clipPath="url(#lensClip3)">
+              <g className="binary-scroll-lens">
+                <text x="220" y="724" fill="#E11D48" fontSize="15" fontWeight="800" letterSpacing="2">
+                  01100101 10110100 01011001 01100101 10110100 01011001
+                </text>
+              </g>
+            </g>
             <circle cx="310" cy="720" r="76" stroke="#3B1A08" strokeWidth="6" />
             <circle cx="310" cy="720" r="68" stroke="#E11D48" strokeWidth="2.5" />
             <line

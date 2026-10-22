@@ -113,30 +113,40 @@ body {
   }
 }
 
-/* Binary stream drift animations */
-@keyframes binaryStreamDrift {
+/* Continuous Scrolling Binary Streams */
+@keyframes binaryScrollLeft {
   0% {
-    transform: translateX(-40px) translateY(0px);
-    opacity: 0.35;
-  }
-  50% {
-    transform: translateX(40px) translateY(-12px);
-    opacity: 0.75;
+    transform: translateX(0px);
   }
   100% {
-    transform: translateX(-40px) translateY(0px);
-    opacity: 0.35;
+    transform: translateX(-1440px);
   }
 }
 
-@keyframes binaryPulse {
-  0%, 100% {
-    opacity: 0.30;
-    transform: scale(0.98);
+@keyframes binaryScrollRight {
+  0% {
+    transform: translateX(-1440px);
   }
-  50% {
-    opacity: 0.70;
-    transform: scale(1.05);
+  100% {
+    transform: translateX(0px);
+  }
+}
+
+@keyframes binaryScrollLens {
+  0% {
+    transform: translateX(0px);
+  }
+  100% {
+    transform: translateX(-420px);
+  }
+}
+
+@keyframes binaryScrollVertical {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-960px);
   }
 }
 
@@ -165,14 +175,24 @@ body {
   transform-origin: center;
 }
 
-.binary-drift {
+.binary-scroll-left {
   font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryStreamDrift 6s ease-in-out infinite;
+  animation: binaryScrollLeft 14s linear infinite;
 }
 
-.binary-pulse {
+.binary-scroll-right {
   font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryPulse 4s ease-in-out infinite;
+  animation: binaryScrollRight 16s linear infinite;
+}
+
+.binary-scroll-lens {
+  font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  animation: binaryScrollLens 5.5s linear infinite;
+}
+
+.binary-scroll-vert {
+  font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  animation: binaryScrollVertical 15s linear infinite;
 }
 
 /* High-contrast case-file cards with burnished leather spine */
