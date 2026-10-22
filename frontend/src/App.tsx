@@ -1504,26 +1504,44 @@ export function App() {
                   className="pop-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <label className="px-3.5 py-2 rounded-xl bg-slate-100 border-2 border-slate-900 font-bold cursor-pointer">
-                      <FileText className="w-3.5 h-3.5 inline mr-1.5 text-[#2B4257]" />
-                      {uploadPdf ? uploadPdf.name : 'Thesis PDF'}
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setUploadPdf(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                    </label>
-                    <label className="px-3.5 py-2 rounded-xl bg-[#EDF0F2] border-2 border-slate-900 font-bold cursor-pointer">
+                    <label className="px-3.5 py-2 rounded-xl bg-[#EDF0F2] border-2 border-slate-900 font-bold cursor-pointer hover:bg-slate-200 transition-colors">
                       <Upload className="w-3.5 h-3.5 inline mr-1.5 text-[#2B4257]" />
-                      {uploadCsv ? uploadCsv.name : 'Dataset CSV / TSV'}
+                      <FileText className="w-3.5 h-3.5 inline mr-1.5 text-[#7A1C24]" />
+                      {uploadCsv && uploadPdf
+                        ? `${uploadPdf.name} + ${uploadCsv.name}`
+                        : uploadCsv
+                          ? uploadCsv.name
+                          : uploadPdf
+                            ? uploadPdf.name
+                            : 'Select CSV, TSV, Excel, or Thesis PDF'}
                       <input
                         type="file"
-                        accept=".csv,.tsv"
-                        onChange={(e) => setUploadCsv(e.target.files?.[0] || null)}
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          for (const f of files) {
+                            if (f.name.toLowerCase().endsWith('.pdf')) {
+                              setUploadPdf(f);
+                            } else {
+                              setUploadCsv(f);
+                            }
+                          }
+                        }}
                         className="hidden"
                       />
                     </label>
+                    {(uploadPdf || uploadCsv) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUploadPdf(null);
+                          setUploadCsv(null);
+                        }}
+                        className="px-2.5 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-600 font-bold cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
                     <button
                       type="submit"
                       disabled={uploading || (!uploadPdf && !uploadCsv)}
