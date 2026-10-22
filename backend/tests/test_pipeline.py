@@ -52,7 +52,18 @@ def test_real_data_only_pipeline():
         assert "stage2_super_learner_ensemble" in esc
         assert esc["stage2_super_learner_ensemble"]["super_learner_score"] > 0.90
 
-        # 5. Reset workspace so DB remains completely clean
+        # 5. Test live scientific integrations probe (OpenTargets, ChEMBL, ClinicalTrials, openFDA, EuropePMC, arXiv, HuggingFace)
+        r_probe = client.get("/api/integrations/probe?query=EGFR")
+        assert r_probe.status_code == 200
+        probe = r_probe.json()
+        assert "opentargets_graphql_v4" in probe["live_integrations"]
+        assert "chembl_ebi_rest" in probe["live_integrations"]
+        assert "clinicaltrials_gov_v2" in probe["live_integrations"]
+        assert "openfda_faers" in probe["live_integrations"]
+        assert "europepmc_rest" in probe["live_integrations"]
+        assert "arxiv_atom_api" in probe["live_integrations"]
+
+        # 6. Reset workspace so DB remains completely clean
         r_reset = client.delete("/api/workspace/reset")
         assert r_reset.status_code == 200
         assert client.get("/api/stats").json()["dissertations_indexed"] == 0

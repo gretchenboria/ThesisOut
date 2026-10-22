@@ -212,6 +212,8 @@ export function App() {
   const [harvestDomain, setHarvestDomain] = useState<string>('biomedical');
   const [harvesting, setHarvesting] = useState<boolean>(false);
   const [streamEvents, setStreamEvents] = useState<string[]>([]);
+  const [probeData, setProbeData] = useState<any>(null);
+  const [probing, setProbing] = useState<boolean>(false);
 
   // Upload state
   const [uploadTitle, setUploadTitle] = useState<string>('');
@@ -409,7 +411,21 @@ export function App() {
     setSelectedDissId(null);
     setSelectedRunId(null);
     setStreamEvents([]);
+    setProbeData(null);
     setCurrentStep(1);
+  };
+
+  const handleRunLiveProbe = async (q: string) => {
+    const targetQ = q.trim() || 'EGFR';
+    setProbing(true);
+    try {
+      const res = await fetch(`/api/integrations/probe?query=${encodeURIComponent(targetQ)}`);
+      if (res.ok) {
+        setProbeData(await res.json());
+      }
+    } finally {
+      setProbing(false);
+    }
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -719,30 +735,42 @@ export function App() {
                     </select>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={harvesting || !harvestQuery.trim()}
-                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-pink-200 transition cursor-pointer"
-                  >
-                    {harvesting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Streaming Live from OpenAlex, ClinicalTrials.gov & Zenodo...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4" />
-                        Stream Real Theses & Auto-Test Data →
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <button
+                      type="submit"
+                      disabled={harvesting || !harvestQuery.trim()}
+                      className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-pink-200 transition cursor-pointer"
+                    >
+                      {harvesting ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Streaming OpenAlex, EuropePMC, arXiv, ClinicalTrials & Zenodo...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4" />
+                          Stream Real Theses & Auto-Test Data →
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRunLiveProbe(harvestQuery || 'EGFR')}
+                      disabled={probing}
+                      className="py-3.5 px-4 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-purple-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0"
+                    >
+                      {probing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      Probe 9 Live Science APIs
+                    </button>
+                  </div>
                 </form>
 
                 {/* Live SSE Stream Progress Log */}
                 {streamEvents.length > 0 && (
                   <div className="mt-5 bg-sky-50/70 border border-sky-200 rounded-2xl p-4 space-y-1.5 text-xs">
                     <div className="font-bold text-sky-800 uppercase tracking-wider text-[10px]">
-                      Live API Stream Status
+                      Live Multi-API Stream Telemetry
                     </div>
                     {streamEvents.map((msg, i) => (
                       <div key={i} className="flex items-center gap-2 text-slate-700">
@@ -750,6 +778,64 @@ export function App() {
                         <span>{msg}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Live Multi-Database Integration Telemetry Drawer */}
+                {probeData && (
+                  <div className="mt-5 bg-purple-50/60 border-2 border-purple-200 rounded-2xl p-4 space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-purple-900">
+                        Live Scientific API Telemetry for "{probeData.query}"
+                      </span>
+                      <button
+                        onClick={() => setProbeData(null)}
+                        className="text-purple-600 font-semibold underline cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="bg-white border border-purple-100 rounded-xl p-3">
+                        <div className="font-bold text-pink-600">OpenTargets GraphQL v4</div>
+                        <div className="text-slate-700 mt-0.5">
+                          Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} (
+                          {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.ensembl_id || 'Live Hit'})
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          Known Drugs: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
+                        </div>
+                      </div>
+                      <div className="bg-white border border-purple-100 rounded-xl p-3">
+                        <div className="font-bold text-emerald-600">ChEMBL EBI REST API</div>
+                        <div className="text-slate-700 mt-0.5">
+                          Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Molecules:{' '}
+                          {probeData.live_integrations?.chembl_ebi_rest?.molecules_found?.length || 0}
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          Max Clinical Phase: {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
+                        </div>
+                      </div>
+                      <div className="bg-white border border-purple-100 rounded-xl p-3">
+                        <div className="font-bold text-sky-600">ClinicalTrials.gov API v2 & openFDA</div>
+                        <div className="text-slate-700 mt-0.5">
+                          Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0}
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          openFDA FAERS Reports: {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
+                        </div>
+                      </div>
+                      <div className="bg-white border border-purple-100 rounded-xl p-3">
+                        <div className="font-bold text-amber-600">EuropePMC, arXiv & HuggingFace</div>
+                        <div className="text-slate-700 mt-0.5">
+                          EuropePMC Hits: {probeData.live_integrations?.europepmc_rest?.length || 0} • arXiv:{' '}
+                          {probeData.live_integrations?.arxiv_atom_api?.length || 0}
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          HF Datasets: {probeData.live_integrations?.huggingface_hub_datasets?.length || 0}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

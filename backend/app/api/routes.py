@@ -12,6 +12,7 @@ from app.agents.translation_agent import translation_agent
 from app.config import settings
 from app.database import get_db
 from app.models import DatasetArtifact, Dissertation, IndustryProblem, LazyPredictRun, MarketOpportunity
+from app.services.scientific_integrations import scientific_integrations
 from app.schemas import (
     CustomLazyPredictRequest,
     DatasetArtifactSchema,
@@ -439,3 +440,35 @@ def create_problem(prob: IndustryProblemCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_prob)
     return db_prob
+
+
+@router.get("/integrations/probe")
+async def probe_live_scientific_integrations(
+    query: str = Query("EGFR"),
+) -> Dict[str, Any]:
+    """
+    Live Scientific Integration Probe:
+    Executes real-time queries against OpenTargets GraphQL v4, ChEMBL REST API,
+    ClinicalTrials.gov API v2, openFDA FAERS API, EuropePMC REST API, and arXiv Atom API
+    and returns the raw live telemetry.
+    """
+    ot = await scientific_integrations.query_opentargets_deep(query)
+    chembl = await scientific_integrations.query_chembl_target_and_bioactivity(query)
+    ct = await translation_agent.check_clinical_trials_whitespace([query])
+    fda = await scientific_integrations.query_openfda_adverse_events_and_approvals(query)
+    epmc = await scientific_integrations.search_europepmc_theses_and_papers(query, max_results=2)
+    arxiv = await scientific_integrations.search_arxiv_preprints_and_theses(query, max_results=2)
+    hf = await scientific_integrations.query_huggingface_datasets(query, limit=2)
+
+    return {
+        "query": query,
+        "live_integrations": {
+            "opentargets_graphql_v4": ot,
+            "chembl_ebi_rest": chembl,
+            "clinicaltrials_gov_v2": ct,
+            "openfda_faers": fda,
+            "europepmc_rest": epmc,
+            "arxiv_atom_api": arxiv,
+            "huggingface_hub_datasets": hf,
+        },
+    }
