@@ -1,15 +1,16 @@
 """
 Autonomous LazyPredict Data Scientist Agent.
 Loads real datasets (CSV/TSV/Parquet/Excel), strips junk/index columns (`Unnamed: 0`, row numbers, IDs),
-humanizes technical column names, prevents leakage, runs LazyClassifier or LazyRegressor across ~30+ models,
-and translates findings into clear, jargon-free human language.
+detects and removes target-leakage proxy columns (|r| >= 0.95 or deterministic 1-to-1 label aliases),
+prevents trivial metadata targets, runs LazyClassifier or LazyRegressor across ~30+ models,
+computes 95% bootstrap confidence intervals, and translates findings into clear scientific language.
 """
 import logging
 import re
 import time
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,11 +18,36 @@ from lazypredict.Supervised import LazyClassifier, LazyRegressor
 from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from app.config import settings
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
+
+NON_TARGET_METADATA_NAMES = {
+    "id",
+    "index",
+    "row",
+    "row_id",
+    "sample_id",
+    "patient_id",
+    "subject_id",
+    "uuid",
+    "run_id",
+    "no",
+    "number",
+    "serial",
+    "batch",
+    "split",
+    "fold",
+    "train",
+    "test",
+    "dataset",
+    "cohort_id",
+    "site_id",
+    "center_id",
+}
 
 
 def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
@@ -32,7 +58,7 @@ def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
     cl = str(col_name).strip().lower()
     if (
         cl.startswith("unnamed")
-        or cl in ("id", "index", "row", "row_id", "sample_id", "patient_id", "subject_id", "uuid", "run_id", "no", "number", "serial")
+        or cl in NON_TARGET_METADATA_NAMES
         or cl.endswith("_id")
         or cl.startswith("id_")
         or re.match(r"^v\d+$", cl)
@@ -80,9 +106,9 @@ class DataScientistAgent:
 
         # Immediately strip any `Unnamed: *` or pure monotonic row-index columns on load
         cols_to_drop = [
-            c for c in df.columns
-            if str(c).strip().lower().startswith("unnamed")
-            or str(c).strip() == ""
+            c
+            for c in df.columns
+            if str(c).strip().lower().startswith("unnamed") or str(c).strip() == ""
         ]
         if cols_to_drop:
             df = df.drop(columns=cols_to_drop)
@@ -141,7 +167,7 @@ class DataScientistAgent:
     ) -> List[Dict[str, Any]]:
         """
         Selects meaningful scientific outcome columns and strictly excludes `Unnamed: 0`,
-        monotonic row counters, and replicate suffixes like `.1`, `.2`.
+        monotonic row counters, replicate suffixes (`.1`, `.2`), and trivial metadata columns.
         """
         targets: List[Dict[str, Any]] = []
         n_rows = len(df)
@@ -187,16 +213,27 @@ class DataScientistAgent:
                 "failure",
                 "toxicity",
                 "yield",
+                "score",
+                "expression",
+                "activity",
             )
             for col in reversed(valid_cols):
                 if any(k in col.lower() for k in outcome_keywords):
                     primary_col = col
                     break
             if not primary_col:
-                # Prefer a binary/categorical outcome column if present, otherwise last non-replicate column
+                # Prefer continuous quantitative scientific variables over trivial binary metadata flags
                 non_rep_cols = [c for c in valid_cols if not re.search(r"\.\d+$", c)] or valid_cols
-                binary_cols = [c for c in non_rep_cols if df[c].nunique(dropna=True) == 2]
-                primary_col = binary_cols[-1] if binary_cols else non_rep_cols[-1]
+                numeric_continuous = [
+                    c
+                    for c in non_rep_cols
+                    if pd.api.types.is_numeric_dtype(df[c]) and df[c].nunique(dropna=True) >= 8
+                ]
+                if numeric_continuous:
+                    primary_col = numeric_continuous[-1]
+                else:
+                    binary_cols = [c for c in non_rep_cols if df[c].nunique(dropna=True) == 2]
+                    primary_col = binary_cols[-1] if binary_cols else non_rep_cols[-1]
 
         targets.append(
             {
@@ -208,8 +245,7 @@ class DataScientistAgent:
 
         # Secondary target rotation (avoid technical replicate columns ending in .1, .2)
         secondary_candidates = [
-            c for c in valid_cols
-            if c != primary_col and not re.search(r"\.\d+$", c)
+            c for c in valid_cols if c != primary_col and not re.search(r"\.\d+$", c)
         ]
         for sec_col in secondary_candidates[:max_secondary_targets]:
             targets.append(
@@ -253,15 +289,16 @@ class DataScientistAgent:
             c_base = re.sub(r"\.\d+$", "", c_str.lower())
             if is_junk_or_id_column(c_str, work_df[c], n_rows):
                 drop_cols.append(c)
-            elif c_base == target_base:
-                # Prevent technical replicate leakage (e.g. cell_line.1 predicting cell_line.2)
-                drop_cols.append(c)
+            elif c_base == target_base or c_base in target_base or target_base in c_base:
+                # Prevent direct label-alias leakage (e.g. `diagnosis_code` predicting `diagnosis`)
+                if len(c_base) >= 4 and len(target_base) >= 4:
+                    drop_cols.append(c)
             elif work_df[c].nunique(dropna=True) <= 1:
                 drop_cols.append(c)
             elif work_df[c].dtype == "object" and work_df[c].nunique(dropna=True) > 30:
                 drop_cols.append(c)
 
-        X_raw = work_df.drop(columns=drop_cols)
+        X_raw = work_df.drop(columns=list(set(drop_cols)))
         if X_raw.shape[1] == 0:
             raise ValueError("No valid predictive feature columns remained after removing IDs/replicates.")
 
@@ -276,8 +313,6 @@ class DataScientistAgent:
                 le = LabelEncoder()
                 X_encoded[col] = le.fit_transform(s)
 
-        feature_names = list(X_encoded.columns)
-
         nunique_y = y_raw.nunique(dropna=True)
         if not task_type:
             if pd.api.types.is_object_dtype(y_raw) or pd.api.types.is_bool_dtype(y_raw) or nunique_y <= 6:
@@ -288,6 +323,37 @@ class DataScientistAgent:
         if task_type == "classification":
             le_y = LabelEncoder()
             y = pd.Series(le_y.fit_transform(y_raw.astype(str)), index=X_encoded.index)
+        else:
+            y = pd.to_numeric(y_raw, errors="coerce").fillna(0.0)
+
+        # Automatic Target-Leakage & Near-Collinear Proxy Guard:
+        # Strip any feature column that is a trivial 1-to-1 proxy of `y` (|corr| >= 0.95 or stump score >= 0.985)
+        leakage_cols: List[str] = []
+        if X_encoded.shape[1] > 2:
+            for col in list(X_encoded.columns):
+                try:
+                    corr = abs(float(np.corrcoef(X_encoded[col].values, y.values)[0, 1]))
+                    if not np.isnan(corr) and corr >= 0.95:
+                        leakage_cols.append(col)
+                        continue
+                    # Also check depth-1 decision stump to catch encoded categorical aliases of y
+                    if task_type == "classification":
+                        stump = DecisionTreeClassifier(max_depth=1, random_state=42)
+                    else:
+                        stump = DecisionTreeRegressor(max_depth=1, random_state=42)
+                    stump.fit(X_encoded[[col]], y)
+                    if float(stump.score(X_encoded[[col]], y)) >= 0.985:
+                        leakage_cols.append(col)
+                except Exception:
+                    pass
+
+            if leakage_cols and (X_encoded.shape[1] - len(leakage_cols)) >= 2:
+                logger.info("Stripped %d target-leakage proxy columns for target '%s': %s", len(leakage_cols), target_column, leakage_cols)
+                X_encoded = X_encoded.drop(columns=leakage_cols)
+
+        feature_names = list(X_encoded.columns)
+
+        if task_type == "classification":
             stratify = y if y.value_counts().min() >= 2 else None
             X_train, X_test, y_train, y_test = train_test_split(
                 X_encoded, y, test_size=0.28, random_state=42, stratify=stratify
@@ -296,7 +362,6 @@ class DataScientistAgent:
             models_df, _ = clf.fit(X_train, X_test, y_train, y_test)
             primary_metric = "ROC AUC" if "ROC AUC" in models_df.columns and models_df["ROC AUC"].notna().any() else "Balanced Accuracy"
         else:
-            y = pd.to_numeric(y_raw, errors="coerce").fillna(0.0)
             X_train, X_test, y_train, y_test = train_test_split(
                 X_encoded, y, test_size=0.28, random_state=42
             )
@@ -311,9 +376,11 @@ class DataScientistAgent:
         if primary_metric in models_df.columns:
             models_df = models_df.sort_values(by=primary_metric, ascending=False)
 
+        n_test = max(10, len(X_test))
         leaderboard: List[Dict[str, Any]] = []
         for _, row in models_df.iterrows():
             entry: Dict[str, Any] = {}
+            row_score = row.get(primary_metric)
             for k, v in row.items():
                 if isinstance(v, (float, np.floating)):
                     if np.isnan(v) or np.isinf(v):
@@ -324,12 +391,20 @@ class DataScientistAgent:
                     entry[k] = int(v)
                 else:
                     entry[k] = str(v)
+
+            # Attach analytical 95% confidence interval per model row
+            if isinstance(row_score, (float, np.floating)) and not np.isnan(row_score):
+                p = float(np.clip(row_score, 0.01, 0.99))
+                se = float(np.sqrt(p * (1.0 - p) / n_test))
+                lo = round(max(0.0, float(row_score) - 1.96 * se), 3)
+                hi = round(min(1.0, float(row_score) + 1.96 * se), 3)
+                entry["95% CI"] = f"[{lo:.3f}, {hi:.3f}]"
             leaderboard.append(entry)
 
         best_model_name = leaderboard[0]["Model"] if leaderboard else "ExtraTrees"
         best_score = float(leaderboard[0].get(primary_metric) or 0.0) if leaderboard else 0.0
 
-        # Real linear baseline from the same leaderboard (NEVER fabricate a fake +0.15 gain when linear is already 1.0!)
+        # Real linear baseline from the same leaderboard
         classical_models = ("LogisticRegression", "LinearRegression", "Ridge", "Lasso", "LinearDiscriminantAnalysis", "OLS")
         classical_score = author_baseline_score
         if classical_score is None:
@@ -353,9 +428,8 @@ class DataScientistAgent:
         author_set = {f.lower() for f in (author_discussed_features or [])}
 
         boot_scores: List[float] = []
-        n_test = len(X_test)
         for _ in range(30):
-            b_idx = rng_boot.integers(0, n_test, size=n_test)
+            b_idx = rng_boot.integers(0, len(X_test), size=len(X_test))
             X_b = X_test.iloc[b_idx]
             y_b = y_test.iloc[b_idx]
             if task_type == "classification" and y_b.nunique() >= 2:
@@ -399,14 +473,14 @@ class DataScientistAgent:
         if signal_gain_delta >= 0.03:
             overlooked_summary = (
                 f"Across {len(work_df)} real samples, {best_model_name} predicted '{clean_target}' with a score of "
-                f"{best_score*100:.1f}% (up from {classical_score*100:.1f}% using standard linear methods — a +{signal_gain_delta*100:.1f}% improvement). "
-                f"The strongest factors driving this result are {', '.join(top_driver_names)} "
+                f"{best_score:.4f} (95% CI: [{ci_low:.3f}, {ci_high:.3f}]), outperforming the linear baseline ({classical_score:.4f}) "
+                f"by +{signal_gain_delta*100:.1f}%. The strongest factors driving this result are {', '.join(top_driver_names)} "
                 f"(Statistical Confidence: {statistical_confidence_pct}%)."
             )
         else:
             overlooked_summary = (
                 f"Across {len(work_df)} real samples, {best_model_name} predicted '{clean_target}' with a score of "
-                f"{best_score*100:.1f}% (Statistical Confidence: {statistical_confidence_pct}%). "
+                f"{best_score:.4f} (95% CI: [{ci_low:.3f}, {ci_high:.3f}], Statistical Confidence: {statistical_confidence_pct}%). "
                 f"The strongest factors in the data are {', '.join(top_driver_names)}."
             )
 

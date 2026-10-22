@@ -1448,7 +1448,7 @@ export function App() {
                               <td className="py-2 px-3">#{idx + 1}</td>
                               {Object.entries(row).map(([k, val]) => (
                                 <td key={k} className="py-2 px-3">
-                                  {val === null ? '-' : String(val)}
+                                  {val === null ? '-' : typeof val === 'number' ? val.toFixed(4) : String(val)}
                                 </td>
                               ))}
                             </tr>
@@ -1788,7 +1788,7 @@ export function App() {
                             <td className="py-2 px-3">#{idx + 1}</td>
                             {Object.entries(row).map(([k, val]) => (
                               <td key={k} className="py-2 px-3">
-                                {val === null ? '-' : String(val)}
+                                {val === null ? '-' : typeof val === 'number' ? val.toFixed(4) : String(val)}
                               </td>
                             ))}
                           </tr>

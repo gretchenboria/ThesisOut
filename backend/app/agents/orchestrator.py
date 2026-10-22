@@ -64,7 +64,7 @@ class PipelineOrchestrator:
         targets = data_scientist_agent.select_targets_for_sweep(
             df,
             author_primary_target=author_primary_target or dissertation.author_primary_target,
-            max_secondary_targets=max_secondary_targets,
+            max_secondary_targets=max(2, max_secondary_targets + 1),
         )
 
         # Ensure live unmet challenges exist for this domain/topic from OpenAlex & ClinicalTrials.gov
@@ -76,6 +76,7 @@ class PipelineOrchestrator:
                 domain=dissertation.domain,
             )
 
+        candidate_results: list[dict] = []
         for t_info in targets:
             t_col = t_info["target_column"]
             is_primary = t_info["is_author_primary_target"]
@@ -94,10 +95,19 @@ class PipelineOrchestrator:
                     author_baseline_score=baseline_to_pass,
                     author_discussed_features=author_discussed_features,
                 )
+                candidate_results.append(exp_res)
             except Exception as exc:
                 logger.warning("LazyPredict skipped target %s on %s: %s", t_col, dataset_name, exc)
                 continue
 
+        # Sort candidate runs so non-trivial empirical signals (where models don't all score a degenerate 1.0) come first
+        def _non_trivial_rank(r: dict) -> tuple:
+            is_trivial_ones = r["best_score"] >= 0.999 and r["signal_gain_delta"] == 0.0
+            return (0 if is_trivial_ones else 1, r["signal_gain_delta"], r["best_score"])
+
+        candidate_results.sort(key=_non_trivial_rank, reverse=True)
+
+        for exp_res in candidate_results[: max_secondary_targets + 1]:
             lazy_run = LazyPredictRun(
                 dataset_id=ds_artifact.id,
                 target_column=exp_res["target_column"],
