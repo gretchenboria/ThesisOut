@@ -152,12 +152,13 @@ def reset_workspace(db: Session = Depends(get_db)) -> Dict[str, str]:
 
 
 @router.post("/upload-dissertation", response_model=DissertationSchema)
+@router.post("/dissertations/upload", response_model=DissertationSchema)
 async def upload_dissertation_and_dataset(
-    title: str = Form(...),
-    authors: str = Form("Doctoral Researcher"),
-    university: str = Form("Tier-1 Research University"),
-    publication_year: int = Form(2024),
-    domain: str = Form("biomedical"),
+    title: Optional[str] = Form(None),
+    authors: Optional[str] = Form(None),
+    university: Optional[str] = Form(None),
+    publication_year: Optional[int] = Form(None),
+    domain: str = Form("general_science"),
     abstract: str = Form(""),
     author_primary_target: Optional[str] = Form(None),
     author_baseline_score: Optional[float] = Form(None),
@@ -167,17 +168,25 @@ async def upload_dissertation_and_dataset(
 ):
     """
     Ingests a user-uploaded dissertation PDF and/or raw dataset (.csv, .tsv, .xlsx, .parquet).
-    If only a PDF is uploaded, automatically extracts embedded tables from the PDF using `pdfplumber`
-    and runs LazyPredict + Market Translation on them.
+    Automatically parses title, authors, university, year, and target columns from the uploaded files
+    so the user never needs to type metadata manually.
     """
+    import time
+
     pdf_saved_path = None
-    extracted_meta = {
+    extracted_meta: Dict[str, Any] = {
         "extracted_claims": ["Empirical findings extracted from uploaded dissertation."],
         "data_availability_links": [],
         "author_statistical_method": "Classical Linear / Parametric Modeling",
     }
 
-    slug = f"upload_{abs(hash(title)) % 100000}"
+    seed_name = (
+        (pdf_file.filename if pdf_file and pdf_file.filename else None)
+        or (dataset_file.filename if dataset_file and dataset_file.filename else None)
+        or title
+        or f"study_{int(time.time())}"
+    )
+    slug = f"upload_{abs(hash(seed_name)) % 100000}"
 
     if pdf_file and pdf_file.filename:
         pdf_dest = settings.PDF_DIR / f"{slug}_{Path(pdf_file.filename).name}"
@@ -187,28 +196,34 @@ async def upload_dissertation_and_dataset(
         if not abstract:
             abstract = extracted_meta.get("text_preview", "")[:1500]
 
+    fallback_file_title = Path(seed_name).stem.replace("_", " ").replace("-", " ").strip().title()
+    final_title = (title or "").strip() or extracted_meta.get("parsed_title") or fallback_file_title or "Uploaded Research Dataset"
+    final_authors = (authors or "").strip() or extracted_meta.get("parsed_authors") or "Research Investigator"
+    final_university = (university or "").strip() or extracted_meta.get("parsed_university") or "Direct File Upload"
+    final_year = publication_year or extracted_meta.get("parsed_year") or 2025
+
     diss = Dissertation(
-        title=title,
-        authors=authors,
-        university=university,
-        department="Graduate Research Division",
-        publication_year=publication_year,
+        title=final_title,
+        authors=final_authors,
+        university=final_university,
+        department="Quantitative Research Division",
+        publication_year=final_year,
         domain=domain,
-        subdomain="Custom Uploaded Dissertation",
-        source_repo="Direct Researcher Upload",
+        subdomain="Uploaded Study",
+        source_repo="Direct File Upload",
         pdf_path=pdf_saved_path,
         institution_tier="Tier-1 Global Research",
         scientific_rigor_score=0.95,
         citation_velocity=3.5,
-        abstract=abstract or f"Uploaded doctoral dissertation: {title}",
-        author_primary_hypothesis=f"Author's primary thesis evaluation on `{author_primary_target or 'primary outcome'}`.",
-        author_Statistical_method=extracted_meta["author_statistical_method"],
+        abstract=abstract or f"Automatically parsed from uploaded file: {final_title}",
+        author_primary_hypothesis=f"Author baseline evaluation on {author_primary_target or 'auto-detected outcome column'}.",
+        author_statistical_method=extracted_meta["author_statistical_method"],
         author_primary_target=author_primary_target,
         author_reported_baseline_metric="ROC-AUC / R-Squared",
         author_reported_baseline_score=author_baseline_score,
         extracted_claims=extracted_meta["extracted_claims"],
         data_availability_links=extracted_meta["data_availability_links"],
-        key_entities={"targets": [title.split()[0]]},
+        key_entities={"targets": [final_title.split()[0]] if final_title.split() else ["target"]},
         status="analyzed",
     )
     db.add(diss)

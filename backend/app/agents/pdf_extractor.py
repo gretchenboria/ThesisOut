@@ -41,9 +41,11 @@ class PDFExtractorAgent:
                 logger.warning("Failed to read page %d of %s: %s", i, path, exc)
 
         full_text = "\n".join(full_text_chunks)
+        first_page_text = full_text_chunks[0] if full_text_chunks else ""
         links = self.extract_repository_links(full_text)
         claims = self.extract_key_claims(full_text)
         stat_method = self.detect_author_statistical_method(full_text)
+        parsed_meta = self.extract_bibliographic_metadata(first_page_text, path.stem)
 
         return {
             "page_count": len(reader.pages),
@@ -51,6 +53,50 @@ class PDFExtractorAgent:
             "data_availability_links": links,
             "extracted_claims": claims,
             "author_statistical_method": stat_method,
+            **parsed_meta,
+        }
+
+    def extract_bibliographic_metadata(self, first_page_text: str, fallback_stem: str) -> Dict[str, Any]:
+        lines = [ln.strip() for ln in first_page_text.splitlines() if len(ln.strip()) > 3]
+        title = ""
+        university = "Research University"
+        authors = "Dissertation Author"
+        pub_year = 2024
+
+        for ln in lines[:12]:
+            low = ln.lower()
+            if any(k in low for k in ["university", "institute of technology", "college", "school of", "eth ", "epfl"]):
+                university = ln[:100]
+                break
+
+        for ln in lines[:8]:
+            low = ln.lower()
+            if not any(k in low for k in ["dissertation", "thesis", "submitted", "partial fulfillment", "university", "department", "degree of", "doctor of"]):
+                if 12 <= len(ln) <= 180:
+                    title = ln
+                    break
+
+        if not title:
+            clean_stem = re.sub(r"^upload_\d+_", "", fallback_stem).replace("_", " ").replace("-", " ").strip()
+            title = clean_stem.title() if clean_stem else "Uploaded Research Study"
+
+        for i, ln in enumerate(lines[:20]):
+            if ln.lower().startswith("by ") and len(ln) < 60:
+                authors = ln[3:].strip()
+                break
+            if ln.lower() == "by" and i + 1 < len(lines) and len(lines[i + 1]) < 60:
+                authors = lines[i + 1].strip()
+                break
+
+        year_matches = re.findall(r"\b(20[0-2]\d|199\d)\b", first_page_text)
+        if year_matches:
+            pub_year = int(year_matches[0])
+
+        return {
+            "parsed_title": title,
+            "parsed_university": university,
+            "parsed_authors": authors,
+            "parsed_year": pub_year,
         }
 
     def extract_repository_links(self, text: str) -> List[Dict[str, str]]:

@@ -7,7 +7,7 @@ import {
   Download,
   ExternalLink,
   FileText,
-  MessageSquare,
+  Lock,
   Play,
   RefreshCw,
   Search,
@@ -194,6 +194,16 @@ interface CopilotMessage {
 }
 
 export function App() {
+  const [accessToken, setAccessToken] = useState<string>(
+    () => sessionStorage.getItem('thesisout_access_token') || ''
+  );
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(
+    () => sessionStorage.getItem('thesisout_access_token') === 'thesisout!'
+  );
+  const [gateInput, setGateInput] = useState<string>('');
+  const [botHoneypot, setBotHoneypot] = useState<string>('');
+  const [gateError, setGateError] = useState<string>('');
+
   const [showAllModels, setShowAllModels] = useState<boolean>(true);
   const [showUploadBox, setShowUploadBox] = useState<boolean>(false);
 
@@ -217,24 +227,57 @@ export function App() {
   const [, setProbeData] = useState<any>(null);
 
   const [chatInput, setChatInput] = useState<string>('');
-  const [followUpInput, setFollowUpInput] = useState<string>('');
-  const [chatLoading, setChatLoading] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([]);
+  const [, setChatMessages] = useState<CopilotMessage[]>([]);
 
-  const [uploadTitle, setUploadTitle] = useState<string>('');
-  const [uploadUni, setUploadUni] = useState<string>('');
-  const [uploadTarget, setUploadTarget] = useState<string>('');
   const [uploadPdf, setUploadPdf] = useState<File | null>(null);
   const [uploadCsv, setUploadCsv] = useState<File | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
 
+  const authHeaders = (extra?: Record<string, string>) => ({
+    'X-Access-Code': accessToken || 'thesisout!',
+    ...(extra || {}),
+  });
+
+  const handleUnlockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (botHoneypot) return;
+    setGateError('');
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: gateInput.trim(), website_url: botHoneypot }),
+      });
+      if (res.ok) {
+        sessionStorage.setItem('thesisout_access_token', gateInput.trim());
+        setAccessToken(gateInput.trim());
+        setIsUnlocked(true);
+      } else {
+        setGateError('Invalid access code.');
+      }
+    } catch {
+      if (gateInput.trim() === 'thesisout!') {
+        sessionStorage.setItem('thesisout_access_token', 'thesisout!');
+        setAccessToken('thesisout!');
+        setIsUnlocked(true);
+      } else {
+        setGateError('Invalid access code.');
+      }
+    }
+  };
+
   const fetchAllData = async () => {
+    if (!isUnlocked) return;
     setErrorMsg(null);
     try {
       const [dRes, oRes] = await Promise.all([
-        fetch('/api/dissertations'),
-        fetch('/api/opportunities'),
+        fetch('/api/dissertations', { headers: authHeaders() }),
+        fetch('/api/opportunities', { headers: authHeaders() }),
       ]);
+      if (dRes.status === 401 || oRes.status === 401) {
+        setIsUnlocked(false);
+        return;
+      }
       const dData: Dissertation[] = await dRes.json();
       const oData: MarketOpportunity[] = await oRes.json();
 
@@ -252,8 +295,10 @@ export function App() {
   };
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (isUnlocked) {
+      fetchAllData();
+    }
+  }, [isUnlocked]);
 
   const selectedDiss = dissertations.find((d) => d.id === selectedDissId) || dissertations[0];
   const activeDataset = selectedDiss?.datasets?.[0];
@@ -280,6 +325,7 @@ export function App() {
     try {
       const res = await fetch(`/api/lazypredict/${lazyRunId}/escalate`, {
         method: 'POST',
+        headers: authHeaders(),
       });
       if (res.ok) {
         const data: DeepInferenceResult = await res.json();
@@ -299,7 +345,7 @@ export function App() {
     try {
       const res = await fetch('/api/lazypredict/run-custom', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           dataset_id: activeDataset.id,
           target_column: colName,
@@ -329,7 +375,7 @@ export function App() {
     setStreamEvents([`Running investigation: "${promptText}"`]);
     setChatMessages((prev) => [...prev, { role: 'user', content: promptText }]);
 
-    const url = `/api/copilot/autonomous-stream?prompt=${encodeURIComponent(promptText)}`;
+    const url = `/api/copilot/autonomous-stream?prompt=${encodeURIComponent(promptText)}&access_code=${encodeURIComponent(accessToken || 'thesisout!')}`;
     const evtSource = new EventSource(url);
 
     evtSource.onmessage = async (event) => {
@@ -390,53 +436,13 @@ export function App() {
     };
   };
 
-  const handleFollowUpChat = async (customPrompt?: string) => {
-    const text = (customPrompt ?? followUpInput).trim();
-    if (!text || chatLoading) return;
-
-    const updatedHistory: CopilotMessage[] = [...chatMessages, { role: 'user', content: text }];
-    setChatMessages(updatedHistory);
-    if (!customPrompt) setFollowUpInput('');
-    setChatLoading(true);
-    setErrorMsg(null);
-
-    try {
-      const res = await fetch('/api/copilot/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedHistory.map((m) => ({ role: m.role, content: m.content })),
-          dissertation_id: selectedDiss?.id ?? null,
-          lazy_run_id: activeRun?.id ?? null,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: data.reply || 'Analysis complete.',
-            hypothesis_formulation: data.hypothesis_formulation,
-            downstream_inference_plan: data.downstream_inference_plan,
-            suggested_actions: data.suggested_actions,
-            model_used: data.model_used || 'Gemini 2.5 (Live API)',
-          },
-        ]);
-      }
-    } catch (err) {
-      setErrorMsg('Failed to reach Gemini endpoint.');
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
   const handleExecuteOpportunityStep = async (oppId: number, stepIdx: number) => {
     const key = `${oppId}_${stepIdx}`;
     setExecutingStepKey(key);
     try {
       const res = await fetch(`/api/opportunities/${oppId}/execute-step?step_index=${stepIdx}`, {
         method: 'POST',
+        headers: authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -459,31 +465,26 @@ export function App() {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadTitle.trim()) return;
+    if (!uploadPdf && !uploadCsv) return;
     setUploading(true);
     setErrorMsg(null);
     try {
       const fd = new FormData();
-      fd.append('title', uploadTitle);
-      fd.append('authors', 'Uploaded Investigation');
-      fd.append('university', uploadUni || 'Research Lab');
-      fd.append('domain', 'biomedical');
-      if (uploadTarget.trim()) fd.append('author_primary_target', uploadTarget.trim());
       if (uploadPdf) fd.append('pdf_file', uploadPdf);
       if (uploadCsv) fd.append('dataset_file', uploadCsv);
 
       const res = await fetch('/api/dissertations/upload', {
         method: 'POST',
+        headers: authHeaders(),
         body: fd,
       });
       if (res.ok) {
         const data = await res.json();
         await fetchAllData();
-        if (data.dissertation_id) setSelectedDissId(data.dissertation_id);
+        if (data.id) setSelectedDissId(data.id);
         setShowUploadBox(false);
-        setUploadTitle('');
-        setUploadUni('');
-        setUploadTarget('');
+        setUploadPdf(null);
+        setUploadCsv(null);
       }
     } catch (err) {
       setErrorMsg('Upload failed.');
@@ -674,20 +675,77 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowUploadBox(!showUploadBox)}
-              className="pop-btn px-3.5 py-1.5 rounded-xl bg-[#FAF6F0] text-[#3B1A08] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5 text-blue-600" />
-              {showUploadBox ? 'Close Upload' : 'Upload Thesis CSV'}
-            </button>
+            {isUnlocked && (
+              <button
+                onClick={() => setShowUploadBox(!showUploadBox)}
+                className="pop-btn px-3.5 py-1.5 rounded-xl bg-[#FAF6F0] text-[#3B1A08] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-blue-600" />
+                {showUploadBox ? 'Close Upload' : 'Upload Thesis / CSV'}
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* ===================================================================== */}
-      {/* SINGLE-PAGE UNIFIED DISCOVERY CANVAS (ZERO TABS, ZERO SILOS)          */}
+      {/* ACCESS CODE GATE & BOT SHIELD ("thesisout!")                          */}
       {/* ===================================================================== */}
+      {!isUnlocked ? (
+        <main className="relative z-10 max-w-md mx-auto px-4 pt-20 pb-12">
+          <form
+            onSubmit={handleUnlockSubmit}
+            className="pop-card rounded-3xl p-7 space-y-5"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl leather-badge flex items-center justify-center font-extrabold text-lg">
+                <Lock className="w-5 h-5 text-blue-300" />
+              </div>
+              <div>
+                <h1 className="text-lg font-extrabold text-slate-900">
+                  Private Research Workspace
+                </h1>
+                <p className="text-xs text-slate-600">
+                  Enter the access code to unlock ThesisOut.
+                </p>
+              </div>
+            </div>
+
+            {/* Hidden Honeypot Trap for Automated Bots */}
+            <input
+              type="text"
+              name="website_url"
+              tabIndex={-1}
+              autoComplete="off"
+              value={botHoneypot}
+              onChange={(e) => setBotHoneypot(e.target.value)}
+              className="hidden"
+              aria-hidden="true"
+            />
+
+            <div className="space-y-2">
+              <input
+                type="password"
+                value={gateInput}
+                onChange={(e) => setGateInput(e.target.value)}
+                placeholder="Access code"
+                autoFocus
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border-2 border-slate-900 text-sm font-bold text-slate-900 focus:outline-none focus:bg-white"
+              />
+              {gateError && (
+                <div className="text-xs font-bold text-rose-600">{gateError}</div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="pop-btn w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm cursor-pointer"
+            >
+              Unlock ThesisOut
+            </button>
+          </form>
+        </main>
+      ) : (
       <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {errorMsg && (
           <div className="pop-card-crimson rounded-2xl p-4 flex items-center justify-between text-xs font-bold text-rose-900">
@@ -701,41 +759,22 @@ export function App() {
           </div>
         )}
 
-        {/* OPTIONAL UPLOAD DRAWER */}
+        {/* ZERO-TEXT FILE UPLOAD DRAWER (AUTO-PARSES METADATA & COLUMNS) */}
         {showUploadBox && (
           <form
             onSubmit={handleUploadSubmit}
             className="pop-card rounded-3xl p-6 space-y-4"
           >
-            <div className="text-sm font-extrabold text-slate-900">
-              Upload Your Own Thesis PDF & Raw Dataset CSV
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="text"
-                required
-                value={uploadTitle}
-                onChange={(e) => setUploadTitle(e.target.value)}
-                placeholder="Thesis Title"
-                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
-              />
-              <input
-                type="text"
-                value={uploadUni}
-                onChange={(e) => setUploadUni(e.target.value)}
-                placeholder="University"
-                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
-              />
-              <input
-                type="text"
-                value={uploadTarget}
-                onChange={(e) => setUploadTarget(e.target.value)}
-                placeholder="Target Column (optional)"
-                className="px-3.5 py-2 rounded-xl border-2 border-slate-900 text-xs font-medium"
-              />
+            <div>
+              <div className="text-sm font-extrabold text-slate-900">
+                Drop Your Thesis PDF or Raw Dataset CSV
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Title, authors, university, publication year, and target variables are parsed automatically from your file.
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              <label className="px-3.5 py-2 rounded-xl bg-slate-100 border-2 border-slate-900 font-bold cursor-pointer">
+              <label className="px-4 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-900 font-bold cursor-pointer">
                 <FileText className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" />
                 {uploadPdf ? uploadPdf.name : 'Choose Thesis PDF'}
                 <input
@@ -745,9 +784,9 @@ export function App() {
                   className="hidden"
                 />
               </label>
-              <label className="px-3.5 py-2 rounded-xl bg-blue-50 border-2 border-slate-900 font-bold cursor-pointer">
+              <label className="px-4 py-2.5 rounded-xl bg-blue-50 border-2 border-slate-900 font-bold cursor-pointer">
                 <Upload className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" />
-                {uploadCsv ? uploadCsv.name : 'Choose Dataset CSV'}
+                {uploadCsv ? uploadCsv.name : 'Choose Dataset CSV / TSV'}
                 <input
                   type="file"
                   accept=".csv,.tsv"
@@ -757,10 +796,10 @@ export function App() {
               </label>
               <button
                 type="submit"
-                disabled={uploading}
-                className="pop-btn px-5 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                disabled={uploading || (!uploadPdf && !uploadCsv)}
+                className="pop-btn px-5 py-2.5 rounded-xl bg-blue-600 disabled:opacity-50 text-white font-bold cursor-pointer"
               >
-                {uploading ? 'Running 30 Models' : 'Run Audit on Upload'}
+                {uploading ? 'Parsing & Running 30 Models' : 'Parse & Audit File'}
               </button>
             </div>
           </form>
@@ -1324,53 +1363,10 @@ export function App() {
                 </div>
               )}
             </div>
-
-            {/* Follow-up Conversational Bar */}
-            <div className="pt-3 border-t border-slate-200 space-y-3">
-              {chatMessages.length > 0 && (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {chatMessages.slice(-2).map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`p-3.5 rounded-2xl text-xs ${
-                        msg.role === 'user'
-                          ? 'bg-slate-900 text-white font-bold ml-auto max-w-xl'
-                          : 'bg-blue-50 border-2 border-slate-900 text-slate-900'
-                      }`}
-                    >
-                      <p className="whitespace-pre-line leading-relaxed">{msg.content}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleFollowUpChat();
-                }}
-                className="flex gap-2"
-              >
-                <input
-                  type="text"
-                  value={followUpInput}
-                  onChange={(e) => setFollowUpInput(e.target.value)}
-                  placeholder="Ask a follow-up question about this moonshot or dataset"
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-900 text-xs font-medium"
-                />
-                <button
-                  type="submit"
-                  disabled={chatLoading || !followUpInput.trim()}
-                  className="pop-btn px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  {chatLoading ? 'Working' : 'Ask Follow-Up'}
-                </button>
-              </form>
-            </div>
           </section>
         )}
       </main>
+      )}
     </div>
   );
 }

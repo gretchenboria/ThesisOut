@@ -1,14 +1,16 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
 from app.config import settings
 from app.data.seed_data import ensure_seeded
 from app.database import Base, SessionLocal, engine
+
+ACCESS_CODE = "thesisout!"
 
 
 @asynccontextmanager
@@ -35,6 +37,47 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def enforce_access_code_and_bot_shield(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api"):
+        if path == "/api/auth/verify":
+            return await call_next(request)
+        header_code = request.headers.get("X-Access-Code", "")
+        query_code = request.query_params.get("access_code", "")
+        cookie_code = request.cookies.get("thesisout_access", "")
+        if header_code != ACCESS_CODE and query_code != ACCESS_CODE and cookie_code != ACCESS_CODE:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Access code required."},
+            )
+    return await call_next(request)
+
+
+@app.post("/api/auth/verify")
+async def verify_access_code(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    code = str(body.get("code", "")).strip()
+    honeypot = str(body.get("website_url", "")).strip()
+    if honeypot:
+        return JSONResponse(status_code=403, content={"valid": False, "detail": "Bot detected."})
+    if code == ACCESS_CODE:
+        resp = JSONResponse(content={"valid": True})
+        resp.set_cookie(
+            key="thesisout_access",
+            value=ACCESS_CODE,
+            max_age=60 * 60 * 24 * 30,
+            httponly=False,
+            samesite="lax",
+        )
+        return resp
+    return JSONResponse(status_code=401, content={"valid": False, "detail": "Invalid access code."})
+
 
 app.include_router(api_router, prefix="/api")
 
