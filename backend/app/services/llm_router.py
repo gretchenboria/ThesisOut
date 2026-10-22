@@ -69,7 +69,7 @@ class LLMRouter:
         try:
             res = await self._call_gemini_json(system_prompt, user_prompt)
             if res and isinstance(res, dict):
-                return res, "Gemini 2.5 Pro (Live API)"
+                return res, "Gemini 3.8 Flash"
         except Exception as exc:
             logger.warning("Live Gemini JSON synthesis failed: %s", exc)
 
@@ -136,7 +136,7 @@ class LLMRouter:
         try:
             res = await self._call_gemini_json(system_prompt, user_prompt)
             if res and isinstance(res, dict) and res.get("reply"):
-                res["model_used"] = "Gemini 2.5 (Live API)"
+                res["model_used"] = "Gemini 3.8 Flash"
                 return res
         except Exception as exc:
             logger.warning("Gemini Copilot live call error: %s", exc)

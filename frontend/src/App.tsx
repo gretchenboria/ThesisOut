@@ -1412,220 +1412,360 @@ export function App() {
         )}
 
         {/* =================================================================== */}
-        {/* SECTION 4: FULL ARCHITECTURE & TECH STACK DIAGRAM                   */}
+        {/* SECTION 4: SYSTEM ARCHITECTURE & DATA SCHEMA SCHEMATIC              */}
         {/* =================================================================== */}
         <section className="pop-card rounded-3xl p-6 sm:p-8 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="px-3.5 py-1 rounded-xl leather-badge text-xs font-extrabold">
-              04. FULL ARCHITECTURE & TECH STACK
+              04. SYSTEM ARCHITECTURE &amp; DATA SCHEMA
             </span>
-            <span className="text-xs font-bold text-slate-600">
-              End-to-End Pipeline from Edge Security to 30-Model Verification
+            <span className="text-xs font-mono font-bold text-slate-500">
+              End-to-End Inference Topology &amp; Relational Entity Schema
             </span>
           </div>
 
-          <div className="w-full overflow-x-auto rounded-2xl border-2 border-[#2B1406] bg-[#FAF8F5] p-3">
+          <div className="w-full overflow-x-auto rounded-2xl border border-slate-300 bg-[#FCFBF9] p-4 sm:p-6">
             <svg
-              viewBox="0 0 1120 320"
-              className="w-full min-w-[780px] h-auto"
+              viewBox="0 0 1160 520"
+              className="w-full min-w-[880px] h-auto"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Connecting Flow Arrows */}
-              <path d="M 218 160 L 252 160" stroke="#2563EB" strokeWidth="3" strokeDasharray="5 4" />
-              <polygon points="248,154 258,160 248,166" fill="#2563EB" />
+              <defs>
+                <pattern id="archGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#E2E8F0" strokeWidth="0.7" />
+                </pattern>
+                <marker id="arrowBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563EB" />
+                </marker>
+                <marker id="arrowIndigo" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4F46E5" />
+                </marker>
+                <marker id="arrowCrimson" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#E11D48" />
+                </marker>
+                <marker id="arrowSlate" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#475569" />
+                </marker>
+              </defs>
 
-              <path d="M 442 160 L 476 160" stroke="#4F46E5" strokeWidth="3" strokeDasharray="5 4" />
-              <polygon points="472,154 482,160 472,166" fill="#4F46E5" />
+              {/* Subtle Technical Blueprint Grid */}
+              <rect x="0" y="0" width="1160" height="520" rx="12" fill="url(#archGrid)" />
 
-              <path d="M 666 160 L 700 160" stroke="#58270E" strokeWidth="3" strokeDasharray="5 4" />
-              <polygon points="696,154 706,160 696,166" fill="#58270E" />
+              {/* =============================================================== */}
+              {/* TIER 1: COMPUTE & INFERENCE PIPELINE TOPOLOGY                   */}
+              {/* =============================================================== */}
+              <text x="24" y="26" fill="#475569" fontSize="10" fontWeight="800" fontFamily="monospace" letterSpacing="1.5">
+                I. INFERENCE &amp; EXECUTION PIPELINE
+              </text>
+              <line x1="255" y1="22" x2="1136" y2="22" stroke="#CBD5E1" strokeWidth="1" />
 
-              <path d="M 890 160 L 924 160" stroke="#E11D48" strokeWidth="3" strokeDasharray="5 4" />
-              <polygon points="920,154 930,160 920,166" fill="#E11D48" />
-
-              {/* COLUMN 1: EDGE & FRONTEND */}
+              {/* Node 1: Edge Gateway */}
               <g>
-                <rect x="24" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
-                <rect x="24" y="28" width="192" height="44" rx="16" fill="#4A200B" />
-                <text x="120" y="55" textAnchor="middle" fill="#FAF6F0" fontSize="11.5" fontWeight="800">
-                  1. EDGE &amp; CLIENT UI
+                <rect x="24" y="44" width="190" height="148" rx="8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="1.5" />
+                <line x1="24" y1="74" x2="214" y2="74" stroke="#E2E8F0" strokeWidth="1.2" />
+                <circle cx="40" cy="59" r="4" fill="#2563EB" />
+                <text x="52" y="63" fill="#0F172A" fontSize="11" fontWeight="800" fontFamily="monospace">
+                  EDGE GATEWAY
                 </text>
-
-                <rect x="38" y="86" width="164" height="44" rx="10" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1.5" />
-                <text x="120" y="105" textAnchor="middle" fill="#1E3A8A" fontSize="11" fontWeight="800">
-                  Cloudflare Edge Worker
+                <text x="38" y="96" fill="#334155" fontSize="10.5" fontWeight="700" fontFamily="monospace">
+                  Cloudflare Worker
                 </text>
-                <text x="120" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  thesisout.com + Bot Shield
+                <text x="38" y="114" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ Zero-Trust Access Gate
                 </text>
-
-                <rect x="38" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="120" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  React 19 + TypeScript
+                <text x="38" y="130" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ Bot UA &amp; Honeypot Filter
                 </text>
-                <text x="120" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Vite 8 + Tailwind CSS v4
+                <text x="38" y="146" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ React 19 + TypeScript
                 </text>
-
-                <rect x="38" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="120" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Access Gate + SSE Stream
-                </text>
-                <text x="120" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Google Sans + 3D SVG Leather
-                </text>
-
-                <text x="120" y="272" textAnchor="middle" fill="#2563EB" fontSize="10" fontWeight="800">
-                  HTTPS / HTTP/3 Edge
+                <text x="38" y="162" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  └─ SSE EventStream Client
                 </text>
               </g>
 
-              {/* COLUMN 2: CLOUD RUN API & PARSER */}
+              {/* Connector 1 -> 2 */}
+              <path d="M 214 118 L 266 118" stroke="#2563EB" strokeWidth="1.6" markerEnd="url(#arrowBlue)" />
+              <text x="240" y="110" textAnchor="middle" fill="#2563EB" fontSize="8.5" fontWeight="700" fontFamily="monospace">
+                HTTP/3
+              </text>
+
+              {/* Node 2: Orchestration & Ingestion Engine */}
               <g>
-                <rect x="248" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
-                <rect x="248" y="28" width="192" height="44" rx="16" fill="#2563EB" />
-                <text x="344" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
-                  2. API &amp; FILE PARSER
+                <rect x="268" y="44" width="210" height="148" rx="8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="1.5" />
+                <line x1="268" y1="74" x2="478" y2="74" stroke="#E2E8F0" strokeWidth="1.2" />
+                <circle cx="284" cy="59" r="4" fill="#2563EB" />
+                <text x="296" y="63" fill="#0F172A" fontSize="11" fontWeight="800" fontFamily="monospace">
+                  CLOUD RUN RUNTIME
                 </text>
-
-                <rect x="262" y="86" width="164" height="44" rx="10" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1.5" />
-                <text x="344" y="105" textAnchor="middle" fill="#1E3A8A" fontSize="11" fontWeight="800">
-                  Google Cloud Run
+                <text x="282" y="96" fill="#334155" fontSize="10.5" fontWeight="700" fontFamily="monospace">
+                  FastAPI + Python 3.12
                 </text>
-                <text x="344" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  FastAPI + Uvicorn (Python 3.12)
+                <text x="282" y="114" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ Gemini 3.8 Flash Planner
                 </text>
-
-                <rect x="262" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="344" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Auto PDF &amp; Table Parser
+                <text x="282" y="130" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ pdfplumber Table Parser
                 </text>
-                <text x="344" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  pdfplumber + pypdf + pandas
+                <text x="282" y="146" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ pypdf Claim &amp; DOI Parser
                 </text>
-
-                <rect x="262" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="344" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  SQLAlchemy + SQLite
-                </text>
-                <text x="344" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Artifact &amp; Leaderboard Store
-                </text>
-
-                <text x="344" y="272" textAnchor="middle" fill="#2563EB" fontSize="10" fontWeight="800">
-                  Zero-Text Metadata Extraction
+                <text x="282" y="162" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  └─ Async httpx Orchestrator
                 </text>
               </g>
 
-              {/* COLUMN 3: 30-MODEL ML ENGINE */}
+              {/* Connector 2 -> 3 */}
+              <path d="M 478 118 L 530 118" stroke="#4F46E5" strokeWidth="1.6" markerEnd="url(#arrowIndigo)" />
+              <text x="504" y="110" textAnchor="middle" fill="#4F46E5" fontSize="8.5" fontWeight="700" fontFamily="monospace">
+                DataFrame
+              </text>
+
+              {/* Node 3: Statistical & ML Verification Engine */}
               <g>
-                <rect x="472" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
-                <rect x="472" y="28" width="192" height="44" rx="16" fill="#4F46E5" />
-                <text x="568" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
-                  3. 30-MODEL ML ENGINE
+                <rect x="532" y="44" width="236" height="148" rx="8" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="1.8" />
+                <line x1="532" y1="74" x2="768" y2="74" stroke="#E2E8F0" strokeWidth="1.2" />
+                <circle cx="548" cy="59" r="4" fill="#4F46E5" />
+                <text x="560" y="63" fill="#0F172A" fontSize="11" fontWeight="800" fontFamily="monospace">
+                  ML &amp; STATISTICAL ENGINE
                 </text>
-
-                <rect x="486" y="86" width="164" height="44" rx="10" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="1.5" />
-                <text x="568" y="105" textAnchor="middle" fill="#312E81" fontSize="11" fontWeight="800">
-                  LazyPredict + Scikit-Learn
+                <text x="546" y="96" fill="#312E81" fontSize="10.5" fontWeight="700" fontFamily="monospace">
+                  30-Model Out-of-Fold Sweep
                 </text>
-                <text x="568" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  XGBoost + LightGBM + CatBoost
+                <text x="546" y="114" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ LazyPredict + Scikit-Learn
                 </text>
-
-                <rect x="486" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="568" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Out-of-Fold Stratified CV
+                <text x="546" y="130" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ XGBoost / LightGBM / CatBoost
                 </text>
-                <text x="568" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  5-Fold / Repeated 5x3 CV + 95% CI
+                <text x="546" y="146" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ 5-Fold Stratified CV + 95% CI
                 </text>
-
-                <rect x="486" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="568" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  5-Stage Deep Verification
-                </text>
-                <text x="568" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Super-Learner + Conformal + Null
-                </text>
-
-                <text x="568" y="272" textAnchor="middle" fill="#4F46E5" fontSize="10" fontWeight="800">
-                  Zero Data Leakage Pipeline
+                <text x="546" y="162" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  └─ Super-Learner + Conformal Null
                 </text>
               </g>
 
-              {/* COLUMN 4: 9 LIVE SCIENTIFIC REGISTRIES */}
+              {/* Connector 3 -> 4 */}
+              <path d="M 768 118 L 820 118" stroke="#E11D48" strokeWidth="1.6" markerEnd="url(#arrowCrimson)" />
+              <text x="794" y="110" textAnchor="middle" fill="#E11D48" fontSize="8.5" fontWeight="700" fontFamily="monospace">
+                Telemetry
+              </text>
+
+              {/* Node 4: External Scientific Registries & Translation */}
               <g>
-                <rect x="696" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
-                <rect x="696" y="28" width="192" height="44" rx="16" fill="#58270E" />
-                <text x="792" y="55" textAnchor="middle" fill="#FAF6F0" fontSize="11.5" fontWeight="800">
-                  4. LIVE DATA REGISTRIES
+                <rect x="822" y="44" width="314" height="148" rx="8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="1.5" />
+                <line x1="822" y1="74" x2="1136" y2="74" stroke="#E2E8F0" strokeWidth="1.2" />
+                <circle cx="838" cy="59" r="4" fill="#E11D48" />
+                <text x="850" y="63" fill="#0F172A" fontSize="11" fontWeight="800" fontFamily="monospace">
+                  EXTERNAL REGISTRIES &amp; SYNTHESIS
                 </text>
-
-                <rect x="710" y="86" width="164" height="44" rx="10" fill="#FAF6F0" stroke="#58270E" strokeWidth="1.5" />
-                <text x="792" y="105" textAnchor="middle" fill="#3B1A08" fontSize="11" fontWeight="800">
-                  Thesis &amp; Dataset Harvest
+                <text x="836" y="96" fill="#881337" fontSize="10.5" fontWeight="700" fontFamily="monospace">
+                  9 Live Scientific APIs + Gemini 3.8 Flash
                 </text>
-                <text x="792" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  OpenAlex + Zenodo + arXiv + EPMC
+                <text x="836" y="114" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ OpenAlex + Zenodo + EuropePMC + arXiv
                 </text>
-
-                <rect x="710" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="792" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Clinical &amp; Regulatory APIs
+                <text x="836" y="130" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ ClinicalTrials.gov API v2 + openFDA FAERS
                 </text>
-                <text x="792" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  ClinicalTrials.gov v2 + openFDA
+                <text x="836" y="146" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  ├─ OpenTargets GraphQL v4 + ChEMBL REST
                 </text>
-
-                <rect x="710" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="792" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Target &amp; Molecule Graph
-                </text>
-                <text x="792" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  OpenTargets GraphQL + ChEMBL
-                </text>
-
-                <text x="792" y="272" textAnchor="middle" fill="#58270E" fontSize="10" fontWeight="800">
-                  9 Live REST &amp; GraphQL Feeds
+                <text x="836" y="162" fill="#64748B" fontSize="9.5" fontFamily="monospace">
+                  └─ Surrogate IP Claims + Python Export (.py)
                 </text>
               </g>
 
-              {/* COLUMN 5: VERTEX AI & TRANSLATION OUTPUTS */}
+              {/* =============================================================== */}
+              {/* TIER 2: RELATIONAL ENTITY & ARTIFACT SCHEMA (SQLALCHEMY ORM)    */}
+              {/* =============================================================== */}
+              <text x="24" y="236" fill="#475569" fontSize="10" fontWeight="800" fontFamily="monospace" letterSpacing="1.5">
+                II. RELATIONAL DATA &amp; ARTIFACT SCHEMA (SQLITE / SQLALCHEMY ORM)
+              </text>
+              <line x1="425" y1="232" x2="1136" y2="232" stroke="#CBD5E1" strokeWidth="1" />
+
+              {/* Vertical Bus Lines from Runtime/ML Engine down to Schema Tables */}
+              <path d="M 373 192 L 373 256" stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="3 3" markerEnd="url(#arrowSlate)" />
+              <path d="M 650 192 L 650 256" stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="3 3" markerEnd="url(#arrowSlate)" />
+              <path d="M 979 192 L 979 256" stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="3 3" markerEnd="url(#arrowSlate)" />
+
+              {/* Table 1: dissertations */}
               <g>
-                <rect x="920" y="28" width="176" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
-                <rect x="920" y="28" width="176" height="44" rx="16" fill="#E11D48" />
-                <text x="1008" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
-                  5. DISCOVERY OUTPUT
+                <rect x="24" y="258" width="234" height="236" rx="8" fill="#FFFFFF" stroke="#334155" strokeWidth="1.5" />
+                <rect x="24" y="258" width="234" height="30" rx="7" fill="#0F172A" />
+                <text x="36" y="277" fill="#FFFFFF" fontSize="10.5" fontWeight="800" fontFamily="monospace">
+                  TABLE: dissertations
+                </text>
+                <text x="218" y="277" fill="#93C5FD" fontSize="9" fontWeight="700" fontFamily="monospace">
+                  1:N
                 </text>
 
-                <rect x="932" y="86" width="152" height="44" rx="10" fill="#FFF1F2" stroke="#E11D48" strokeWidth="1.5" />
-                <text x="1008" y="105" textAnchor="middle" fill="#881337" fontSize="11" fontWeight="800">
-                  Vertex AI Gemini 2.5
+                <text x="36" y="308" fill="#2563EB" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  PK  id                   INTEGER
                 </text>
-                <text x="1008" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Hypothesis &amp; Case Synthesis
+                <text x="36" y="326" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      title                VARCHAR
+                </text>
+                <text x="36" y="344" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      university           VARCHAR
+                </text>
+                <text x="36" y="362" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      domain               VARCHAR
+                </text>
+                <text x="36" y="380" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      scientific_rigor     FLOAT
+                </text>
+                <text x="36" y="398" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      author_stat_method   VARCHAR
+                </text>
+                <text x="36" y="416" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      author_baseline      FLOAT
+                </text>
+                <text x="36" y="434" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      extracted_claims     JSONB
+                </text>
+                <text x="36" y="452" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      data_links           JSONB
+                </text>
+                <text x="36" y="470" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      key_entities         JSONB
+                </text>
+              </g>
+
+              {/* Schema Relation Line: dissertations (1) ---> (N) dataset_artifacts */}
+              <path d="M 258 326 L 308 326" stroke="#2563EB" strokeWidth="1.5" markerEnd="url(#arrowBlue)" />
+              <circle cx="264" cy="326" r="3" fill="#2563EB" />
+
+              {/* Table 2: dataset_artifacts */}
+              <g>
+                <rect x="310" y="258" width="234" height="236" rx="8" fill="#FFFFFF" stroke="#334155" strokeWidth="1.5" />
+                <rect x="310" y="258" width="234" height="30" rx="7" fill="#1E293B" />
+                <text x="322" y="277" fill="#FFFFFF" fontSize="10.5" fontWeight="800" fontFamily="monospace">
+                  TABLE: dataset_artifacts
+                </text>
+                <text x="504" y="277" fill="#93C5FD" fontSize="9" fontWeight="700" fontFamily="monospace">
+                  1:N
                 </text>
 
-                <rect x="932" y="142" width="152" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="1008" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Provisional IP Claims
+                <text x="322" y="308" fill="#2563EB" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  PK  id                   INTEGER
                 </text>
-                <text x="1008" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Surrogate Decision Rules
+                <text x="322" y="326" fill="#4F46E5" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  FK  dissertation_id      INTEGER
+                </text>
+                <text x="322" y="344" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      source_type          VARCHAR
+                </text>
+                <text x="322" y="362" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      source_url           VARCHAR
+                </text>
+                <text x="322" y="380" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      file_path            VARCHAR
+                </text>
+                <text x="322" y="398" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      row_count            INTEGER
+                </text>
+                <text x="322" y="416" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      col_count            INTEGER
+                </text>
+                <text x="322" y="434" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      column_metadata      JSONB
+                </text>
+                <text x="322" y="452" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      sample_rows          JSONB
+                </text>
+              </g>
+
+              {/* Schema Relation Line: dataset_artifacts (1) ---> (N) lazypredict_runs */}
+              <path d="M 544 326 L 594 326" stroke="#4F46E5" strokeWidth="1.5" markerEnd="url(#arrowIndigo)" />
+              <circle cx="550" cy="326" r="3" fill="#4F46E5" />
+
+              {/* Table 3: lazypredict_runs */}
+              <g>
+                <rect x="596" y="258" width="246" height="236" rx="8" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="1.6" />
+                <rect x="596" y="258" width="246" height="30" rx="7" fill="#312E81" />
+                <text x="608" y="277" fill="#FFFFFF" fontSize="10.5" fontWeight="800" fontFamily="monospace">
+                  TABLE: lazypredict_runs
+                </text>
+                <text x="802" y="277" fill="#C7D2FE" fontSize="9" fontWeight="700" fontFamily="monospace">
+                  OOF CV
                 </text>
 
-                <rect x="932" y="198" width="152" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                <text x="1008" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
-                  Exportable Artifacts
+                <text x="608" y="308" fill="#2563EB" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  PK  id                   INTEGER
                 </text>
-                <text x="1008" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
-                  Python Pipeline (.py) + .md
+                <text x="608" y="326" fill="#4F46E5" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  FK  dataset_id           INTEGER
+                </text>
+                <text x="608" y="344" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      target_column        VARCHAR
+                </text>
+                <text x="608" y="362" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      task_type            VARCHAR
+                </text>
+                <text x="608" y="380" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      models_tested_count  INTEGER
+                </text>
+                <text x="608" y="398" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      best_model_name      VARCHAR
+                </text>
+                <text x="608" y="416" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      best_score           FLOAT
+                </text>
+                <text x="608" y="434" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      signal_gain_delta    FLOAT
+                </text>
+                <text x="608" y="452" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      leaderboard          JSONB
+                </text>
+                <text x="608" y="470" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      top_features         JSONB
+                </text>
+              </g>
+
+              {/* Schema Relation Line: lazypredict_runs (1) ---> (N) market_opportunities */}
+              <path d="M 842 344 L 892 344" stroke="#E11D48" strokeWidth="1.5" markerEnd="url(#arrowCrimson)" />
+              <circle cx="848" cy="344" r="3" fill="#E11D48" />
+
+              {/* Table 4: market_opportunities */}
+              <g>
+                <rect x="894" y="258" width="242" height="236" rx="8" fill="#FFFFFF" stroke="#E11D48" strokeWidth="1.6" />
+                <rect x="894" y="258" width="242" height="30" rx="7" fill="#881337" />
+                <text x="906" y="277" fill="#FFFFFF" fontSize="10.5" fontWeight="800" fontFamily="monospace">
+                  TABLE: market_opportunities
                 </text>
 
-                <text x="1008" y="272" textAnchor="middle" fill="#E11D48" fontSize="10" fontWeight="800">
-                  Moonshot Reveal Dossier
+                <text x="906" y="308" fill="#2563EB" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  PK  id                   INTEGER
+                </text>
+                <text x="906" y="326" fill="#4F46E5" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  FK  dissertation_id      INTEGER
+                </text>
+                <text x="906" y="344" fill="#4F46E5" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                  FK  lazy_run_id          INTEGER
+                </text>
+                <text x="906" y="362" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      opportunity_type     VARCHAR
+                </text>
+                <text x="906" y="380" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      clinical_trials_chk  JSONB
+                </text>
+                <text x="906" y="398" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      opentargets_chembl   JSONB
+                </text>
+                <text x="906" y="416" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      overall_tos_score    FLOAT
+                </text>
+                <text x="906" y="434" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      proposed_solution    TEXT
+                </text>
+                <text x="906" y="452" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      validation_roadmap   JSONB
+                </text>
+                <text x="906" y="470" fill="#334155" fontSize="9.5" fontFamily="monospace">
+                      provisional_ip_claim TEXT
                 </text>
               </g>
             </svg>

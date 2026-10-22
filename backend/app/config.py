@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     DATASET_DIR: Path = STORAGE_DIR / "datasets"
     DB_PATH: Path = STORAGE_DIR / "thesisout.db"
 
-    # LLM Router Configuration: Gemini 4 Argon (Primary) -> Claude Opus 5.5 (Fallback)
-    PRIMARY_LLM_MODEL: str = "gemini-4-argon"
+    # LLM Router Configuration: Gemini 3.8 Flash (Primary)
+    PRIMARY_LLM_MODEL: str = "gemini-3.8-flash"
     FALLBACK_LLM_MODEL: str = "claude-opus-5-5"
     GEMINI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
