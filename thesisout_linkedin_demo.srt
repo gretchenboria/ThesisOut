@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:19,578
+Think about how many doctoral theses sit on university servers right now. Inside those PDFs and raw spreadsheets are breakthroughs across medicine, physics, climate, and engineering that never leave the lab. At thesisout.com, you unlock the private research workspace and pull those discoveries out into the world.
+
+2
+00:00:19,578 --> 00:00:37,500
+Ask a question in any field, or drop your own thesis file directly. You never have to type titles or metadata by hand. Gemini 3.8 Flash formulates a testable hypothesis, pulls the matching university dataset, and prepares a leak-free cross-validation split.
+
+3
+00:00:37,500 --> 00:00:54,438
+Next, look at the Clue Board. Instead of trusting one linear regression, ThesisOut tests thirty machine learning models out of fold. You get probability-based ROC AUC, Balanced Accuracy, Precision, Recall, and ninety-five percent confidence intervals.
+
+4
+00:00:54,438 --> 00:01:08,808
+Why did the top ensemble beat the author's baseline by more than four points? The feature audit highlights the exact variables the original paper overlooked, and verifies them with five-stage permutation testing and conformal calibration.
+
+5
+00:01:08,808 --> 00:01:23,658
+At the bottom, the system schematic maps the entire inference pipeline and relational database schema. ThesisOut cross-checks nine live registries and lets you download the standalone Python model and venture dossier in one click.
+
