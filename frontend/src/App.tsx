@@ -7,16 +7,14 @@ import {
   ChevronDown,
   ChevronUp,
   Compass,
-  Heart,
+  Download,
+  ExternalLink,
+  FileText,
   Play,
   RefreshCw,
-  Rocket,
   Search,
   ShieldCheck,
-  Sparkles,
-  Star,
   Upload,
-  Wand2,
 } from 'lucide-react';
 
 interface TopFeature {
@@ -122,7 +120,7 @@ interface Dissertation {
   citation_velocity: number;
   abstract: string;
   author_primary_hypothesis?: string;
-  author_Statistical_method?: string;
+  author_statistical_method?: string;
   author_primary_target?: string;
   author_reported_baseline_metric?: string;
   author_reported_baseline_score?: number;
@@ -178,11 +176,9 @@ interface DeepInferenceResult {
 }
 
 export function App() {
-  // 3-Step Friendly Guided Wizard State
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [step1Mode, setStep1Mode] = useState<'search' | 'upload' | 'saved'>('search');
 
-  // Progressive Disclosure Toggles (Keep UI calm and uncluttered by default)
   const [showAllModels, setShowAllModels] = useState<boolean>(false);
   const [showDeepCheck, setShowDeepCheck] = useState<boolean>(false);
   const [showMoreDataTools, setShowMoreDataTools] = useState<boolean>(false);
@@ -195,21 +191,17 @@ export function App() {
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Stage-2 Deep Verification state
   const [escalationCache, setEscalationCache] = useState<Record<number, DeepInferenceResult>>({});
   const [escalatingRunId, setEscalatingRunId] = useState<number | null>(null);
   const [stepActionResults, setStepActionResults] = useState<Record<string, any>>({});
   const [executingStepKey, setExecutingStepKey] = useState<string | null>(null);
 
-  // Custom Target Rotation state
   const [customTargetCol, setCustomTargetCol] = useState<string>('');
   const [runningCustomTarget, setRunningCustomTarget] = useState<boolean>(false);
 
-  // Attach Zenodo / Dataset to existing dissertation
   const [zenodoInput, setZenodoInput] = useState<string>('');
   const [attachingData, setAttachingData] = useState<boolean>(false);
 
-  // Live Harvester state
   const [harvestQuery, setHarvestQuery] = useState<string>('');
   const [harvestDomain, setHarvestDomain] = useState<string>('biomedical');
   const [harvesting, setHarvesting] = useState<boolean>(false);
@@ -217,7 +209,6 @@ export function App() {
   const [probeData, setProbeData] = useState<any>(null);
   const [probing, setProbing] = useState<boolean>(false);
 
-  // Upload state
   const [uploadTitle, setUploadTitle] = useState<string>('');
   const [uploadUni, setUploadUni] = useState<string>('');
   const [uploadDomain, setUploadDomain] = useState<string>('biomedical');
@@ -304,7 +295,7 @@ export function App() {
           dataset_id: activeDataset.id,
           target_column: customTargetCol,
           is_author_primary_target: false,
-          target_rationale: `Exploring column ${customTargetCol}`,
+          target_rationale: `Investigating column ${customTargetCol}`,
         }),
       });
       if (res.ok) {
@@ -372,7 +363,7 @@ export function App() {
     if (!harvestQuery.trim()) return;
     setHarvesting(true);
     setErrorMsg(null);
-    setStreamEvents(['Connecting to live OpenAlex, ClinicalTrials.gov & Zenodo streams...']);
+    setStreamEvents(['Connecting to live OpenAlex, ClinicalTrials.gov, and Zenodo streams...']);
 
     const url = `/api/harvest/stream?query=${encodeURIComponent(harvestQuery.trim())}&domain=${encodeURIComponent(harvestDomain)}&min_year=2018&max_results=3`;
     const evtSource = new EventSource(url);
@@ -480,7 +471,7 @@ export function App() {
         handleSelectDissertation(created);
       }
     } catch (err) {
-      setErrorMsg('Upload failed. Please check your file format.');
+      setErrorMsg('Upload failed. Please verify the file format.');
     } finally {
       setUploading(false);
     }
@@ -492,121 +483,150 @@ export function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top Care Bears Rainbow Ribbon */}
-      <div className="h-2 w-full care-rainbow-bar" />
+      {/* Top Investigative Rule Bar */}
+      <div className="h-2 w-full investigative-header-rule" />
 
-      {/* Calm, Friendly Header */}
-      <header className="bg-white/85 backdrop-blur-md border-b border-pink-100 sticky top-0 z-30">
+      {/* Editorial Magnifying Glass Header */}
+      <header className="bg-white border-b-2 border-slate-900 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 via-amber-300 to-sky-400 flex items-center justify-center shadow-sm">
-              <Heart className="w-5 h-5 text-white fill-white" />
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-lg bg-slate-900 border-2 border-amber-500 flex items-center justify-center shadow-xs">
+              <Search className="w-5 h-5 text-amber-400 stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-slate-800">ThesisOut</span>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-200">
-                  Guided Discovery
+              <div className="flex items-center gap-2.5">
+                <span className="font-black text-xl tracking-tight text-slate-900 uppercase">
+                  ThesisOut
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 bg-amber-400 text-slate-950 border border-slate-900">
+                  Investigative Discovery Engine
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Your friendly companion for finding hidden gems in dissertations & datasets
+              <p className="text-xs text-slate-600 font-medium">
+                Uncovering overlooked empirical signals in dissertations and translating them into verified market solutions
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2.5 text-xs">
             {dissertations.length > 0 && (
               <button
                 onClick={handleResetWorkspace}
-                className="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium transition cursor-pointer"
+                className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white border border-slate-900 font-bold uppercase tracking-wider transition cursor-pointer"
               >
-                Clear Workspace
+                Clear Case Files
               </button>
             )}
-            <span className="px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+            <span className="px-3 py-1.5 bg-slate-900 text-amber-400 border border-slate-900 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <Search className="w-3.5 h-3.5 text-amber-400" />
               Gemini 4 Argon + Opus 5.5
             </span>
           </div>
         </div>
 
-        {/* 3-Step Care Bears Guided Stepper */}
+        {/* 3-Step Investigative Stepper */}
         <div className="max-w-5xl mx-auto px-6 pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Step 1: Cheer Bear Pink */}
             <button
               onClick={() => setCurrentStep(1)}
-              className={`text-left p-3.5 rounded-2xl border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 1
-                  ? 'bg-pink-50/90 border-pink-400 shadow-xs'
-                  : 'bg-white border-slate-100 hover:border-pink-200'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
+                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                  currentStep === 1 ? 'bg-pink-500 text-white' : 'bg-pink-100 text-pink-600'
+                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                  currentStep === 1
+                    ? 'bg-amber-400 text-slate-950 border-slate-950'
+                    : 'bg-white text-slate-900 border-slate-400'
                 }`}
               >
-                1
+                01
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-800">Pick or Add a Thesis</div>
-                <div className="text-[11px] text-slate-500">Search online or upload yours</div>
+                <div className="text-xs font-extrabold uppercase tracking-wider">
+                  Select or Ingest Case
+                </div>
+                <div
+                  className={`text-[11px] ${
+                    currentStep === 1 ? 'text-slate-300' : 'text-slate-500'
+                  }`}
+                >
+                  Query live repositories or upload files
+                </div>
               </div>
             </button>
 
-            {/* Step 2: Grumpy Bear Sky Blue */}
             <button
               onClick={() => setCurrentStep(2)}
-              className={`text-left p-3.5 rounded-2xl border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 2
-                  ? 'bg-sky-50/90 border-sky-400 shadow-xs'
-                  : 'bg-white border-slate-100 hover:border-sky-200'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
+                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                  currentStep === 2 ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-600'
+                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                  currentStep === 2
+                    ? 'bg-amber-400 text-slate-950 border-slate-950'
+                    : 'bg-white text-slate-900 border-slate-400'
                 }`}
               >
-                2
+                02
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-800">30-Model Data Check</div>
-                <div className="text-[11px] text-slate-500">Let LazyPredict spot hidden patterns</div>
+                <div className="text-xs font-extrabold uppercase tracking-wider">
+                  30-Model Signal Audit
+                </div>
+                <div
+                  className={`text-[11px] ${
+                    currentStep === 2 ? 'text-slate-300' : 'text-slate-500'
+                  }`}
+                >
+                  Inspect overlooked patterns and confidence
+                </div>
               </div>
             </button>
 
-            {/* Step 3: Share Bear Lavender */}
             <button
               onClick={() => setCurrentStep(3)}
-              className={`text-left p-3.5 rounded-2xl border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 3
-                  ? 'bg-purple-50/90 border-purple-400 shadow-xs'
-                  : 'bg-white border-slate-100 hover:border-purple-200'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
+                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                  currentStep === 3 ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600'
+                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                  currentStep === 3
+                    ? 'bg-amber-400 text-slate-950 border-slate-950'
+                    : 'bg-white text-slate-900 border-slate-400'
                 }`}
               >
-                3
+                03
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-800">Market & Impact Match</div>
-                <div className="text-[11px] text-slate-500">See real-world problems it solves</div>
+                <div className="text-xs font-extrabold uppercase tracking-wider">
+                  Actionable Dossier
+                </div>
+                <div
+                  className={`text-[11px] ${
+                    currentStep === 3 ? 'text-slate-300' : 'text-slate-500'
+                  }`}
+                >
+                  Execute verification steps and export code
+                </div>
               </div>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Guided Workspace */}
+      {/* Main Investigative Workspace */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
         {errorMsg && (
-          <div className="mb-6 bg-rose-50 border-2 border-rose-200 text-rose-700 px-5 py-3.5 rounded-2xl text-xs flex items-center justify-between">
+          <div className="mb-6 bg-red-50 border-2 border-red-800 text-red-900 px-5 py-3.5 text-xs flex items-center justify-between font-medium">
             <span>{errorMsg}</span>
             <button onClick={() => setErrorMsg(null)} className="font-bold underline cursor-pointer">
               Dismiss
@@ -614,23 +634,25 @@ export function App() {
           </div>
         )}
 
-        {/* Active Thesis Context Pill (Shown on Steps 2 & 3 so user never feels lost) */}
+        {/* Active Case File Context Banner */}
         {selectedDiss && currentStep > 1 && (
-          <div className="mb-6 bg-white border-2 border-sky-100 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+          <div className="mb-6 bg-white border-2 border-slate-900 px-5 py-4 flex flex-wrap items-center justify-between gap-3 shadow-[3px_3px_0px_#0F172A]">
             <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 font-semibold text-xs border border-sky-200">
-                Active Thesis
+              <span className="px-2.5 py-1 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
+                Active Case File
               </span>
               <div>
-                <div className="text-xs font-bold text-slate-800 line-clamp-1">{selectedDiss.title}</div>
-                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
+                <div className="text-xs font-bold text-slate-900 line-clamp-1">
+                  {selectedDiss.title}
+                </div>
+                <div className="text-[11px] text-slate-600 flex flex-wrap items-center gap-2 mt-1">
                   <span>
-                    {selectedDiss.authors} • {selectedDiss.university} ({selectedDiss.publication_year})
+                    {selectedDiss.authors} | {selectedDiss.university} ({selectedDiss.publication_year})
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                  <span className="px-2 py-0.5 bg-stone-100 text-slate-900 border border-slate-400 font-semibold">
                     Source: {selectedDiss.source_repo}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                  <span className="px-2 py-0.5 bg-amber-100 text-slate-900 border border-amber-500 font-semibold">
                     Rigor Confidence: {(selectedDiss.scientific_rigor_score * 100).toFixed(0)}%
                   </span>
                   {selectedDiss.source_url && (
@@ -638,9 +660,9 @@ export function App() {
                       href={selectedDiss.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sky-600 font-bold underline"
+                      className="text-blue-700 font-bold underline inline-flex items-center gap-1"
                     >
-                      Verify Source Link ↗
+                      Verify Source Record <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
                 </div>
@@ -654,11 +676,11 @@ export function App() {
                   const found = dissertations.find((d) => d.id === Number(e.target.value));
                   if (found) handleSelectDissertation(found);
                 }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700"
+                className="bg-stone-50 border-2 border-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-900"
               >
                 {dissertations.map((d) => (
                   <option key={d.id} value={d.id}>
-                    Switch: {d.title.slice(0, 45)}...
+                    Switch Case: {d.title.slice(0, 45)}...
                   </option>
                 ))}
               </select>
@@ -667,56 +689,59 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 1: PICK OR ADD A THESIS (CHEER BEAR PINK ACCENTS) */}
+        {/* STEP 1: SELECT OR INGEST CASE */}
         {/* ===================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-6">
             <div className="text-center max-w-xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-semibold mb-2">
-                <Star className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
-                Step 1 of 3 • Let's Get Started
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold uppercase tracking-wider mb-2">
+                <Search className="w-3.5 h-3.5" />
+                Stage 01 | Evidence Acquisition
               </span>
-              <h1 className="text-2xl font-bold text-slate-800">
-                How would you like to start your discovery?
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                Select or Ingest a Dissertation & Dataset
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Pick one simple option below. We will automatically handle the dataset matching and model testing for you!
+              <p className="text-sm text-slate-600 mt-1">
+                Search live scientific repositories for doctoral theses and open research datasets, or upload your own files for automated 30-model inspection.
               </p>
             </div>
 
-            {/* Friendly 3-Option Mode Switcher */}
+            {/* 3-Option Mode Switcher */}
             <div className="flex justify-center">
-              <div className="inline-flex bg-white p-1.5 rounded-2xl border-2 border-pink-100 shadow-xs gap-1">
+              <div className="inline-flex bg-white p-1 border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A] gap-1">
                 <button
                   onClick={() => setStep1Mode('search')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
                     step1Mode === 'search'
-                      ? 'bg-pink-500 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-pink-50'
+                      ? 'bg-slate-900 text-amber-400'
+                      : 'text-slate-700 hover:bg-stone-100'
                   }`}
                 >
-                  🔍 Search Online (OpenAlex + Zenodo)
+                  <Search className="w-3.5 h-3.5" />
+                  Search Repositories (OpenAlex + Zenodo)
                 </button>
                 <button
                   onClick={() => setStep1Mode('upload')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
                     step1Mode === 'upload'
-                      ? 'bg-sky-500 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-sky-50'
+                      ? 'bg-slate-900 text-amber-400'
+                      : 'text-slate-700 hover:bg-stone-100'
                   }`}
                 >
-                  📄 Upload My Own PDF / CSV
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload PDF / CSV
                 </button>
                 {dissertations.length > 0 && (
                   <button
                     onClick={() => setStep1Mode('saved')}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
                       step1Mode === 'saved'
-                        ? 'bg-emerald-500 text-white shadow-xs'
-                        : 'text-slate-600 hover:bg-emerald-50'
+                        ? 'bg-slate-900 text-amber-400'
+                        : 'text-slate-700 hover:bg-stone-100'
                     }`}
                   >
-                    📚 My Saved Theses ({dissertations.length})
+                    <FileText className="w-3.5 h-3.5" />
+                    Active Case Files ({dissertations.length})
                   </button>
                 )}
               </div>
@@ -724,24 +749,26 @@ export function App() {
 
             {/* MODE A: Search Online */}
             {step1Mode === 'search' && (
-              <div className="care-card border-2 border-pink-200 rounded-3xl p-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 text-pink-600 font-bold text-base mb-1">
-                  <Search className="w-5 h-5" />
-                  Find Real Dissertations & Open Datasets
+              <div className="dossier-card p-8 max-w-2xl mx-auto">
+                <div className="flex items-center gap-2.5 text-slate-900 font-black text-base uppercase tracking-tight mb-1">
+                  <Search className="w-5 h-5 text-red-700" />
+                  Live Repository & Open Dataset Investigation
                 </div>
-                <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                  Type any research topic or click a quick suggestion below. We'll search live university repositories (OpenAlex) and open data archives (Zenodo) for real datasets, then test 30+ models automatically.
+                <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                  Enter a research topic or select a preset domain below. The engine streams live dissertations from OpenAlex, matches open tabular datasets from Zenodo, and runs 30+ machine learning models automatically.
                 </p>
 
-                {/* Quick Topic Chips */}
+                {/* Quick Topic Presets (No Emojis) */}
                 <div className="flex flex-wrap items-center gap-2 mb-5">
-                  <span className="text-[11px] font-semibold text-slate-400">Try a topic:</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Quick Topics:
+                  </span>
                   {[
-                    { label: '🎗️ Breast Cancer', q: 'breast cancer', dom: 'biomedical' },
-                    { label: '🩺 Sepsis Biomarkers', q: 'sepsis', dom: 'biomedical' },
-                    { label: '🧬 CRISPR Delivery', q: 'CRISPR delivery', dom: 'biomedical' },
-                    { label: '🔋 Battery Degradation', q: 'battery degradation', dom: 'cs_ai' },
-                    { label: '🤖 Transformer Inference', q: 'transformer attention', dom: 'cs_ai' },
+                    { label: 'Breast Cancer', q: 'breast cancer', dom: 'biomedical' },
+                    { label: 'Sepsis Biomarkers', q: 'sepsis', dom: 'biomedical' },
+                    { label: 'CRISPR Delivery', q: 'CRISPR delivery', dom: 'biomedical' },
+                    { label: 'Battery Degradation', q: 'battery degradation', dom: 'cs_ai' },
+                    { label: 'Transformer Inference', q: 'transformer attention', dom: 'cs_ai' },
                   ].map((chip) => (
                     <button
                       key={chip.label}
@@ -750,7 +777,7 @@ export function App() {
                         setHarvestQuery(chip.q);
                         setHarvestDomain(chip.dom);
                       }}
-                      className="px-3 py-1 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 text-xs font-medium transition cursor-pointer"
+                      className="px-3 py-1 bg-stone-100 hover:bg-amber-100 text-slate-900 border border-slate-900 text-xs font-bold transition cursor-pointer"
                     >
                       {chip.label}
                     </button>
@@ -759,33 +786,37 @@ export function App() {
 
                 <form onSubmit={handleLiveHarvest} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1.5">What topic are you exploring?</label>
+                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
+                      Investigation Query
+                    </label>
                     <input
                       type="text"
                       value={harvestQuery}
                       onChange={(e) => setHarvestQuery(e.target.value)}
                       placeholder="e.g., breast cancer, Alzheimer's, solid-state battery..."
-                      className="w-full bg-white border-2 border-slate-200 focus:border-pink-400 rounded-2xl px-4 py-3 text-sm text-slate-800 focus:outline-none"
+                      className="w-full bg-white border-2 border-slate-900 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:bg-amber-50/30"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1.5">Research Field</label>
+                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
+                      Scientific Domain
+                    </label>
                     <select
                       value={harvestDomain}
                       onChange={(e) => setHarvestDomain(e.target.value)}
-                      className="w-full bg-white border-2 border-slate-200 focus:border-pink-400 rounded-2xl px-4 py-3 text-sm text-slate-800 focus:outline-none"
+                      className="w-full bg-white border-2 border-slate-900 px-4 py-3 text-sm text-slate-900 focus:outline-none"
                     >
-                      <option value="biomedical">🧬 Biomedical, Life Sciences & Healthcare</option>
-                      <option value="cs_ai">💻 Computer Science, AI & Engineering</option>
+                      <option value="biomedical">Biomedical, Life Sciences & Clinical</option>
+                      <option value="cs_ai">Computer Science, AI & Engineering</option>
                     </select>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2.5">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-1">
                     <button
                       type="submit"
                       disabled={harvesting || !harvestQuery.trim()}
-                      className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-pink-200 transition cursor-pointer"
+                      className="flex-1 py-3.5 px-6 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer"
                     >
                       {harvesting ? (
                         <>
@@ -794,8 +825,8 @@ export function App() {
                         </>
                       ) : (
                         <>
-                          <Wand2 className="w-4 h-4" />
-                          Stream Real Theses & Auto-Test Data →
+                          <Search className="w-4 h-4" />
+                          Investigate Live Repositories & Audit Data
                         </>
                       )}
                     </button>
@@ -804,9 +835,13 @@ export function App() {
                       type="button"
                       onClick={() => handleRunLiveProbe(harvestQuery || 'EGFR')}
                       disabled={probing}
-                      className="py-3.5 px-4 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-purple-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0"
+                      className="py-3.5 px-4 bg-amber-400 hover:bg-amber-500 text-slate-950 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer shrink-0"
                     >
-                      {probing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {probing ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
                       Probe 9 Live Science APIs
                     </button>
                   </div>
@@ -814,13 +849,13 @@ export function App() {
 
                 {/* Live SSE Stream Progress Log */}
                 {streamEvents.length > 0 && (
-                  <div className="mt-5 bg-sky-50/70 border border-sky-200 rounded-2xl p-4 space-y-1.5 text-xs">
-                    <div className="font-bold text-sky-800 uppercase tracking-wider text-[10px]">
-                      Live Multi-API Stream Telemetry
+                  <div className="mt-5 bg-stone-100 border-2 border-slate-900 p-4 space-y-1.5 text-xs font-mono">
+                    <div className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">
+                      Live Multi-Repository Investigation Log
                     </div>
                     {streamEvents.map((msg, i) => (
-                      <div key={i} className="flex items-center gap-2 text-slate-700">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                      <div key={i} className="flex items-center gap-2 text-slate-800">
+                        <span className="w-2 h-2 bg-red-700 shrink-0" />
                         <span>{msg}</span>
                       </div>
                     ))}
@@ -829,55 +864,55 @@ export function App() {
 
                 {/* Live Multi-Database Integration Telemetry Drawer */}
                 {probeData && (
-                  <div className="mt-5 bg-purple-50/60 border-2 border-purple-200 rounded-2xl p-4 space-y-3 text-xs">
+                  <div className="mt-5 bg-stone-100 border-2 border-slate-900 p-4 space-y-3 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-purple-900">
-                        Live Scientific API Telemetry for "{probeData.query}"
+                      <span className="font-black uppercase tracking-wider text-slate-900">
+                        Live 9-Database Telemetry for "{probeData.query}"
                       </span>
                       <button
                         onClick={() => setProbeData(null)}
-                        className="text-purple-600 font-semibold underline cursor-pointer"
+                        className="text-red-700 font-bold underline cursor-pointer"
                       >
                         Close
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div className="bg-white border border-purple-100 rounded-xl p-3">
-                        <div className="font-bold text-pink-600">OpenTargets GraphQL v4</div>
-                        <div className="text-slate-700 mt-0.5">
+                      <div className="bg-white border border-slate-900 p-3">
+                        <div className="font-bold text-red-700">OpenTargets GraphQL v4</div>
+                        <div className="text-slate-800 mt-0.5">
                           Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} (
                           {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.ensembl_id || 'Live Hit'})
                         </div>
-                        <div className="text-slate-500 text-[11px]">
+                        <div className="text-slate-600 text-[11px]">
                           Known Drugs: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
                         </div>
                       </div>
-                      <div className="bg-white border border-purple-100 rounded-xl p-3">
-                        <div className="font-bold text-emerald-600">ChEMBL EBI REST API</div>
-                        <div className="text-slate-700 mt-0.5">
-                          Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Molecules:{' '}
+                      <div className="bg-white border border-slate-900 p-3">
+                        <div className="font-bold text-emerald-800">ChEMBL EBI REST API</div>
+                        <div className="text-slate-800 mt-0.5">
+                          Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} | Molecules:{' '}
                           {probeData.live_integrations?.chembl_ebi_rest?.molecules_found?.length || 0}
                         </div>
-                        <div className="text-slate-500 text-[11px]">
+                        <div className="text-slate-600 text-[11px]">
                           Max Clinical Phase: {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
                         </div>
                       </div>
-                      <div className="bg-white border border-purple-100 rounded-xl p-3">
-                        <div className="font-bold text-sky-600">ClinicalTrials.gov API v2 & openFDA</div>
-                        <div className="text-slate-700 mt-0.5">
+                      <div className="bg-white border border-slate-900 p-3">
+                        <div className="font-bold text-blue-800">ClinicalTrials.gov API v2 & openFDA</div>
+                        <div className="text-slate-800 mt-0.5">
                           Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0}
                         </div>
-                        <div className="text-slate-500 text-[11px]">
+                        <div className="text-slate-600 text-[11px]">
                           openFDA FAERS Reports: {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
                         </div>
                       </div>
-                      <div className="bg-white border border-purple-100 rounded-xl p-3">
-                        <div className="font-bold text-amber-600">EuropePMC, arXiv & HuggingFace</div>
-                        <div className="text-slate-700 mt-0.5">
-                          EuropePMC Hits: {probeData.live_integrations?.europepmc_rest?.length || 0} • arXiv:{' '}
+                      <div className="bg-white border border-slate-900 p-3">
+                        <div className="font-bold text-amber-800">EuropePMC, arXiv & HuggingFace</div>
+                        <div className="text-slate-800 mt-0.5">
+                          EuropePMC Hits: {probeData.live_integrations?.europepmc_rest?.length || 0} | arXiv:{' '}
                           {probeData.live_integrations?.arxiv_atom_api?.length || 0}
                         </div>
-                        <div className="text-slate-500 text-[11px]">
+                        <div className="text-slate-600 text-[11px]">
                           HF Datasets: {probeData.live_integrations?.huggingface_hub_datasets?.length || 0}
                         </div>
                       </div>
@@ -887,102 +922,112 @@ export function App() {
               </div>
             )}
 
-            {/* MODE B: Upload My Own PDF / CSV */}
+            {/* MODE B: Upload PDF / CSV */}
             {step1Mode === 'upload' && (
-              <div className="care-card border-2 border-sky-200 rounded-3xl p-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 text-sky-600 font-bold text-base mb-1">
-                  <Upload className="w-5 h-5" />
-                  Upload Your Dissertation PDF or Dataset
+              <div className="dossier-card p-8 max-w-2xl mx-auto">
+                <div className="flex items-center gap-2.5 text-slate-900 font-black text-base uppercase tracking-tight mb-1">
+                  <Upload className="w-5 h-5 text-red-700" />
+                  Submit Dissertation PDF or Tabular Dataset
                 </div>
-                <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                  Have a CSV/Excel dataset or a dissertation PDF on your computer? Drop it here and we'll automatically run all 30+ LazyPredict models and take you to Step 2.
+                <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                  Upload a local CSV, TSV, Excel, or Parquet dataset along with an optional dissertation PDF. The engine will execute 30+ LazyPredict models and advance to Stage 02.
                 </p>
 
                 <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Title of the Study *</label>
+                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                      Study or Dissertation Title *
+                    </label>
                     <input
                       type="text"
                       required
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
-                      placeholder="Give your study or dissertation a title"
-                      className="w-full bg-white border-2 border-slate-200 focus:border-sky-400 rounded-2xl px-4 py-2.5 text-slate-800 focus:outline-none"
+                      placeholder="Enter study or dissertation title"
+                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">University (Optional)</label>
+                      <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                        Institution (Optional)
+                      </label>
                       <input
                         type="text"
                         value={uploadUni}
                         onChange={(e) => setUploadUni(e.target.value)}
                         placeholder="e.g., MIT, Stanford"
-                        className="w-full bg-white border-2 border-slate-200 focus:border-sky-400 rounded-2xl px-4 py-2.5 text-slate-800 focus:outline-none"
+                        className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Field</label>
+                      <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                        Scientific Domain
+                      </label>
                       <select
                         value={uploadDomain}
                         onChange={(e) => setUploadDomain(e.target.value)}
-                        className="w-full bg-white border-2 border-slate-200 focus:border-sky-400 rounded-2xl px-4 py-2.5 text-slate-800 focus:outline-none"
+                        className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
                       >
-                        <option value="biomedical">🧬 Biomedical & Healthcare</option>
-                        <option value="cs_ai">💻 CS, AI & Engineering</option>
+                        <option value="biomedical">Biomedical & Healthcare</option>
+                        <option value="cs_ai">CS, AI & Engineering</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div className="border-2 border-dashed border-sky-200 rounded-2xl p-4 bg-sky-50/40">
-                      <label className="block font-bold text-sky-800 mb-1">📊 Dataset File (.csv, .xlsx, .tsv)</label>
+                    <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50">
+                      <label className="block font-bold uppercase tracking-wider text-slate-900 mb-1">
+                        Dataset File (.csv, .xlsx, .tsv)
+                      </label>
                       <input
                         type="file"
                         accept=".csv,.tsv,.xlsx,.parquet"
                         onChange={(e) => setUploadCsv(e.target.files?.[0] || null)}
-                        className="w-full text-slate-600 text-[11px]"
+                        className="w-full text-slate-700 text-[11px]"
                       />
                     </div>
-                    <div className="border-2 border-dashed border-pink-200 rounded-2xl p-4 bg-pink-50/40">
-                      <label className="block font-bold text-pink-800 mb-1">📄 Dissertation PDF (Optional)</label>
+                    <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50">
+                      <label className="block font-bold uppercase tracking-wider text-slate-900 mb-1">
+                        Dissertation PDF (Optional)
+                      </label>
                       <input
                         type="file"
                         accept=".pdf"
                         onChange={(e) => setUploadPdf(e.target.files?.[0] || null)}
-                        className="w-full text-slate-600 text-[11px]"
+                        className="w-full text-slate-700 text-[11px]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Column to Predict (Leave blank and we'll pick it automatically!)
+                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                      Target Column to Predict (Leave blank for automatic selection)
                     </label>
                     <input
                       type="text"
                       value={uploadTarget}
                       onChange={(e) => setUploadTarget(e.target.value)}
-                      placeholder="Optional column name"
-                      className="w-full bg-white border-2 border-slate-200 focus:border-sky-400 rounded-2xl px-4 py-2.5 text-slate-800 focus:outline-none"
+                      placeholder="Optional target column name"
+                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-sky-200 transition cursor-pointer"
+                    className="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-amber-400 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#D97706] transition cursor-pointer"
                   >
                     {uploading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        Analyzing Dataset with 30+ Models...
+                        Auditing Dataset Across 30+ Models...
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        Upload & Go to Step 2 →
+                        Ingest Evidence & Proceed to Stage 02
                       </>
                     )}
                   </button>
@@ -990,7 +1035,7 @@ export function App() {
               </div>
             )}
 
-            {/* MODE C: Saved Theses */}
+            {/* MODE C: Active Case Files */}
             {step1Mode === 'saved' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dissertations.map((diss) => {
@@ -999,29 +1044,29 @@ export function App() {
                     <div
                       key={diss.id}
                       onClick={() => handleSelectDissertation(diss)}
-                      className="care-card border-2 border-emerald-200 hover:border-emerald-400 rounded-3xl p-6 transition cursor-pointer flex flex-col justify-between"
+                      className="dossier-card p-6 transition cursor-pointer flex flex-col justify-between hover:bg-stone-50"
                     >
                       <div>
                         <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-pink-50 text-pink-700 font-semibold border border-pink-200">
+                          <span className="px-2.5 py-0.5 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider">
                             {diss.university}
                           </span>
-                          <span className="text-slate-400 font-medium">{diss.publication_year}</span>
+                          <span className="text-slate-600 font-bold">{diss.publication_year}</span>
                         </div>
-                        <h3 className="text-base font-bold text-slate-800 leading-snug">{diss.title}</h3>
-                        <p className="text-xs text-slate-500 mt-2 line-clamp-2">{diss.abstract}</p>
+                        <h3 className="text-base font-bold text-slate-900 leading-snug">{diss.title}</h3>
+                        <p className="text-xs text-slate-600 mt-2 line-clamp-2">{diss.abstract}</p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <div className="mt-4 pt-3 border-t border-slate-300 flex items-center justify-between text-xs">
                         {run ? (
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                            ✨ Best Model: {run.best_model_name} ({run.best_score})
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-900 font-bold border border-emerald-700">
+                            Best Model: {run.best_model_name} ({run.best_score})
                           </span>
                         ) : (
-                          <span className="text-slate-400">Click to attach data</span>
+                          <span className="text-slate-500">Click to attach dataset</span>
                         )}
-                        <span className="font-bold text-sky-600 flex items-center gap-1">
-                          See Step 2 <ArrowRight className="w-3.5 h-3.5" />
+                        <span className="font-bold text-red-700 uppercase tracking-wider flex items-center gap-1">
+                          Open Audit <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>
                     </div>
@@ -1033,35 +1078,37 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 2: 30-MODEL DATA CHECK (SKY BLUE, MINT & FUNSHINE YELLOW) */}
+        {/* STEP 2: 30-MODEL SIGNAL AUDIT */}
         {/* ===================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-6">
             {!selectedDiss ? (
-              <div className="care-card border-2 border-sky-200 rounded-3xl p-10 text-center max-w-lg mx-auto">
-                <BookOpen className="w-10 h-10 text-sky-400 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-800">Let's Pick a Thesis First!</h3>
-                <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Head back to Step 1 to search for a real dissertation or upload your dataset.
+              <div className="dossier-card p-10 text-center max-w-lg mx-auto">
+                <BookOpen className="w-10 h-10 text-slate-900 mx-auto mb-3" />
+                <h3 className="text-lg font-black uppercase text-slate-900">
+                  No Active Case Selected
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 mb-5">
+                  Return to Stage 01 to query live repositories or upload a dataset.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 rounded-2xl bg-pink-500 text-white text-xs font-bold cursor-pointer"
+                  className="px-5 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  ← Go to Step 1
+                  Return to Stage 01
                 </button>
               </div>
             ) : !activeRun ? (
-              <div className="care-card border-2 border-amber-200 rounded-3xl p-8 max-w-xl mx-auto space-y-5">
+              <div className="dossier-card p-8 max-w-xl mx-auto space-y-5">
                 <div className="text-center">
-                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-                    Almost Ready!
+                  <span className="px-3 py-1 bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider border border-slate-900">
+                    Dataset Required
                   </span>
-                  <h3 className="text-lg font-bold text-slate-800 mt-2">
-                    Attach a Dataset to Test 30+ Models on This Thesis
+                  <h3 className="text-lg font-black text-slate-900 mt-2">
+                    Attach a Dataset to Execute the 30-Model Audit
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Upload a CSV/Excel table or paste a Zenodo Record ID below and LazyPredict will test 30+ machine learning models automatically.
+                  <p className="text-xs text-slate-600 mt-1">
+                    Upload a CSV/Excel table or enter a Zenodo Record ID below to benchmark 30+ machine learning models automatically.
                   </p>
                 </div>
 
@@ -1070,21 +1117,21 @@ export function App() {
                     type="text"
                     value={zenodoInput}
                     onChange={(e) => setZenodoInput(e.target.value)}
-                    placeholder="Paste Zenodo Record ID or URL..."
-                    className="flex-1 bg-white border-2 border-slate-200 rounded-2xl px-4 py-2.5 text-xs"
+                    placeholder="Enter Zenodo Record ID or URL..."
+                    className="flex-1 bg-white border-2 border-slate-900 px-4 py-2.5 text-xs"
                   />
                   <button
                     type="submit"
                     disabled={attachingData}
-                    className="px-4 py-2.5 rounded-2xl bg-sky-500 text-white text-xs font-bold cursor-pointer"
+                    className="px-4 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     {attachingData ? 'Fetching...' : 'Fetch Zenodo CSV'}
                   </button>
                 </form>
 
-                <div className="border-2 border-dashed border-emerald-200 rounded-2xl p-4 bg-emerald-50/40 text-center">
-                  <label className="block text-xs font-bold text-emerald-800 mb-2">
-                    Or Upload a Dataset File (.csv, .tsv, .xlsx, .parquet)
+                <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50 text-center">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
+                    Or Upload a Local Dataset File (.csv, .tsv, .xlsx, .parquet)
                   </label>
                   <input
                     type="file"
@@ -1093,24 +1140,24 @@ export function App() {
                       const f = e.target.files?.[0];
                       if (f) handleAttachDatasetFile(f);
                     }}
-                    className="text-xs text-slate-600"
+                    className="text-xs text-slate-700"
                   />
                 </div>
               </div>
             ) : (
               <>
-                {/* Funshine Bear Yellow "Plain-English Takeaway" Hero Banner */}
-                <div className="bg-amber-50/90 border-2 border-amber-200 rounded-3xl p-6 shadow-xs">
+                {/* Investigative Signal Takeaway Banner */}
+                <div className="dossier-card p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200/70 text-amber-900 text-xs font-bold">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Discovery & Confidence Summary
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-slate-950 border border-slate-900 text-xs font-bold uppercase tracking-wider">
+                          <Search className="w-3.5 h-3.5" />
+                          Empirical Signal & Confidence Report
                         </div>
                         {activeDataset && (
-                          <span className="px-3 py-1 rounded-full bg-white border border-amber-300 text-slate-700 text-xs font-semibold">
-                            Dataset Source: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows × {activeDataset.col_count} cols)
+                          <span className="px-3 py-1 bg-stone-100 border border-slate-900 text-slate-900 text-xs font-semibold">
+                            Dataset Provenance: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows x {activeDataset.col_count} cols)
                           </span>
                         )}
                         {activeDataset?.source_url && (
@@ -1118,15 +1165,15 @@ export function App() {
                             href={activeDataset.source_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-bold underline"
+                            className="px-3 py-1 bg-blue-50 border border-blue-800 text-blue-900 text-xs font-bold underline inline-flex items-center gap-1"
                           >
-                            Dataset Origin Link ↗
+                            Dataset Origin Link <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>
-                      <h2 className="text-lg font-bold text-slate-800">
-                        We tested {activeRun.models_tested_count} machine learning models on{' '}
-                        <code className="px-2 py-0.5 rounded-lg bg-white border border-amber-300 text-pink-600">
+                      <h2 className="text-lg font-black text-slate-900">
+                        Audited {activeRun.models_tested_count} models on target column{' '}
+                        <code className="px-2 py-0.5 bg-stone-100 border border-slate-900 text-red-700 font-mono">
                           {activeRun.target_column}
                         </code>
                       </h2>
@@ -1140,25 +1187,26 @@ export function App() {
                         setCurrentStep(3);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xs flex items-center gap-2 shrink-0 shadow-md shadow-purple-200 transition cursor-pointer"
+                      className="px-5 py-3.5 bg-red-700 hover:bg-red-800 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2 shrink-0 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer"
                     >
-                      <Rocket className="w-4 h-4" />
-                      Next: See Market & Impact Match →
+                      Proceed to Actionable Dossier <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Simple Target Switcher Pills if multiple columns were tested */}
+                  {/* Target Switcher Pills */}
                   {activeDataset && activeDataset.lazy_runs.length > 1 && (
-                    <div className="mt-4 pt-3 border-t border-amber-200/70 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-semibold text-amber-900">Tested Columns:</span>
+                    <div className="mt-4 pt-3 border-t border-slate-300 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-bold uppercase tracking-wider text-slate-700">
+                        Audited Columns:
+                      </span>
                       {activeDataset.lazy_runs.map((run) => (
                         <button
                           key={run.id}
                           onClick={() => setSelectedRunId(run.id)}
-                          className={`px-3 py-1 rounded-full font-bold transition cursor-pointer ${
+                          className={`px-3 py-1 font-bold border transition cursor-pointer ${
                             activeRun.id === run.id
-                              ? 'bg-slate-800 text-white'
-                              : 'bg-white text-slate-700 border border-amber-300 hover:bg-amber-100'
+                              ? 'bg-slate-900 text-amber-400 border-slate-900'
+                              : 'bg-stone-50 text-slate-800 border-slate-400 hover:border-slate-900'
                           }`}
                         >
                           {run.target_column} ({run.best_score})
@@ -1168,68 +1216,65 @@ export function App() {
                   )}
                 </div>
 
-                {/* 3 Friendly Summary Cards (No Wall of Numbers!) */}
+                {/* 3 High-Contrast Investigative Evidence Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {/* Card 1: Grumpy Sky Blue — Classical Baseline */}
-                  <div className="bg-sky-50/70 border-2 border-sky-200 rounded-3xl p-5 flex flex-col justify-between">
+                  <div className="dossier-card p-5 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700">
-                        1. Standard Linear Baseline
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        01. Classical Linear Baseline
                       </span>
-                      <div className="text-3xl font-extrabold text-slate-800 mt-2">
+                      <div className="text-3xl font-black text-slate-900 mt-2">
                         {activeRun.author_baseline_score}
                       </div>
-                      <div className="text-xs font-medium text-sky-800 mt-0.5">
+                      <div className="text-xs font-bold text-slate-700 mt-0.5">
                         Metric: {activeRun.primary_metric_name}
                       </div>
                     </div>
                     <p className="text-xs text-slate-600 mt-4 leading-relaxed">
-                      What standard linear statistical methods achieve on this column without nonlinear pattern recognition.
+                      Baseline performance of conventional linear statistical methods prior to nonlinear ensemble screening.
                     </p>
                   </div>
 
-                  {/* Card 2: Good Luck Mint — Winning LazyPredict Model */}
-                  <div className="bg-emerald-50/80 border-2 border-emerald-300 rounded-3xl p-5 flex flex-col justify-between">
+                  <div className="dossier-card p-5 flex flex-col justify-between bg-amber-50/40">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-                          2. Best Model Found
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                          02. Top Model Identified
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[11px] font-extrabold">
-                          +{(activeRun.signal_gain_delta * 100).toFixed(1)}% Boost
+                        <span className="px-2.5 py-0.5 bg-emerald-700 text-white text-[11px] font-bold uppercase">
+                          +{(activeRun.signal_gain_delta * 100).toFixed(1)}% Gain
                         </span>
                       </div>
-                      <div className="text-3xl font-extrabold text-emerald-700 mt-2">
+                      <div className="text-3xl font-black text-emerald-800 mt-2">
                         {activeRun.best_score}
                       </div>
-                      <div className="text-xs font-bold text-slate-800 mt-0.5">
-                        Winner: {activeRun.best_model_name}
+                      <div className="text-xs font-bold text-slate-900 mt-0.5">
+                        Model: {activeRun.best_model_name}
                       </div>
                     </div>
                     <p className="text-xs text-slate-600 mt-4 leading-relaxed">
-                      Automatically selected after testing {activeRun.models_tested_count} different machine learning algorithms side-by-side.
+                      Selected after benchmarking {activeRun.models_tested_count} distinct machine learning architectures on identical folds.
                     </p>
                   </div>
 
-                  {/* Card 3: Cheer Bear Pink — Top 3 Clues */}
-                  <div className="bg-pink-50/70 border-2 border-pink-200 rounded-3xl p-5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-pink-700">
-                      3. Top 3 Clues Driving the Result
+                  <div className="dossier-card p-5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                      03. Primary Predictive Variables
                     </span>
                     <div className="space-y-3 mt-3">
                       {activeRun.top_features.slice(0, 3).map((tf, i) => (
-                        <div key={tf.feature} className="bg-white/90 border border-pink-100 rounded-2xl p-2.5">
+                        <div key={tf.feature} className="bg-stone-50 border border-slate-400 p-2.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-800 truncate pr-2">
+                            <span className="font-bold text-slate-900 truncate pr-2">
                               #{i + 1} {tf.feature}
                             </span>
-                            <span className="font-bold text-pink-600 shrink-0">
-                              {(tf.importance * 100).toFixed(0)}% impact
+                            <span className="font-bold text-red-700 shrink-0">
+                              {(tf.importance * 100).toFixed(0)}% weight
                             </span>
                           </div>
-                          <div className="w-full h-1.5 bg-pink-100 rounded-full overflow-hidden mt-1.5">
+                          <div className="w-full h-1.5 bg-slate-200 overflow-hidden mt-1.5">
                             <div
-                              className="h-full bg-pink-400 rounded-full"
+                              className="h-full bg-slate-900"
                               style={{ width: `${Math.min(100, tf.importance * 180)}%` }}
                             />
                           </div>
@@ -1239,78 +1284,78 @@ export function App() {
                   </div>
                 </div>
 
-                {/* PROGRESSIVE DISCLOSURE DRAWERS (Optional Deep-Dives) */}
+                {/* PROGRESSIVE DISCLOSURE DRAWERS */}
                 <div className="space-y-3 pt-2">
-                  {/* Drawer 1: Double-Check This Discovery (Stage-2 Deep Verification) */}
-                  <div className="bg-white border-2 border-purple-200 rounded-3xl overflow-hidden">
+                  {/* Drawer 1: 5-Stage Deep Verification */}
+                  <div className="dossier-card overflow-hidden">
                     <button
                       onClick={() => handleEscalateDeepInference(activeRun.id)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-purple-50/50 transition cursor-pointer"
+                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                        <div className="w-8 h-8 bg-slate-900 text-amber-400 flex items-center justify-center">
                           <ShieldCheck className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-slate-800">
-                            🛡️ Double-Check This Discovery (Run 5-Stage Deep Verification)
+                          <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                            Verify Discovery (5-Stage Deep Verification Audit)
                           </div>
-                          <div className="text-xs text-slate-500">
-                            Makes sure the signal is real (not random luck), combines top models into a team, and finds sweet-spot thresholds
+                          <div className="text-xs text-slate-600">
+                            Executes 5-fold cross-validation, target-permutation null testing, Super-Learner stacking, and regime threshold extraction
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1.5 rounded-xl bg-purple-100 text-purple-700 text-xs font-bold shrink-0">
+                      <span className="px-3 py-1.5 bg-amber-400 text-slate-950 border border-slate-900 text-xs font-bold uppercase tracking-wider shrink-0">
                         {escalatingRunId === activeRun.id
-                          ? 'Checking...'
+                          ? 'Auditing...'
                           : escalationCache[activeRun.id]
-                          ? 'Verified ✓'
-                          : 'Run Check'}
+                          ? 'Verified'
+                          : 'Run Audit'}
                       </span>
                     </button>
 
                     {showDeepCheck && escalationCache[activeRun.id] && (
-                      <div className="px-6 pb-6 pt-2 border-t border-purple-100 bg-purple-50/30 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="px-6 pb-6 pt-3 border-t-2 border-slate-900 bg-stone-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                         {(() => {
                           const esc = escalationCache[activeRun.id];
                           return (
                             <>
-                              <div className="bg-white border border-purple-200 rounded-2xl p-4">
-                                <div className="font-bold text-purple-700 mb-1">
-                                  ✓ Real Signal vs. Random Luck Check
+                              <div className="bg-white border border-slate-900 p-4">
+                                <div className="font-bold uppercase tracking-wider text-slate-900 mb-1">
+                                  01. Permutation & Leakage Audit
                                 </div>
-                                <p className="text-slate-600 leading-relaxed">
+                                <p className="text-slate-700 leading-relaxed">
                                   {esc.stage1_leakage_and_permutation_audit.audit_interpretation}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-emerald-200 rounded-2xl p-4">
-                                <div className="font-bold text-emerald-700 mb-1">
-                                  🤝 Super-Learner Team Score: {esc.stage2_super_learner_ensemble.super_learner_score}
+                              <div className="bg-white border border-slate-900 p-4">
+                                <div className="font-bold uppercase tracking-wider text-emerald-800 mb-1">
+                                  02. Super-Learner Stacking Score: {esc.stage2_super_learner_ensemble.super_learner_score}
                                 </div>
-                                <p className="text-slate-600 leading-relaxed">
-                                  Combining LightGBM, XGBoost, ExtraTrees, and Random Forest together reached{' '}
+                                <p className="text-slate-700 leading-relaxed">
+                                  Stacking LightGBM, XGBoost, ExtraTrees, and Random Forest achieved{' '}
                                   <strong>{esc.stage2_super_learner_ensemble.super_learner_score}</strong>.{' '}
                                   {esc.stage4_conformal_uncertainty.ood_note}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-amber-200 rounded-2xl p-4">
-                                <div className="font-bold text-amber-700 mb-1">
-                                  🎯 Sweet-Spot Thresholds Found
+                              <div className="bg-white border border-slate-900 p-4">
+                                <div className="font-bold uppercase tracking-wider text-amber-800 mb-1">
+                                  03. Mechanistic Regime Thresholds
                                 </div>
-                                <p className="text-slate-600 leading-relaxed">
+                                <p className="text-slate-700 leading-relaxed">
                                   {esc.stage3_mechanistic_regime_discovery.synergy_conclusion}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-pink-200 rounded-2xl p-4">
-                                <div className="font-bold text-pink-700 mb-1">
-                                  💡 Recommended "What-If" Adjustments
+                              <div className="bg-white border border-slate-900 p-4">
+                                <div className="font-bold uppercase tracking-wider text-red-700 mb-1">
+                                  04. Counterfactual Parameter Shifts
                                 </div>
-                                <ul className="space-y-1 text-slate-600 mt-1">
+                                <ul className="space-y-1 text-slate-700 mt-1">
                                   {esc.stage5_counterfactual_intervention.prescribed_parameter_shifts.map((s, idx) => (
-                                    <li key={idx}>• {s.intervention_action}</li>
+                                    <li key={idx}>- {s.intervention_action}</li>
                                   ))}
                                 </ul>
                               </div>
@@ -1321,27 +1366,27 @@ export function App() {
                     )}
                   </div>
 
-                  {/* Drawer 2: Peek inside all 30+ tested models */}
-                  <div className="bg-white border-2 border-sky-200 rounded-3xl overflow-hidden">
+                  {/* Drawer 2: Full 30-Model Leaderboard */}
+                  <div className="dossier-card overflow-hidden">
                     <button
                       onClick={() => setShowAllModels(!showAllModels)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-sky-50/50 transition cursor-pointer"
+                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
                     >
-                      <div className="text-sm font-bold text-slate-800">
-                        📊 Peek Inside All {activeRun.leaderboard.length} Tested Models (Full Leaderboard)
+                      <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                        Inspect Full {activeRun.leaderboard.length}-Model Leaderboard & Confidence Intervals
                       </div>
                       {showAllModels ? (
-                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                        <ChevronUp className="w-5 h-5 text-slate-700" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                        <ChevronDown className="w-5 h-5 text-slate-700" />
                       )}
                     </button>
 
                     {showAllModels && (
-                      <div className="px-6 pb-6 pt-2 border-t border-sky-100 overflow-x-auto max-h-80">
+                      <div className="px-6 pb-6 pt-2 border-t-2 border-slate-900 overflow-x-auto max-h-80">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
-                            <tr className="border-b border-slate-200 text-slate-500">
+                            <tr className="border-b-2 border-slate-900 text-slate-900 font-bold">
                               <th className="py-2 px-3">Rank</th>
                               {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
                                 <th key={col} className="py-2 px-3">
@@ -1350,16 +1395,16 @@ export function App() {
                               ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100 font-mono">
+                          <tbody className="divide-y divide-slate-200 font-mono">
                             {activeRun.leaderboard.map((row, idx) => (
                               <tr
                                 key={idx}
-                                className={idx === 0 ? 'bg-emerald-50 font-bold text-emerald-900' : 'text-slate-700'}
+                                className={idx === 0 ? 'bg-amber-100 font-bold text-slate-950' : 'text-slate-800'}
                               >
                                 <td className="py-2 px-3">#{idx + 1}</td>
                                 {Object.entries(row).map(([k, val]) => (
                                   <td key={k} className="py-2 px-3">
-                                    {val === null ? '—' : String(val)}
+                                    {val === null ? '-' : String(val)}
                                   </td>
                                 ))}
                               </tr>
@@ -1370,31 +1415,31 @@ export function App() {
                     )}
                   </div>
 
-                  {/* Drawer 3: Try predicting a different column */}
+                  {/* Drawer 3: Audit Another Column */}
                   {activeDataset && (
-                    <div className="bg-white border-2 border-amber-200 rounded-3xl overflow-hidden">
+                    <div className="dossier-card overflow-hidden">
                       <button
                         onClick={() => setShowMoreDataTools(!showMoreDataTools)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-amber-50/50 transition cursor-pointer"
+                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
                       >
-                        <div className="text-sm font-bold text-slate-800">
-                          🔄 Curious about another column in this dataset? Test it here
+                        <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                          Audit Another Target Variable in This Dataset
                         </div>
                         {showMoreDataTools ? (
-                          <ChevronUp className="w-5 h-5 text-slate-400" />
+                          <ChevronUp className="w-5 h-5 text-slate-700" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                          <ChevronDown className="w-5 h-5 text-slate-700" />
                         )}
                       </button>
 
                       {showMoreDataTools && (
-                        <div className="px-6 pb-6 pt-3 border-t border-amber-100 flex flex-wrap items-center gap-3 text-xs">
+                        <div className="px-6 pb-6 pt-3 border-t-2 border-slate-900 flex flex-wrap items-center gap-3 text-xs">
                           <select
                             value={customTargetCol}
                             onChange={(e) => setCustomTargetCol(e.target.value)}
-                            className="flex-1 bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-2.5 text-slate-800"
+                            className="flex-1 bg-stone-50 border-2 border-slate-900 px-4 py-2.5 text-slate-900"
                           >
-                            <option value="">Choose any column from {activeDataset.name}...</option>
+                            <option value="">Select column from {activeDataset.name}...</option>
                             {activeDataset.column_metadata
                               .filter((c) => c.role !== 'identifier')
                               .map((c) => (
@@ -1406,14 +1451,14 @@ export function App() {
                           <button
                             onClick={handleRunCustomTarget}
                             disabled={!customTargetCol || runningCustomTarget}
-                            className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
                           >
                             {runningCustomTarget ? (
                               <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
                               <Play className="w-4 h-4" />
                             )}
-                            Run 30-Model Check
+                            Run 30-Model Audit
                           </button>
                         </div>
                       )}
@@ -1421,22 +1466,22 @@ export function App() {
                   )}
                 </div>
 
-                {/* Friendly Bottom Step Navigation */}
+                {/* Bottom Step Navigation */}
                 <div className="flex items-center justify-between pt-4">
                   <button
                     onClick={() => setCurrentStep(1)}
-                    className="px-4 py-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2.5 bg-white border-2 border-slate-900 text-slate-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
                   >
-                    <ArrowLeft className="w-4 h-4" /> Back to Step 1
+                    <ArrowLeft className="w-4 h-4" /> Stage 01
                   </button>
                   <button
                     onClick={() => {
                       setCurrentStep(3);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 cursor-pointer"
+                    className="px-6 py-3 bg-red-700 hover:bg-red-800 text-white border-2 border-slate-900 text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-[3px_3px_0px_#0F172A] cursor-pointer"
                   >
-                    Continue to Step 3: Market & Impact Match <ArrowRight className="w-4 h-4" />
+                    Continue to Stage 03: Actionable Dossier <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </>
@@ -1445,85 +1490,90 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 3: MARKET & IMPACT MATCH (SHARE BEAR LAVENDER & PEACH) */}
+        {/* STEP 3: ACTIONABLE DOSSIER & MARKET TRANSLATION */}
         {/* ===================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-6">
             <div className="text-center max-w-xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold mb-2">
-                <Compass className="w-3.5 h-3.5 text-purple-600" />
-                Step 3 of 3 • Turning Data into Real-World Solutions
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold uppercase tracking-wider mb-2">
+                <Compass className="w-3.5 h-3.5" />
+                Stage 03 | Commercial & Clinical Translation
               </span>
-              <h2 className="text-2xl font-bold text-slate-800">
-                Untranslated Market Solutions & Moonshot Matches
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                Investigative Translation Dossiers & Executable Roadmap
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Here is how the hidden signal found in Step 2 can solve major real-world industry problems that haven't been commercialized yet.
+              <p className="text-xs text-slate-600 mt-1">
+                Every discovered empirical signal is cross-examined against live clinical trials, bioactivity registries, and high-urgency industry bottlenecks.
               </p>
             </div>
 
             {activeOpportunities.length === 0 ? (
-              <div className="care-card border-2 border-purple-200 rounded-3xl p-10 text-center max-w-lg mx-auto">
-                <Rocket className="w-10 h-10 text-purple-400 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-slate-800">No Market Dossiers Yet</h3>
-                <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Run a dataset through Step 2 first, and we will automatically match its findings to unmet clinical and engineering problems!
+              <div className="dossier-card p-10 text-center max-w-lg mx-auto">
+                <Search className="w-10 h-10 text-slate-900 mx-auto mb-3" />
+                <h3 className="text-base font-black uppercase text-slate-900">
+                  No Translation Dossiers Generated Yet
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 mb-5">
+                  Audit a dataset in Stage 02 first to synthesize market translation dossiers.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 rounded-2xl bg-pink-500 text-white text-xs font-bold cursor-pointer"
+                  className="px-5 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  Start at Step 1
+                  Return to Stage 01
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
                 {activeOpportunities.map((opp) => (
-                  <div
-                    key={opp.id}
-                    className="care-card border-2 border-purple-200 rounded-3xl p-6 space-y-5"
-                  >
+                  <div key={opp.id} className="dossier-card p-6 space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold border border-emerald-300">
-                        🌟 Translation Opportunity Score: {opp.overall_tos_score} / 100
+                      <span className="px-3 py-1 bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider border border-slate-900">
+                        Translation Opportunity Score: {opp.overall_tos_score} / 100
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold border border-purple-200">
+                      <span className="px-3 py-1 bg-slate-900 text-white text-xs font-bold uppercase tracking-wider">
                         {opp.opportunity_type}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-800 leading-snug">{opp.title}</h3>
+                    <h3 className="text-lg font-black text-slate-900 leading-snug">{opp.title}</h3>
 
-                    {/* 3 Friendly Story Cards */}
+                    {/* 3 Investigative Case Notes */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div className="bg-pink-50/60 border border-pink-200 rounded-2xl p-4">
-                        <div className="font-bold text-pink-700 mb-1.5">✨ 1. What the Data Revealed</div>
-                        <p className="text-slate-700 leading-relaxed">{opp.untranslated_finding_summary}</p>
+                      <div className="dossier-subcard p-4">
+                        <div className="font-black uppercase tracking-wider text-red-700 mb-1.5">
+                          01. Empirical Evidence Uncovered
+                        </div>
+                        <p className="text-slate-800 leading-relaxed">{opp.untranslated_finding_summary}</p>
                       </div>
 
-                      <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4">
-                        <div className="font-bold text-amber-800 mb-1.5">🌉 2. Why It Got Stuck in Academia</div>
-                        <p className="text-slate-700 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
+                      <div className="dossier-subcard p-4">
+                        <div className="font-black uppercase tracking-wider text-amber-800 mb-1.5">
+                          02. Academic Bottleneck Diagnosis
+                        </div>
+                        <p className="text-slate-800 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
                       </div>
 
-                      <div className="bg-sky-50/60 border border-sky-200 rounded-2xl p-4">
-                        <div className="font-bold text-sky-800 mb-1.5">🚀 3. Market & Clinical Whitespace</div>
-                        <p className="text-slate-700 leading-relaxed">
+                      <div className="dossier-subcard p-4">
+                        <div className="font-black uppercase tracking-wider text-blue-800 mb-1.5">
+                          03. Live Registry Whitespace
+                        </div>
+                        <p className="text-slate-800 leading-relaxed">
                           <strong>ClinicalTrials.gov:</strong> {opp.clinical_trials_check?.whitespace_status}
                         </p>
-                        <p className="text-slate-700 mt-1.5 leading-relaxed">
+                        <p className="text-slate-800 mt-1.5 leading-relaxed">
                           <strong>Target / Modality:</strong> {opp.opentargets_chembl_check?.tractability_modality}
                         </p>
                       </div>
                     </div>
 
                     {/* Proposed Solution & Interactive 4-Step Action Plan */}
-                    <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 text-xs space-y-4">
+                    <div className="bg-stone-100 border-2 border-slate-900 p-5 text-xs space-y-4">
                       <div>
-                        <div className="font-bold text-emerald-800 uppercase tracking-wider text-[11px] mb-1">
-                          Recommended Real-World Solution & Interactive Action Steps (Click Any Step to Execute)
+                        <div className="font-black text-slate-900 uppercase tracking-wider text-[11px] mb-1">
+                          Recommended Translation Strategy & Executable Verification Steps
                         </div>
-                        <p className="text-slate-800 font-semibold text-sm">
+                        <p className="text-slate-900 font-semibold text-sm">
                           {opp.proposed_product_or_therapeutic}
                         </p>
                       </div>
@@ -1534,26 +1584,26 @@ export function App() {
                           const isRunning = executingStepKey === key;
                           const stepRes = stepActionResults[key];
                           const buttonLabels = [
-                            '▶ Run 5-Fold Verification Now',
-                            '▶ Generate Thresholds & Patent Claim',
-                            '▶ Run Live Clinical & ChEMBL Audit',
-                            '▶ Generate Python Script & Dossier',
+                            'Run 5-Fold Verification Now',
+                            'Generate Thresholds & Patent Claim',
+                            'Run Live Clinical & ChEMBL Audit',
+                            'Generate Python Script & Dossier',
                           ];
 
                           return (
                             <div
                               key={i}
-                              className="bg-white border-2 border-emerald-200 rounded-2xl p-4 text-slate-700 flex flex-col justify-between gap-3"
+                              className="bg-white border-2 border-slate-900 p-4 text-slate-800 flex flex-col justify-between gap-3"
                             >
                               <div className="flex items-start gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-4 h-4 text-red-700 shrink-0 mt-0.5" />
                                 <span className="leading-relaxed">{step}</span>
                               </div>
 
                               <button
                                 onClick={() => handleExecuteOpportunityStep(opp.id, i)}
                                 disabled={isRunning}
-                                className="self-start px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                                className="self-start px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5 transition cursor-pointer"
                               >
                                 {isRunning ? (
                                   <>
@@ -1561,39 +1611,42 @@ export function App() {
                                     Executing Step {i + 1}...
                                   </>
                                 ) : (
-                                  buttonLabels[i] || `▶ Execute Step ${i + 1}`
+                                  <>
+                                    <Play className="w-3 h-3" />
+                                    {buttonLabels[i] || `Execute Step ${i + 1}`}
+                                  </>
                                 )}
                               </button>
 
                               {/* Live Action Result Box */}
                               {stepRes && (
-                                <div className="mt-1 pt-3 border-t border-emerald-100 space-y-2 text-[11px]">
-                                  <div className="font-bold text-emerald-800">{stepRes.action_title}</div>
-                                  <p className="text-slate-600">{stepRes.summary}</p>
+                                <div className="mt-1 pt-3 border-t border-slate-300 space-y-2 text-[11px]">
+                                  <div className="font-bold text-slate-900 uppercase">{stepRes.action_title}</div>
+                                  <p className="text-slate-700">{stepRes.summary}</p>
 
                                   {stepRes.metrics && (
-                                    <div className="grid grid-cols-2 gap-1.5 bg-emerald-50/70 p-2.5 rounded-xl">
+                                    <div className="grid grid-cols-2 gap-1.5 bg-stone-100 border border-slate-400 p-2.5">
                                       {Object.entries(stepRes.metrics).map(([k, v]) => (
                                         <div key={k}>
-                                          <span className="text-slate-500">{k}: </span>
-                                          <strong className="text-slate-800">{String(v)}</strong>
+                                          <span className="text-slate-600">{k}: </span>
+                                          <strong className="text-slate-900">{String(v)}</strong>
                                         </div>
                                       ))}
                                     </div>
                                   )}
 
                                   {stepRes.provisional_patent_claim && (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-slate-700 font-mono text-[10px]">
+                                    <div className="bg-amber-50 border border-slate-900 p-2.5 text-slate-900 font-mono text-[10px]">
                                       {stepRes.provisional_patent_claim}
                                     </div>
                                   )}
 
                                   {stepRes.live_registry_checks && (
-                                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-2.5 space-y-1">
+                                    <div className="bg-stone-100 border border-slate-900 p-2.5 space-y-1">
                                       {Object.entries(stepRes.live_registry_checks).map(([k, v]) => (
                                         <div key={k}>
-                                          <span className="text-slate-500">{k}: </span>
-                                          <strong className="text-slate-800">{String(v)}</strong>
+                                          <span className="text-slate-600">{k}: </span>
+                                          <strong className="text-slate-900">{String(v)}</strong>
                                         </div>
                                       ))}
                                     </div>
@@ -1608,9 +1661,9 @@ export function App() {
                                             stepRes.reproducible_python_code
                                           )
                                         }
-                                        className="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold cursor-pointer"
+                                        className="px-3 py-1.5 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
                                       >
-                                        ⬇ Download Python Model (.py)
+                                        <Download className="w-3 h-3" /> Download Python Model (.py)
                                       </button>
                                       <button
                                         onClick={() =>
@@ -1619,9 +1672,9 @@ export function App() {
                                             stepRes.venture_dossier_markdown
                                           )
                                         }
-                                        className="px-3 py-1.5 rounded-lg bg-purple-600 text-white font-bold cursor-pointer"
+                                        className="px-3 py-1.5 bg-red-700 text-white font-bold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
                                       >
-                                        ⬇ Download Venture Dossier (.md)
+                                        <Download className="w-3 h-3" /> Download Dossier (.md)
                                       </button>
                                     </div>
                                   )}
@@ -1637,39 +1690,39 @@ export function App() {
               </div>
             )}
 
-            {/* Collapsible Moonshot Problem Bank Drawer (Tenderheart Peach) */}
-            <div className="bg-white border-2 border-orange-200 rounded-3xl overflow-hidden">
+            {/* Collapsible Moonshot Problem Bank Drawer */}
+            <div className="dossier-card overflow-hidden">
               <button
                 onClick={() => setShowAllMoonshots(!showAllMoonshots)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-orange-50/50 transition cursor-pointer"
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
               >
                 <div>
-                  <div className="text-sm font-bold text-slate-800">
-                    🌍 Browse All {problems.length} Giant-Impact Moonshot Problems ($2.5T+ Market Need)
+                  <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                    Inspect All {problems.length} Live Unmet Industry & Clinical Bottlenecks
                   </div>
-                  <div className="text-xs text-slate-500">
-                    See the full list of major biomedical and engineering challenges we match dissertations against
+                  <div className="text-xs text-slate-600">
+                    Streamed from terminated ClinicalTrials.gov records and high-urgency engineering challenges
                   </div>
                 </div>
                 {showAllMoonshots ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
+                  <ChevronUp className="w-5 h-5 text-slate-700" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
+                  <ChevronDown className="w-5 h-5 text-slate-700" />
                 )}
               </button>
 
               {showAllMoonshots && (
-                <div className="p-6 border-t border-orange-100 bg-orange-50/20 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="p-6 border-t-2 border-slate-900 bg-stone-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   {problems.map((prob) => (
-                    <div key={prob.id} className="bg-white border border-orange-200 rounded-2xl p-4">
+                    <div key={prob.id} className="bg-white border-2 border-slate-900 p-4">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold">
-                          {prob.code} • ${prob.tam_billions_usd}B Need
+                        <span className="px-2.5 py-0.5 bg-amber-400 text-slate-950 border border-slate-900 font-bold">
+                          {prob.code} | ${prob.tam_billions_usd}B Scale
                         </span>
-                        <span className="text-slate-400">{prob.sponsor_or_source}</span>
+                        <span className="text-slate-600 font-medium">{prob.sponsor_or_source}</span>
                       </div>
-                      <div className="font-bold text-slate-800 text-sm">{prob.title}</div>
-                      <p className="text-slate-600 mt-1.5 leading-relaxed">{prob.description}</p>
+                      <div className="font-bold text-slate-900 text-sm">{prob.title}</div>
+                      <p className="text-slate-700 mt-1.5 leading-relaxed">{prob.description}</p>
                     </div>
                   ))}
                 </div>
@@ -1679,15 +1732,15 @@ export function App() {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => setCurrentStep(2)}
-                className="px-4 py-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 bg-white border-2 border-slate-900 text-slate-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Step 2 (Data Check)
+                <ArrowLeft className="w-4 h-4" /> Return to Stage 02
               </button>
               <button
                 onClick={() => setCurrentStep(1)}
-                className="px-5 py-2.5 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold cursor-pointer"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
               >
-                ✨ Explore Another Dissertation (Step 1)
+                Investigate Another Dissertation (Stage 01)
               </button>
             </div>
           </div>
