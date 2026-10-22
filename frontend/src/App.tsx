@@ -1410,6 +1410,227 @@ export function App() {
             </div>
           </section>
         )}
+
+        {/* =================================================================== */}
+        {/* SECTION 4: FULL ARCHITECTURE & TECH STACK DIAGRAM                   */}
+        {/* =================================================================== */}
+        <section className="pop-card rounded-3xl p-6 sm:p-8 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="px-3.5 py-1 rounded-xl leather-badge text-xs font-extrabold">
+              04. FULL ARCHITECTURE & TECH STACK
+            </span>
+            <span className="text-xs font-bold text-slate-600">
+              End-to-End Pipeline from Edge Security to 30-Model Verification
+            </span>
+          </div>
+
+          <div className="w-full overflow-x-auto rounded-2xl border-2 border-[#2B1406] bg-[#FAF8F5] p-3">
+            <svg
+              viewBox="0 0 1120 320"
+              className="w-full min-w-[780px] h-auto"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* Connecting Flow Arrows */}
+              <path d="M 218 160 L 252 160" stroke="#2563EB" strokeWidth="3" strokeDasharray="5 4" />
+              <polygon points="248,154 258,160 248,166" fill="#2563EB" />
+
+              <path d="M 442 160 L 476 160" stroke="#4F46E5" strokeWidth="3" strokeDasharray="5 4" />
+              <polygon points="472,154 482,160 472,166" fill="#4F46E5" />
+
+              <path d="M 666 160 L 700 160" stroke="#58270E" strokeWidth="3" strokeDasharray="5 4" />
+              <polygon points="696,154 706,160 696,166" fill="#58270E" />
+
+              <path d="M 890 160 L 924 160" stroke="#E11D48" strokeWidth="3" strokeDasharray="5 4" />
+              <polygon points="920,154 930,160 920,166" fill="#E11D48" />
+
+              {/* COLUMN 1: EDGE & FRONTEND */}
+              <g>
+                <rect x="24" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
+                <rect x="24" y="28" width="192" height="44" rx="16" fill="#4A200B" />
+                <text x="120" y="55" textAnchor="middle" fill="#FAF6F0" fontSize="11.5" fontWeight="800">
+                  1. EDGE &amp; CLIENT UI
+                </text>
+
+                <rect x="38" y="86" width="164" height="44" rx="10" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1.5" />
+                <text x="120" y="105" textAnchor="middle" fill="#1E3A8A" fontSize="11" fontWeight="800">
+                  Cloudflare Edge Worker
+                </text>
+                <text x="120" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  thesisout.com + Bot Shield
+                </text>
+
+                <rect x="38" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="120" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  React 19 + TypeScript
+                </text>
+                <text x="120" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Vite 8 + Tailwind CSS v4
+                </text>
+
+                <rect x="38" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="120" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Access Gate + SSE Stream
+                </text>
+                <text x="120" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Google Sans + 3D SVG Leather
+                </text>
+
+                <text x="120" y="272" textAnchor="middle" fill="#2563EB" fontSize="10" fontWeight="800">
+                  HTTPS / HTTP/3 Edge
+                </text>
+              </g>
+
+              {/* COLUMN 2: CLOUD RUN API & PARSER */}
+              <g>
+                <rect x="248" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
+                <rect x="248" y="28" width="192" height="44" rx="16" fill="#2563EB" />
+                <text x="344" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
+                  2. API &amp; FILE PARSER
+                </text>
+
+                <rect x="262" y="86" width="164" height="44" rx="10" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1.5" />
+                <text x="344" y="105" textAnchor="middle" fill="#1E3A8A" fontSize="11" fontWeight="800">
+                  Google Cloud Run
+                </text>
+                <text x="344" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  FastAPI + Uvicorn (Python 3.12)
+                </text>
+
+                <rect x="262" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="344" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Auto PDF &amp; Table Parser
+                </text>
+                <text x="344" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  pdfplumber + pypdf + pandas
+                </text>
+
+                <rect x="262" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="344" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  SQLAlchemy + SQLite
+                </text>
+                <text x="344" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Artifact &amp; Leaderboard Store
+                </text>
+
+                <text x="344" y="272" textAnchor="middle" fill="#2563EB" fontSize="10" fontWeight="800">
+                  Zero-Text Metadata Extraction
+                </text>
+              </g>
+
+              {/* COLUMN 3: 30-MODEL ML ENGINE */}
+              <g>
+                <rect x="472" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
+                <rect x="472" y="28" width="192" height="44" rx="16" fill="#4F46E5" />
+                <text x="568" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
+                  3. 30-MODEL ML ENGINE
+                </text>
+
+                <rect x="486" y="86" width="164" height="44" rx="10" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="1.5" />
+                <text x="568" y="105" textAnchor="middle" fill="#312E81" fontSize="11" fontWeight="800">
+                  LazyPredict + Scikit-Learn
+                </text>
+                <text x="568" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  XGBoost + LightGBM + CatBoost
+                </text>
+
+                <rect x="486" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="568" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Out-of-Fold Stratified CV
+                </text>
+                <text x="568" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  5-Fold / Repeated 5x3 CV + 95% CI
+                </text>
+
+                <rect x="486" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="568" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  5-Stage Deep Verification
+                </text>
+                <text x="568" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Super-Learner + Conformal + Null
+                </text>
+
+                <text x="568" y="272" textAnchor="middle" fill="#4F46E5" fontSize="10" fontWeight="800">
+                  Zero Data Leakage Pipeline
+                </text>
+              </g>
+
+              {/* COLUMN 4: 9 LIVE SCIENTIFIC REGISTRIES */}
+              <g>
+                <rect x="696" y="28" width="192" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
+                <rect x="696" y="28" width="192" height="44" rx="16" fill="#58270E" />
+                <text x="792" y="55" textAnchor="middle" fill="#FAF6F0" fontSize="11.5" fontWeight="800">
+                  4. LIVE DATA REGISTRIES
+                </text>
+
+                <rect x="710" y="86" width="164" height="44" rx="10" fill="#FAF6F0" stroke="#58270E" strokeWidth="1.5" />
+                <text x="792" y="105" textAnchor="middle" fill="#3B1A08" fontSize="11" fontWeight="800">
+                  Thesis &amp; Dataset Harvest
+                </text>
+                <text x="792" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  OpenAlex + Zenodo + arXiv + EPMC
+                </text>
+
+                <rect x="710" y="142" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="792" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Clinical &amp; Regulatory APIs
+                </text>
+                <text x="792" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  ClinicalTrials.gov v2 + openFDA
+                </text>
+
+                <rect x="710" y="198" width="164" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="792" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Target &amp; Molecule Graph
+                </text>
+                <text x="792" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  OpenTargets GraphQL + ChEMBL
+                </text>
+
+                <text x="792" y="272" textAnchor="middle" fill="#58270E" fontSize="10" fontWeight="800">
+                  9 Live REST &amp; GraphQL Feeds
+                </text>
+              </g>
+
+              {/* COLUMN 5: VERTEX AI & TRANSLATION OUTPUTS */}
+              <g>
+                <rect x="920" y="28" width="176" height="264" rx="18" fill="#FFFFFF" stroke="#2B1406" strokeWidth="2.5" />
+                <rect x="920" y="28" width="176" height="44" rx="16" fill="#E11D48" />
+                <text x="1008" y="55" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="800">
+                  5. DISCOVERY OUTPUT
+                </text>
+
+                <rect x="932" y="86" width="152" height="44" rx="10" fill="#FFF1F2" stroke="#E11D48" strokeWidth="1.5" />
+                <text x="1008" y="105" textAnchor="middle" fill="#881337" fontSize="11" fontWeight="800">
+                  Vertex AI Gemini 2.5
+                </text>
+                <text x="1008" y="121" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Hypothesis &amp; Case Synthesis
+                </text>
+
+                <rect x="932" y="142" width="152" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="1008" y="161" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Provisional IP Claims
+                </text>
+                <text x="1008" y="177" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Surrogate Decision Rules
+                </text>
+
+                <rect x="932" y="198" width="152" height="44" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                <text x="1008" y="217" textAnchor="middle" fill="#0F172A" fontSize="11" fontWeight="800">
+                  Exportable Artifacts
+                </text>
+                <text x="1008" y="233" textAnchor="middle" fill="#475569" fontSize="9.5" fontWeight="600">
+                  Python Pipeline (.py) + .md
+                </text>
+
+                <text x="1008" y="272" textAnchor="middle" fill="#E11D48" fontSize="10" fontWeight="800">
+                  Moonshot Reveal Dossier
+                </text>
+              </g>
+            </svg>
+          </div>
+        </section>
       </main>
       )}
     </div>
