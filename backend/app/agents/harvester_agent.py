@@ -243,6 +243,13 @@ class HarvesterAgent:
                         if dl_url:
                             r_file = await client.get(dl_url)
                             if r_file.status_code == 200:
+                                if key.lower().endswith(".csv"):
+                                    try:
+                                        df_preview = pd.read_csv(io.BytesIO(r_file.content), nrows=120)
+                                        if len(df_preview) < 25 or len(df_preview.columns) < 4:
+                                            continue
+                                    except Exception:
+                                        continue
                                 safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", Path(key).name)
                                 out_path = target_dir / f"zenodo_{rec_id}_{safe_name}"
                                 out_path.write_bytes(r_file.content)

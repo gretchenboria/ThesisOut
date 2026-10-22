@@ -187,9 +187,17 @@ def _compute_multiclass_ovr_balanced_accuracy(y_true: np.ndarray, y_pred: np.nda
 class DataScientistAgent:
     def load_dataframe(self, file_path: str | Path) -> pd.DataFrame:
         path = Path(file_path)
+        if not path.exists():
+            from app.config import settings
+            fallback = settings.DATASET_DIR / path.name
+            if fallback.exists():
+                path = fallback
         suffix = path.suffix.lower()
         if suffix == ".csv":
-            df = pd.read_csv(path)
+            try:
+                df = pd.read_csv(path)
+            except Exception:
+                df = pd.read_csv(path, sep=None, engine="python", on_bad_lines="skip")
         elif suffix in (".tsv", ".txt"):
             df = pd.read_csv(path, sep="\t")
         elif suffix in (".xlsx", ".xls"):

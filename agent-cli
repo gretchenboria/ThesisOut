@@ -1,0 +1,179 @@
+#!/Users/dr.gretchenboria/thesisout/backend/.venv/bin/python3
+"""
+agent-cli: Production Agent Registry, Policy Verification, and AGY CLI Bridge for ThesisOut.
+Supports:
+  agent-cli register          -> Registers all 6 production agents into SQLite agent_registry and verifies .agents/ manifests
+  agent-cli list              -> Lists all registered agents, roles, skills, policies, and live agy discovery status
+  agent-cli verify-policies   -> Audits agent.md, SKILL.md, PROJECT_BRIEFING.md, and enforces zero-dummy-data policy gates
+  agent-cli inspect <name>    -> Displays full manifest, policies, skill path, and invocation telemetry for an agent
+"""
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path("/Users/dr.gretchenboria/thesisout")
+BACKEND_DIR = ROOT_DIR / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
+
+from app.database import Base, SessionLocal, engine
+from app.agents.registry import sync_agent_registry, record_agent_invocation
+
+
+def cmd_register() -> int:
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        agents = sync_agent_registry(db)
+        print(f"Registered {len(agents)} production agents in SQLite agent_registry and .agents/ workspace:")
+        for a in agents:
+            print(f"  [ACTIVE] {a.name:<30} | Role: {a.role} | Skill: {a.skill_name} | Policies: {len(a.policies)}")
+    finally:
+        db.close()
+
+    agy_bin = Path("/Users/dr.gretchenboria/.local/bin/agy")
+    if agy_bin.exists():
+        res = subprocess.run([str(agy_bin), "agents"], cwd=str(ROOT_DIR), capture_output=True, text=True)
+        if res.stdout.strip():
+            print("\nAntigravity CLI (agy agents) discovery:")
+            for line in res.stdout.strip().splitlines():
+                print(f"  {line}")
+    return 0
+
+
+def cmd_list(as_json: bool = False) -> int:
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        agents = sync_agent_registry(db)
+        if as_json:
+            payload = [
+                {
+                    "name": a.name,
+                    "role": a.role,
+                    "skill_name": a.skill_name,
+                    "skill_path": a.skill_path,
+                    "agent_md_path": a.agent_md_path,
+                    "tools_allowed": a.tools_allowed,
+                    "policies": a.policies,
+                    "status": a.status,
+                    "invocations_count": a.invocations_count,
+                }
+                for a in agents
+            ]
+            print(json.dumps(payload, indent=2))
+            return 0
+
+        print("THESISOUT AGENT REGISTRY (PRODUCTION)")
+        print("=" * 105)
+        for a in agents:
+            pol_summary = ", ".join(f"{p['rule']}:{p['target']}" for p in (a.policies or []))
+            print(f"- {a.name} [{a.status.upper()}] (Invocations: {a.invocations_count})")
+            print(f"  Role      : {a.role}")
+            print(f"  Skill     : {a.skill_name} ({a.skill_path})")
+            print(f"  Agent MD  : {a.agent_md_path}")
+            print(f"  Tools     : {', '.join(a.tools_allowed)}")
+            print(f"  Policies  : {pol_summary}")
+            print("-" * 105)
+    finally:
+        db.close()
+    return 0
+
+
+def cmd_verify_policies() -> int:
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    failures = []
+    try:
+        agents = sync_agent_registry(db)
+        for a in agents:
+            if not (ROOT_DIR / a.agent_md_path).exists():
+                failures.append(f"Missing agent.md for {a.name}: {a.agent_md_path}")
+            if not (ROOT_DIR / a.skill_path).exists():
+                failures.append(f"Missing SKILL.md for {a.name}: {a.skill_path}")
+            if not a.policies or len(a.policies) < 2:
+                failures.append(f"Insufficient policies on {a.name}")
+
+        for req_file in ["PROJECT_BRIEFING.md", "AGENTS.md", "GEMINI.md", ".agents/rules/AGENTS.md", ".agents/skills.json"]:
+            if not (ROOT_DIR / req_file).exists():
+                failures.append(f"Missing required briefing/rule file: {req_file}")
+
+        # Audit backend/app/ for prohibited synthetic dataset generators
+        seed_path = BACKEND_DIR / "app" / "data" / "seed_data.py"
+        if seed_path.exists():
+            txt = seed_path.read_text()
+            if "_build_30_model_leaderboard" in txt or "default_rng" in txt:
+                failures.append("Policy violation in seed_data.py: synthetic leaderboard or random data generator detected.")
+
+        pdf_ext_path = BACKEND_DIR / "app" / "agents" / "pdf_extractor.py"
+        if pdf_ext_path.exists():
+            txt = pdf_ext_path.read_text()
+            if "default_rng" in txt:
+                failures.append("Policy violation in pdf_extractor.py: random fallback table generator detected.")
+
+        if failures:
+            print("POLICY VERIFICATION FAILED:")
+            for f in failures:
+                print(f"  [FAIL] {f}")
+            return 1
+
+        print("ALL AGENT REGISTRY & ZERO-DUMMY-DATA POLICIES VERIFIED (6/6 AGENTS PASS)")
+        return 0
+    finally:
+        db.close()
+
+
+def cmd_inspect(name: str) -> int:
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        sync_agent_registry(db)
+        ag = record_agent_invocation(db, name)
+        if not ag:
+            print(f"Agent '{name}' not found in registry.")
+            return 1
+        print(json.dumps({
+            "name": ag.name,
+            "role": ag.role,
+            "description": ag.description,
+            "skill_name": ag.skill_name,
+            "skill_path": ag.skill_path,
+            "agent_md_path": ag.agent_md_path,
+            "tools_allowed": ag.tools_allowed,
+            "policies": ag.policies,
+            "status": ag.status,
+            "invocations_count": ag.invocations_count,
+            "last_invoked_at": str(ag.last_invoked_at),
+        }, indent=2))
+        return 0
+    finally:
+        db.close()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="ThesisOut Agent Registry & Policy Governance CLI (agent-cli)")
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("register", help="Register all agents in SQLite agent_registry and verify .agents/ manifests")
+    p_list = sub.add_parser("list", help="List all registered agents, roles, skills, and policies")
+    p_list.add_argument("--json", action="store_true", help="Output as JSON")
+    sub.add_parser("verify-policies", help="Verify agent manifests, briefing files, and zero-dummy-data policies")
+    p_insp = sub.add_parser("inspect", help="Inspect a specific registered agent")
+    p_insp.add_argument("name", help="Agent name")
+
+    args = parser.parse_args()
+    if args.command == "register":
+        return cmd_register()
+    elif args.command == "list":
+        return cmd_list(as_json=args.json)
+    elif args.command == "verify-policies":
+        return cmd_verify_policies()
+    elif args.command == "inspect":
+        return cmd_inspect(args.name)
+    else:
+        return cmd_list(as_json=False)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

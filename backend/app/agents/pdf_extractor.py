@@ -1,8 +1,9 @@
 """
 PDF Dissertation Parser & In-PDF Table Extractor Agent.
 1. Extracts text chapters, claims, baseline statistical methodology, and repository links (Zenodo, Figshare, Dryad, OSF, GitHub, GEO).
-2. Uses `pdfplumber` to extract structured multi-row experimental/clinical/benchmark tables directly from dissertation PDFs
-   and saves them as clean CSV datasets when external raw files are missing or supplementary.
+2. Uses `pdfplumber` (both grid-line and borderless text-alignment strategies) plus whitespace-aligned numeric row parsing
+   to extract real structured experimental/clinical/benchmark tables directly from dissertation PDFs.
+   Zero synthetic or random data generation.
 """
 import logging
 import re
@@ -25,6 +26,8 @@ REPO_PATTERNS = [
     ("huggingface", re.compile(r"https?://huggingface\.co/datasets/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", re.I)),
     ("ncbi_geo", re.compile(r"\bGSE\d{4,8}\b")),
 ]
+
+NUMERIC_TOKEN_RE = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$")
 
 
 class PDFExtractorAgent:
@@ -59,7 +62,7 @@ class PDFExtractorAgent:
     def extract_bibliographic_metadata(self, first_page_text: str, fallback_stem: str) -> Dict[str, Any]:
         lines = [ln.strip() for ln in first_page_text.splitlines() if len(ln.strip()) > 3]
         title = ""
-        university = "Research University"
+        university = "Indexed Research Institution"
         authors = "Dissertation Author"
         pub_year = 2024
 
@@ -118,7 +121,7 @@ class PDFExtractorAgent:
 
     def extract_key_claims(self, text: str) -> List[str]:
         sentences = re.split(r"(?<=[.!?])\s+", text)
-        claim_Triggers = (
+        claim_triggers = (
             "we demonstrate",
             "our results show",
             "significantly associated",
@@ -135,7 +138,7 @@ class PDFExtractorAgent:
         claims: List[str] = []
         for s in sentences:
             clean_s = " ".join(s.split())
-            if 55 <= len(clean_s) <= 320 and any(t in clean_s.lower() for t in claim_Triggers):
+            if 55 <= len(clean_s) <= 320 and any(t in clean_s.lower() for t in claim_triggers):
                 claims.append(clean_s)
                 if len(claims) >= 8:
                     break
@@ -157,50 +160,162 @@ class PDFExtractorAgent:
                 methods.append(label)
         return ", ".join(methods[:2]) if methods else "Classical Parametric Linear Modeling (ANOVA / OLS)"
 
-    def extract_tables_from_pdf(self, pdf_path: str | Path, dissertation_slug: str) -> List[Dict[str, Any]]:
+    def _validate_and_save_raw_table(
+        self,
+        raw_table: List[List[Any]],
+        dissertation_slug: str,
+        stem: str,
+        page_num: int,
+        table_idx: int,
+    ) -> Dict[str, Any] | None:
+        if not raw_table or len(raw_table) < 8:
+            return None
+        header = [str(c or f"col_{i}").strip().replace("\n", "_") for i, c in enumerate(raw_table[0])]
+        if len(header) < 3:
+            return None
+        df = pd.DataFrame(raw_table[1:], columns=header)
+        numeric_cols = 0
+        for col in df.columns:
+            coerced = pd.to_numeric(df[col], errors="coerce")
+            if coerced.notna().mean() >= 0.55:
+                df[col] = coerced
+                numeric_cols += 1
+        if numeric_cols >= 2 and len(df) >= 10:
+            out_name = f"{dissertation_slug}_pdf_table_p{page_num}_{table_idx}.csv"
+            out_path = settings.DATASET_DIR / out_name
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(out_path, index=False)
+            return {
+                "name": f"{stem}_table_p{page_num}.csv",
+                "source_type": "pdf_table",
+                "source_url": "",
+                "file_path": str(out_path),
+            }
+        return None
+
+    def _parse_text_aligned_numeric_tables(
+        self,
+        page_texts: List[str],
+        dissertation_slug: str,
+        stem: str,
+    ) -> List[Dict[str, Any]]:
         """
-        Scans PDF pages for embedded quantitative data tables and reconstructs them as CSV files
-        so LazyPredict can run even when external repository links are unavailable.
+        Parses whitespace- or comma-separated numeric data blocks directly from PDF page text
+        when LaTeX tables omit cell border lines.
+        """
+        artifacts: List[Dict[str, Any]] = []
+        for page_num, txt in enumerate(page_texts, start=1):
+            lines = [ln.strip() for ln in txt.splitlines() if ln.strip()]
+            block_rows: List[List[str]] = []
+            header_candidate: List[str] | None = None
+
+            for idx, ln in enumerate(lines):
+                tokens = re.split(r"\s+|\t+|,", ln)
+                tokens = [t.strip() for t in tokens if t.strip()]
+                num_cnt = sum(1 for t in tokens if NUMERIC_TOKEN_RE.match(t))
+                if len(tokens) >= 3 and num_cnt >= max(2, len(tokens) - 1):
+                    if not block_rows:
+                        if idx > 0:
+                            prev_tokens = [t.strip() for t in re.split(r"\s+|\t+|,", lines[idx - 1]) if t.strip()]
+                            if len(prev_tokens) == len(tokens):
+                                header_candidate = prev_tokens
+                    if not block_rows or len(tokens) == len(block_rows[0]):
+                        block_rows.append(tokens)
+                else:
+                    if len(block_rows) >= 10:
+                        hdr = header_candidate or [f"Variable_{i+1}" for i in range(len(block_rows[0]))]
+                        art = self._validate_and_save_raw_table(
+                            [hdr] + block_rows,
+                            dissertation_slug,
+                            stem,
+                            page_num,
+                            len(artifacts) + 1,
+                        )
+                        if art:
+                            artifacts.append(art)
+                    block_rows = []
+                    header_candidate = None
+
+            if len(block_rows) >= 10:
+                hdr = header_candidate or [f"Variable_{i+1}" for i in range(len(block_rows[0]))]
+                art = self._validate_and_save_raw_table(
+                    [hdr] + block_rows,
+                    dissertation_slug,
+                    stem,
+                    page_num,
+                    len(artifacts) + 1,
+                )
+                if art:
+                    artifacts.append(art)
+
+        return artifacts
+
+    def extract_tables_from_pdf(
+        self,
+        pdf_path: str | Path,
+        dissertation_slug: str,
+        fallback_text: str = "",
+        fallback_title: str = "",
+    ) -> List[Dict[str, Any]]:
+        """
+        Extracts real quantitative data tables from PDF pages using:
+        1) Bordered grid extraction (`page.extract_tables()`)
+        2) Borderless text-aligned extraction (`vertical_strategy='text', horizontal_strategy='text'`)
+        3) Whitespace/CSV numeric row parsing on page text.
+        Zero synthetic or random fallback generation.
         """
         path = Path(pdf_path)
         extracted_artifacts: List[Dict[str, Any]] = []
+        collected_text: List[str] = []
+
+        if not path.exists():
+            return []
 
         try:
             with pdfplumber.open(str(path)) as pdf:
                 table_idx = 0
-                for page_num, page in enumerate(pdf.pages[:50], start=1):
-                    tables = page.extract_tables() or []
-                    for raw_table in tables:
-                        if not raw_table or len(raw_table) < 12:
-                            continue
-                        header = [str(c or f"col_{i}").strip().replace("\n", "_") for i, c in enumerate(raw_table[0])]
-                        if len(header) < 3:
-                            continue
-                        rows = raw_table[1:]
-                        df = pd.DataFrame(rows, columns=header)
-                        # Attempt numeric coercion on columns
-                        numeric_cols = 0
-                        for col in df.columns:
-                            coerced = pd.to_numeric(df[col], errors="coerce")
-                            if coerced.notna().mean() >= 0.6:
-                                df[col] = coerced
-                                numeric_cols += 1
+                for page_num, page in enumerate(pdf.pages[:40], start=1):
+                    try:
+                        collected_text.append(page.extract_text() or "")
+                    except Exception:
+                        pass
 
-                        if numeric_cols >= 2 and len(df) >= 10:
-                            table_idx += 1
-                            out_name = f"{dissertation_slug}_pdf_table_p{page_num}_{table_idx}.csv"
-                            out_path = settings.DATASET_DIR / out_name
-                            df.to_csv(out_path, index=False)
-                            extracted_artifacts.append(
-                                {
-                                    "name": f"Embedded PDF Cohort/Experimental Table (Page {page_num})",
-                                    "source_type": "pdf_table",
-                                    "source_url": f"file://{path}#page={page_num}",
-                                    "file_path": str(out_path),
-                                }
+                    # Pass 1: Grid-bordered tables
+                    tables = page.extract_tables() or []
+                    # Pass 2: Borderless LaTeX text-aligned tables
+                    if not tables:
+                        try:
+                            tables = (
+                                page.extract_tables(
+                                    table_settings={
+                                        "vertical_strategy": "text",
+                                        "horizontal_strategy": "text",
+                                        "snap_tolerance": 4,
+                                    }
+                                )
+                                or []
                             )
+                        except Exception:
+                            tables = []
+
+                    for raw_table in tables:
+                        table_idx += 1
+                        art = self._validate_and_save_raw_table(
+                            raw_table, dissertation_slug, path.stem, page_num, table_idx
+                        )
+                        if art:
+                            extracted_artifacts.append(art)
         except Exception as exc:
             logger.warning("PDF table extraction warning on %s: %s", path, exc)
+
+        if extracted_artifacts:
+            return extracted_artifacts
+
+        # Pass 3: Parse inline whitespace/CSV numeric tables from page text
+        if collected_text:
+            extracted_artifacts = self._parse_text_aligned_numeric_tables(
+                collected_text, dissertation_slug, path.stem
+            )
 
         return extracted_artifacts
 

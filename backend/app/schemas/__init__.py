@@ -151,3 +151,50 @@ class CustomLazyPredictRequest(BaseModel):
     task_type: Optional[str] = None  # Auto-detected if None
     is_author_primary_target: bool = False
     target_rationale: Optional[str] = None
+
+
+class SavedItemToggleRequest(BaseModel):
+    dissertation_id: int
+    opportunity_id: Optional[int] = None
+    toggle_field: str = "star"  # "star" | "ribbon"
+    user_note: Optional[str] = None
+
+
+class SavedItemNoteUpdate(BaseModel):
+    user_note: str
+    tags: Optional[List[str]] = None
+
+
+class SavedItemSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    dissertation_id: int
+    opportunity_id: Optional[int] = None
+    is_starred: bool
+    is_bookmarked: bool
+    user_note: str
+    tags: List[str] = []
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    dissertation: Optional[DissertationSchema] = None
+    opportunity: Optional[MarketOpportunitySchema] = None
+
+
+class RegisteredAgentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    role: str
+    description: str
+    skill_name: str
+    skill_path: str
+    agent_md_path: str
+    tools_allowed: List[str]
+    policies: List[Dict[str, Any]]
+    status: str
+    invocations_count: int
+    last_invoked_at: Optional[datetime] = None
+    created_at: datetime
+

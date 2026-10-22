@@ -1,28 +1,35 @@
 1
-00:00:00,000 --> 00:00:14,375
-Welcome to ThesisOut at thesisout.com. We begin at the private research workspace, protected by Cloudflare edge bot filtering. Enter the access code and click Unlock ThesisOut to enter the global discovery engine.
+00:00:00,000 --> 00:00:09,916
+Welcome to ThesisOut at thesisout.com. Enter your access code and click Unlock to open the scientific discovery workspace.
 
 2
-00:00:14,375 --> 00:00:33,708
-There is no need to formulate a hypothesis. ThesisOut runs a global search across university repositories and pulls the highest-signal findings automatically. Use the All Global Findings button in the top bar, filter by discipline, or drop a thesis PDF or CSV with zero manual typing.
+00:00:10,066 --> 00:00:22,622
+Search across doctoral dissertations and open research datasets by topic, institution, or scientific domain, or launch a live repository sweep in one click.
 
 3
-00:00:33,708 --> 00:00:51,167
-Right below, Section Zero One makes the revealed dissertations and high-value opportunities immediately obvious and clear. Each card pairs the source university thesis and overlooked variable with the commercial product to build, model signal gain, and Translation Score.
+00:00:22,772 --> 00:00:40,944
+To audit your own research, upload a dissertation PDF or raw CSV dataset and click Audit File. ThesisOut extracts the underlying data, benchmarks thirty machine learning models, and highlights the winning model and primary driver at the top.
 
 4
-00:00:51,167 --> 00:01:12,375
-Clicking any card opens Section Zero Two, the High-Value Opportunity Dossier. It details the overlooked empirical finding, why the original thesis missed it, and live registry whitespace. Four action buttons let you run five-fold verification, draft a patent claim, audit live registries, and download the Python model.
+00:00:41,094 --> 00:00:54,586
+Each discovery card pairs the source academic study and its overlooked empirical variable with a commercial product concept, model performance gain, and Translation Opportunity Score.
 
 5
-00:01:12,375 --> 00:01:31,708
-Section Zero Three is the thirty-model Empirical Clue Board. Every architecture is evaluated out of fold with ninety-five percent confidence intervals. Here ExtraTreesRegressor lifts R-squared from the author's zero point six one baseline to zero point nine one four, a thirty point four percent gain.
+00:00:54,736 --> 00:01:04,964
+Save promising findings to your shortlist and attach due-diligence notes so your team can track priority licensing and validation targets.
 
 6
-00:01:31,708 --> 00:01:51,167
-In the feature importance audit, crimson badges highlight the exact overlooked clues driving the outcome, such as sub-threshold voltage ripple and die-edge thermal gradient. Clicking Run Five-Stage Proof executes target-permutation null testing, Super-Learner stacking, and conformal calibration.
+00:01:05,114 --> 00:01:21,198
+Selecting any card opens the Opportunity Dossier. Four summary blocks present the overlooked empirical clue, the classical baseline blindspot, live clinical and patent whitespace, and addressable market scale.
 
 7
-00:01:51,167 --> 00:02:12,833
-Finally, at the bottom of the workspace, Section Zero Five keeps the System Architecture and Data Schema collapsed by default so the interface stays clean, yet one click expands the full Cloudflare, FastAPI, Gemini 3.8 Flash, and SQLAlchemy relational schema. Visit thesisout.com to explore.
+00:01:21,348 --> 00:01:35,584
+Directly inside the dossier, generate a provisional patent claim grounded in the discovered regime thresholds, run live regulatory checks, and download the standalone Python model and report.
 
+8
+00:01:35,734 --> 00:01:48,626
+The Empirical Leaderboard compares all thirty cross-validated models against the author's original baseline, reporting out-of-fold accuracy and ninety-five percent confidence intervals.
+
+9
+00:01:48,776 --> 00:02:05,604
+Finally, inspect the exact variables driving the prediction alongside five-stage statistical verification, confirming zero target-permutation leakage and ninety percent conformal coverage. Explore live at thesisout.com.

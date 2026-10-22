@@ -1,0 +1,21 @@
+ThesisOut Open-Source Non-Commercial License (with Commercial Licensing Option)
+Copyright (c) 2026 Dr. Gretchen Boria. All rights reserved.
+
+1. Grant of Open-Source Non-Commercial License
+Permission is hereby granted, free of charge, to any person or academic institution obtaining a copy of this software, source code, agent specifications, documentation, and associated files (the "Software"), to use, read, copy, modify, fork, and distribute the Software solely for non-commercial purposes, including academic research, scientific benchmarking, classroom instruction, and personal evaluation, subject to the following conditions:
+
+a) Attribution: The above copyright notice, this license notice, and attribution to Dr. Gretchen Boria must be included in all copies, forks, or substantial portions of the Software.
+b) Non-Commercial Restriction: You may not use the Software, or any derivative works thereof, for commercial purposes. Prohibited commercial uses include, without limitation:
+   - Selling, licensing, leasing, or charging fees for access to the Software or any hosted service built upon the Software.
+   - Using the Software within a for-profit enterprise, venture capital fund, biotechnology company, pharmaceutical company, or commercial consulting practice to evaluate proprietary pipelines, commercialize assets, or generate commercial intelligence.
+   - Bundling or redistributing the Software as part of a commercial product or paid platform.
+
+2. Commercial Licensing Inquiries
+If you or your organization wish to use, deploy, integrate, or commercialize ThesisOut or its multi-agent verification pipeline for commercial or enterprise purposes, you must obtain a separate commercial license from the author.
+To request a commercial license, please contact:
+Dr. Gretchen Boria
+GitHub: https://github.com/gretchenboria
+Website: https://thesisout.com
+
+3. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

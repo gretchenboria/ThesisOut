@@ -26,7 +26,10 @@ RUN uv sync --frozen --no-dev
 
 COPY backend/app ./app
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
-RUN mkdir -p /app/storage/datasets /app/storage/pdfs
+COPY .agents /app/.agents
+COPY agent-cli PROJECT_BRIEFING.md AGENTS.md GEMINI.md /app/
+COPY storage /app/storage
+RUN chmod +x /app/agent-cli && mkdir -p /app/storage/datasets /app/storage/pdfs
 
 EXPOSE 8080
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

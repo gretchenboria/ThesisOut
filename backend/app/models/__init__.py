@@ -147,3 +147,39 @@ class MarketOpportunity(Base):
     dissertation = relationship("Dissertation", back_populates="opportunities")
     lazy_run = relationship("LazyPredictRun", back_populates="opportunities")
     matched_problem = relationship("IndustryProblem")
+
+
+class SavedItem(Base):
+    __tablename__ = "saved_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    dissertation_id = Column(Integer, ForeignKey("dissertations.id"), nullable=False, index=True)
+    opportunity_id = Column(Integer, ForeignKey("market_opportunities.id"), nullable=True, index=True)
+    is_starred = Column(Boolean, default=False, nullable=False)      # Star / Favorite
+    is_bookmarked = Column(Boolean, default=False, nullable=False)   # Ribbon / Saved to Memory
+    user_note = Column(Text, default="", nullable=False)
+    tags = Column(JSON, default=list)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    dissertation = relationship("Dissertation")
+    opportunity = relationship("MarketOpportunity")
+
+
+class RegisteredAgent(Base):
+    __tablename__ = "agent_registry"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(120), unique=True, index=True, nullable=False)
+    role = Column(String(250), nullable=False)
+    description = Column(Text, nullable=False)
+    skill_name = Column(String(150), nullable=False)
+    skill_path = Column(String(500), nullable=False)
+    agent_md_path = Column(String(500), nullable=False)
+    tools_allowed = Column(JSON, default=list)
+    policies = Column(JSON, default=list)
+    status = Column(String(50), default="active")
+    invocations_count = Column(Integer, default=0)
+    last_invoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+

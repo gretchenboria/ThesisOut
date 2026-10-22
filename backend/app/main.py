@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -5,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.agents.registry import sync_agent_registry
 from app.api.routes import router as api_router
 from app.config import settings
 from app.data.seed_data import ensure_seeded
@@ -13,15 +15,27 @@ from app.database import Base, SessionLocal, engine
 ACCESS_CODE = "thesisout!"
 
 
+async def _background_seed() -> None:
+    db = SessionLocal()
+    try:
+        await ensure_seeded(db)
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        await ensure_seeded(db)
+        sync_agent_registry(db)
     finally:
         db.close()
+    seed_task = asyncio.create_task(_background_seed())
     yield
+    seed_task.cancel()
 
 
 app = FastAPI(
