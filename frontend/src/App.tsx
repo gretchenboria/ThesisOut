@@ -250,7 +250,6 @@ export function App() {
   const [probeData, setProbeData] = useState<any>(null);
   const [probing, setProbing] = useState<boolean>(false);
 
-  // Gemini Discovery & Downstream Inference Co-Pilot state
   const [chatInput, setChatInput] = useState<string>('');
   const [chatLoading, setChatLoading] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([
@@ -600,27 +599,162 @@ export function App() {
     : opportunities;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Top Investigative Rule Bar */}
-      <div className="h-2 w-full investigative-header-rule" />
+    <div className="min-h-screen flex flex-col relative">
+      {/* Subtle Animated Background with Trajectory Dash Lines & Drifting Magnifying Glass Optics */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <svg
+          className="w-full h-full opacity-60"
+          viewBox="0 0 1440 900"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <linearGradient id="trajGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#2563EB" stopOpacity="0.28" />
+              <stop offset="50%" stopColor="#4F46E5" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#E11D48" stopOpacity="0.18" />
+            </linearGradient>
+            <linearGradient id="trajGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.24" />
+              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.08" />
+            </linearGradient>
+            <radialGradient id="lensGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.12" />
+              <stop offset="70%" stopColor="#6366F1" stopOpacity="0.04" />
+              <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
+            </radialGradient>
+          </defs>
 
-      {/* Editorial Magnifying Glass Header */}
-      <header className="bg-white border-b-2 border-slate-900 sticky top-0 z-30">
+          {/* Animated Curved Trajectory Dash Lines */}
+          <path
+            d="M -80 680 C 260 520, 480 200, 860 280 C 1140 340, 1290 140, 1520 90"
+            stroke="url(#trajGrad1)"
+            strokeWidth="2"
+            className="trajectory-dash"
+          />
+          <path
+            d="M -60 220 C 320 380, 640 120, 1020 440 C 1220 600, 1380 490, 1540 580"
+            stroke="url(#trajGrad2)"
+            strokeWidth="1.75"
+            className="trajectory-dash-slow"
+          />
+          <path
+            d="M 180 940 C 420 640, 780 690, 1120 320 C 1260 170, 1390 220, 1500 180"
+            stroke="url(#trajGrad1)"
+            strokeWidth="1.5"
+            className="trajectory-dash"
+          />
+
+          {/* Trajectory Waypoint Nodes */}
+          <circle cx="860" cy="280" r="4" fill="#2563EB" fillOpacity="0.35" />
+          <circle cx="860" cy="280" r="11" stroke="#2563EB" strokeOpacity="0.2" strokeWidth="1" />
+          <circle cx="1020" cy="440" r="4" fill="#4F46E5" fillOpacity="0.35" />
+          <circle cx="1020" cy="440" r="11" stroke="#4F46E5" strokeOpacity="0.2" strokeWidth="1" />
+          <circle cx="430" cy="360" r="3.5" fill="#E11D48" fillOpacity="0.3" />
+
+          {/* Floating Magnifying Glass Assembly 1 (Upper Right Trajectory Intersection) */}
+          <g className="floating-magnifying-lens-1">
+            <circle cx="1080" cy="250" r="120" fill="url(#lensGlow)" />
+            <circle
+              cx="1080"
+              cy="250"
+              r="76"
+              stroke="#3B82F6"
+              strokeOpacity="0.22"
+              strokeWidth="2"
+            />
+            <circle
+              cx="1080"
+              cy="250"
+              r="64"
+              stroke="#6366F1"
+              strokeOpacity="0.16"
+              strokeWidth="1"
+              strokeDasharray="6 6"
+            />
+            {/* Optical Lens Glint Arc */}
+            <path
+              d="M 1035 215 A 56 56 0 0 1 1105 198"
+              stroke="#2563EB"
+              strokeOpacity="0.28"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            {/* Magnifying Glass Handle */}
+            <line
+              x1="1134"
+              y1="304"
+              x2="1192"
+              y2="362"
+              stroke="#3B82F6"
+              strokeOpacity="0.24"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Floating Magnifying Glass Assembly 2 (Lower Left Trajectory Sweep) */}
+          <g className="floating-magnifying-lens-2">
+            <circle cx="290" cy="540" r="105" fill="url(#lensGlow)" />
+            <circle
+              cx="290"
+              cy="540"
+              r="58"
+              stroke="#6366F1"
+              strokeOpacity="0.2"
+              strokeWidth="1.75"
+            />
+            <circle
+              cx="290"
+              cy="540"
+              r="46"
+              stroke="#3B82F6"
+              strokeOpacity="0.14"
+              strokeWidth="1"
+              strokeDasharray="4 8"
+            />
+            <path
+              d="M 256 512 A 42 42 0 0 1 310 500"
+              stroke="#4F46E5"
+              strokeOpacity="0.25"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <line
+              x1="331"
+              y1="581"
+              x2="376"
+              y2="626"
+              stroke="#6366F1"
+              strokeOpacity="0.22"
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+          </g>
+        </svg>
+      </div>
+
+      {/* Top Sapphire-Indigo-Crimson Accent Line */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 relative z-20" />
+
+      {/* Sleek Glass Header */}
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-lg bg-slate-900 border-2 border-amber-500 flex items-center justify-center shadow-xs">
-              <Search className="w-5 h-5 text-amber-400 stroke-[2.5]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-blue-500/20">
+              <Search className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="font-black text-xl tracking-tight text-slate-900 uppercase">
+                <span className="font-extrabold text-lg tracking-tight text-slate-900">
                   ThesisOut
                 </span>
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 bg-amber-400 text-slate-950 border border-slate-900">
-                  Investigative Discovery Engine
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  Scientific Trajectory Engine
                 </span>
               </div>
-              <p className="text-xs text-slate-600 font-medium">
+              <p className="text-xs text-slate-500">
                 Conversational Gemini reasoning paired with 30-model empirical screening and 9 live scientific APIs
               </p>
             </div>
@@ -630,76 +764,72 @@ export function App() {
             {dissertations.length > 0 && (
               <button
                 onClick={handleResetWorkspace}
-                className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white border border-slate-900 font-bold uppercase tracking-wider transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold transition cursor-pointer"
               >
-                Clear Case Files
+                Clear Workspace
               </button>
             )}
-            <span className="px-3 py-1.5 bg-slate-900 text-amber-400 border border-slate-900 font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <Search className="w-3.5 h-3.5 text-amber-400" />
+            <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold flex items-center gap-1.5">
+              <Search className="w-3.5 h-3.5 text-indigo-600" />
               Gemini Live API Active
             </span>
           </div>
         </div>
 
-        {/* 3-Step Investigative Stepper */}
+        {/* 3-Stage Trajectory Stepper */}
         <div className="max-w-5xl mx-auto px-6 pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={() => setCurrentStep(1)}
-              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 1
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
-                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
+                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
               }`}
             >
               <div
-                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   currentStep === 1
-                    ? 'bg-amber-400 text-slate-950 border-slate-950'
-                    : 'bg-white text-slate-900 border-slate-400'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 01
               </div>
               <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider">
-                  Gemini Discovery Dialogue
-                </div>
+                <div className="text-xs font-bold">Gemini Discovery Dialogue</div>
                 <div
                   className={`text-[11px] ${
-                    currentStep === 1 ? 'text-slate-300' : 'text-slate-500'
+                    currentStep === 1 ? 'text-blue-100' : 'text-slate-500'
                   }`}
                 >
-                  Chat to formulate hypotheses & stream data
+                  Formulate hypotheses & stream data
                 </div>
               </div>
             </button>
 
             <button
               onClick={() => setCurrentStep(2)}
-              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 2
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
-                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
+                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
               }`}
             >
               <div
-                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   currentStep === 2
-                    ? 'bg-amber-400 text-slate-950 border-slate-950'
-                    : 'bg-white text-slate-900 border-slate-400'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 02
               </div>
               <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider">
-                  30-Model Signal Audit
-                </div>
+                <div className="text-xs font-bold">30-Model Signal Audit</div>
                 <div
                   className={`text-[11px] ${
-                    currentStep === 2 ? 'text-slate-300' : 'text-slate-500'
+                    currentStep === 2 ? 'text-blue-100' : 'text-slate-500'
                   }`}
                 >
                   Inspect empirical patterns & steer inference
@@ -709,28 +839,26 @@ export function App() {
 
             <button
               onClick={() => setCurrentStep(3)}
-              className={`text-left p-3.5 border-2 transition flex items-center gap-3 cursor-pointer ${
+              className={`text-left p-3.5 rounded-2xl border transition flex items-center gap-3 cursor-pointer ${
                 currentStep === 3
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-[3px_3px_0px_#D97706]'
-                  : 'bg-stone-50 text-slate-800 border-slate-300 hover:border-slate-900'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md shadow-blue-500/20'
+                  : 'bg-white/90 text-slate-800 border-slate-200/90 hover:border-blue-300'
               }`}
             >
               <div
-                className={`w-8 h-8 flex items-center justify-center font-black text-sm shrink-0 border ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   currentStep === 3
-                    ? 'bg-amber-400 text-slate-950 border-slate-950'
-                    : 'bg-white text-slate-900 border-slate-400'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 03
               </div>
               <div>
-                <div className="text-xs font-extrabold uppercase tracking-wider">
-                  Actionable Dossier
-                </div>
+                <div className="text-xs font-bold">Actionable Dossier</div>
                 <div
                   className={`text-[11px] ${
-                    currentStep === 3 ? 'text-slate-300' : 'text-slate-500'
+                    currentStep === 3 ? 'text-blue-100' : 'text-slate-500'
                   }`}
                 >
                   Execute verification steps & export code
@@ -741,10 +869,10 @@ export function App() {
         </div>
       </header>
 
-      {/* Main Investigative Workspace */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
+      {/* Main Workspace */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8 relative z-10">
         {errorMsg && (
-          <div className="mb-6 bg-red-50 border-2 border-red-800 text-red-900 px-5 py-3.5 text-xs flex items-center justify-between font-medium">
+          <div className="mb-6 bg-rose-50 border border-rose-200 text-rose-800 px-5 py-3.5 rounded-2xl text-xs flex items-center justify-between font-medium">
             <span>{errorMsg}</span>
             <button onClick={() => setErrorMsg(null)} className="font-bold underline cursor-pointer">
               Dismiss
@@ -752,25 +880,25 @@ export function App() {
           </div>
         )}
 
-        {/* Active Case File Context Banner */}
+        {/* Active Study Context Banner */}
         {selectedDiss && (
-          <div className="mb-6 bg-white border-2 border-slate-900 px-5 py-4 flex flex-wrap items-center justify-between gap-3 shadow-[3px_3px_0px_#0F172A]">
+          <div className="mb-6 glass-panel rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
-                Active Case File
+              <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-xs">
+                Active Study
               </span>
               <div>
                 <div className="text-xs font-bold text-slate-900 line-clamp-1">
                   {selectedDiss.title}
                 </div>
-                <div className="text-[11px] text-slate-600 flex flex-wrap items-center gap-2 mt-1">
+                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-2 mt-1">
                   <span>
-                    {selectedDiss.authors} | {selectedDiss.university} ({selectedDiss.publication_year})
+                    {selectedDiss.authors} • {selectedDiss.university} ({selectedDiss.publication_year})
                   </span>
-                  <span className="px-2 py-0.5 bg-stone-100 text-slate-900 border border-slate-400 font-semibold">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                     Source: {selectedDiss.source_repo}
                   </span>
-                  <span className="px-2 py-0.5 bg-amber-100 text-slate-900 border border-amber-500 font-semibold">
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">
                     Rigor Confidence: {(selectedDiss.scientific_rigor_score * 100).toFixed(0)}%
                   </span>
                   {selectedDiss.source_url && (
@@ -778,7 +906,7 @@ export function App() {
                       href={selectedDiss.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-blue-700 font-bold underline inline-flex items-center gap-1"
+                      className="text-blue-600 font-semibold underline inline-flex items-center gap-1"
                     >
                       Verify Source Record <ExternalLink className="w-3 h-3" />
                     </a>
@@ -794,11 +922,11 @@ export function App() {
                   const found = dissertations.find((d) => d.id === Number(e.target.value));
                   if (found) handleSelectDissertation(found);
                 }}
-                className="bg-stone-50 border-2 border-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-900"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700"
               >
                 {dissertations.map((d) => (
                   <option key={d.id} value={d.id}>
-                    Switch Case: {d.title.slice(0, 45)}...
+                    Switch: {d.title.slice(0, 45)}...
                   </option>
                 ))}
               </select>
@@ -807,32 +935,32 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 1: CONVERSATIONAL GEMINI DISCOVERY & EVIDENCE ACQUISITION */}
+        {/* STAGE 01: CONVERSATIONAL GEMINI DISCOVERY & EVIDENCE ACQUISITION */}
         {/* ===================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-6">
             <div className="text-center max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold mb-2">
                 <Search className="w-3.5 h-3.5" />
-                Stage 01 | Conversational Hypothesis & Evidence Formulation
+                Stage 01 • Hypothesis & Evidence Formulation
               </span>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                 Collaborate with Gemini to Guide Discovery & Downstream Inference
               </h1>
-              <p className="text-xs text-slate-600 mt-1">
-                Discuss what you believe is happening in a biological or engineering system. Gemini will help structure the hypothesis, recommend what empirical evidence to stream, and configure downstream 30-model inference.
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Discuss what you believe is happening in a biological or engineering system. Gemini helps structure the hypothesis, recommends what empirical evidence to stream, and configures downstream 30-model inference.
               </p>
             </div>
 
             {/* Mode Switcher */}
             <div className="flex justify-center">
-              <div className="inline-flex bg-white p-1 border-2 border-slate-900 shadow-[3px_3px_0px_#0F172A] gap-1">
+              <div className="inline-flex bg-white/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-xs gap-1">
                 <button
                   onClick={() => setStep1Mode('copilot')}
-                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     step1Mode === 'copilot'
-                      ? 'bg-slate-900 text-amber-400'
-                      : 'text-slate-700 hover:bg-stone-100'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
@@ -840,10 +968,10 @@ export function App() {
                 </button>
                 <button
                   onClick={() => setStep1Mode('upload')}
-                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     step1Mode === 'upload'
-                      ? 'bg-slate-900 text-amber-400'
-                      : 'text-slate-700 hover:bg-stone-100'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   <Upload className="w-3.5 h-3.5" />
@@ -852,14 +980,14 @@ export function App() {
                 {dissertations.length > 0 && (
                   <button
                     onClick={() => setStep1Mode('saved')}
-                    className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                       step1Mode === 'saved'
-                        ? 'bg-slate-900 text-amber-400'
-                        : 'text-slate-700 hover:bg-stone-100'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    Active Case Files ({dissertations.length})
+                    Saved Studies ({dissertations.length})
                   </button>
                 )}
               </div>
@@ -869,14 +997,14 @@ export function App() {
             {step1Mode === 'copilot' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Left 7 Columns: Conversational Gemini Co-Pilot */}
-                <div className="lg:col-span-7 dossier-card p-6 flex flex-col justify-between space-y-4">
+                <div className="lg:col-span-7 glass-panel rounded-3xl p-6 flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
-                      <div className="flex items-center gap-2 text-slate-900 font-black text-sm uppercase tracking-wider">
-                        <MessageSquare className="w-4 h-4 text-red-700" />
-                        Gemini Scientific Discovery & Inference Dialogue
+                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
+                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                        <MessageSquare className="w-4 h-4 text-blue-600" />
+                        Gemini Scientific Discovery & Inference Co-Pilot
                       </div>
-                      <span className="px-2 py-0.5 bg-amber-400 text-slate-950 border border-slate-900 text-[10px] font-bold uppercase">
+                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-semibold">
                         Context-Aware
                       </span>
                     </div>
@@ -886,21 +1014,21 @@ export function App() {
                       {chatMessages.map((msg, idx) => (
                         <div
                           key={idx}
-                          className={`p-4 border-2 text-xs space-y-3 ${
+                          className={`p-4 rounded-2xl text-xs space-y-3 ${
                             msg.role === 'user'
-                              ? 'bg-slate-900 text-white border-slate-900 ml-8'
-                              : 'bg-stone-50 text-slate-900 border-slate-900 mr-4'
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-8 shadow-sm'
+                              : 'glass-subpanel text-slate-800 mr-4'
                           }`}
                         >
-                          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-75">
+                          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider opacity-75">
                             <span>{msg.role === 'user' ? 'Investigator' : msg.model_used || 'Gemini Co-Pilot'}</span>
                           </div>
 
                           <div className="leading-relaxed whitespace-pre-line">{msg.content}</div>
 
                           {msg.hypothesis_formulation && (
-                            <div className="bg-amber-50 border border-slate-900 p-2.5 text-slate-900">
-                              <div className="font-black uppercase tracking-wider text-[10px] text-amber-900">
+                            <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3 text-slate-800">
+                              <div className="font-bold uppercase tracking-wider text-[10px] text-blue-700">
                                 Formulated Hypothesis
                               </div>
                               <div className="mt-0.5 font-medium">{msg.hypothesis_formulation}</div>
@@ -908,11 +1036,11 @@ export function App() {
                           )}
 
                           {msg.downstream_inference_plan && msg.downstream_inference_plan.length > 0 && (
-                            <div className="bg-white border border-slate-900 p-2.5 text-slate-900 space-y-1">
-                              <div className="font-black uppercase tracking-wider text-[10px] text-slate-700">
+                            <div className="bg-white/90 border border-slate-200 rounded-xl p-3 text-slate-800 space-y-1">
+                              <div className="font-bold uppercase tracking-wider text-[10px] text-indigo-700">
                                 Downstream Inference Strategy
                               </div>
-                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-700">
+                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600">
                                 {msg.downstream_inference_plan.map((step, sIdx) => (
                                   <li key={sIdx}>{step}</li>
                                 ))}
@@ -922,7 +1050,7 @@ export function App() {
 
                           {msg.suggested_actions && msg.suggested_actions.length > 0 && (
                             <div className="pt-1 space-y-1.5">
-                              <div className="text-[10px] font-black uppercase tracking-wider text-red-700">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-700">
                                 Recommended Actions (Click to Execute):
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -932,7 +1060,7 @@ export function App() {
                                     type="button"
                                     onClick={() => handleCopilotActionClick(act)}
                                     disabled={harvesting || probing || runningCustomTarget}
-                                    className="px-3 py-1.5 bg-slate-900 hover:bg-red-700 text-amber-400 hover:text-white border border-slate-900 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white font-semibold text-[11px] flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                                   >
                                     <Play className="w-3 h-3" />
                                     {act.label}
@@ -945,8 +1073,8 @@ export function App() {
                       ))}
 
                       {chatLoading && (
-                        <div className="p-4 bg-stone-50 border-2 border-slate-900 text-xs flex items-center gap-2 text-slate-700">
-                          <RefreshCw className="w-4 h-4 animate-spin text-red-700" />
+                        <div className="p-4 rounded-2xl glass-subpanel text-xs flex items-center gap-2 text-slate-600">
+                          <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
                           Gemini is analyzing your hypothesis and workspace state...
                         </div>
                       )}
@@ -959,19 +1087,19 @@ export function App() {
                       e.preventDefault();
                       handleSendCopilotMessage();
                     }}
-                    className="pt-3 border-t-2 border-slate-900 flex gap-2"
+                    className="pt-3 border-t border-slate-200/80 flex gap-2"
                   >
                     <input
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder="Ask Gemini about a hypothesis, mechanism, or which variables to test next..."
-                      className="flex-1 bg-white border-2 border-slate-900 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
+                      className="flex-1 bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={chatLoading || !chatInput.trim()}
-                      className="px-4 py-2.5 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       Send
@@ -980,21 +1108,21 @@ export function App() {
                 </div>
 
                 {/* Right 5 Columns: Direct Live Repository Stream & 9-API Telemetry */}
-                <div className="lg:col-span-5 dossier-card p-6 flex flex-col justify-between space-y-5">
+                <div className="lg:col-span-5 glass-panel rounded-3xl p-6 flex flex-col justify-between space-y-5">
                   <div className="space-y-4">
-                    <div className="border-b-2 border-slate-900 pb-3">
-                      <div className="flex items-center gap-2 text-slate-900 font-black text-sm uppercase tracking-wider">
-                        <Search className="w-4 h-4 text-red-700" />
+                    <div className="border-b border-slate-200/80 pb-3">
+                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                        <Search className="w-4 h-4 text-blue-600" />
                         Direct Multi-Repository Stream
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                         Or enter any free-form scientific query directly. Domain classification, dataset matching (OpenAlex + Zenodo), and 30-model LazyPredict screening run automatically without rigid presets.
                       </p>
                     </div>
 
                     <form onSubmit={handleLiveHarvest} className="space-y-3 text-xs">
                       <div>
-                        <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1.5">
+                        <label className="block font-semibold text-slate-700 mb-1.5">
                           Free-Form Scientific Query
                         </label>
                         <input
@@ -1002,7 +1130,7 @@ export function App() {
                           value={harvestQuery}
                           onChange={(e) => setHarvestQuery(e.target.value)}
                           placeholder="Enter any mechanism, target, disease, or system..."
-                          className="w-full bg-white border-2 border-slate-900 px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
+                          className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
                         />
                       </div>
 
@@ -1010,7 +1138,7 @@ export function App() {
                         <button
                           type="submit"
                           disabled={harvesting || !harvestQuery.trim()}
-                          className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#D97706] transition cursor-pointer"
+                          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20 transition cursor-pointer"
                         >
                           {harvesting ? (
                             <>
@@ -1029,7 +1157,7 @@ export function App() {
                           type="button"
                           onClick={() => handleRunLiveProbe(harvestQuery)}
                           disabled={probing || !harvestQuery.trim()}
-                          className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-slate-950 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 text-indigo-700 border border-indigo-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                         >
                           {probing ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1043,13 +1171,13 @@ export function App() {
 
                     {/* Live SSE Stream Progress Log */}
                     {streamEvents.length > 0 && (
-                      <div className="bg-stone-100 border-2 border-slate-900 p-3.5 space-y-1.5 text-[11px] font-mono">
-                        <div className="font-bold text-slate-900 uppercase tracking-wider text-[10px]">
+                      <div className="glass-subpanel rounded-2xl p-3.5 space-y-1.5 text-[11px] font-mono">
+                        <div className="font-bold text-blue-700 uppercase tracking-wider text-[10px]">
                           Live Multi-Repository Stream Telemetry
                         </div>
                         {streamEvents.map((msg, i) => (
-                          <div key={i} className="flex items-start gap-2 text-slate-800">
-                            <span className="w-2 h-2 bg-red-700 shrink-0 mt-1" />
+                          <div key={i} className="flex items-start gap-2 text-slate-700">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
                             <span>{msg}</span>
                           </div>
                         ))}
@@ -1058,37 +1186,37 @@ export function App() {
 
                     {/* Live Multi-Database Integration Telemetry Drawer */}
                     {probeData && (
-                      <div className="bg-stone-100 border-2 border-slate-900 p-3.5 space-y-2.5 text-[11px]">
+                      <div className="glass-subpanel rounded-2xl p-3.5 space-y-2.5 text-[11px]">
                         <div className="flex items-center justify-between">
-                          <span className="font-black uppercase tracking-wider text-slate-900">
+                          <span className="font-bold text-slate-900">
                             9-API Telemetry: "{probeData.query}"
                           </span>
                           <button
                             onClick={() => setProbeData(null)}
-                            className="text-red-700 font-bold underline cursor-pointer"
+                            className="text-blue-600 font-semibold underline cursor-pointer"
                           >
                             Close
                           </button>
                         </div>
                         <div className="space-y-2">
-                          <div className="bg-white border border-slate-900 p-2.5">
-                            <div className="font-bold text-red-700">OpenTargets GraphQL v4</div>
-                            <div className="text-slate-800">
-                              Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} | Known Drugs:{' '}
+                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
+                            <div className="font-bold text-blue-700">OpenTargets GraphQL v4</div>
+                            <div className="text-slate-700">
+                              Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} • Known Drugs:{' '}
                               {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
                             </div>
                           </div>
-                          <div className="bg-white border border-slate-900 p-2.5">
-                            <div className="font-bold text-emerald-800">ChEMBL EBI REST API</div>
-                            <div className="text-slate-800">
-                              Targets: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} | Max Phase:{' '}
+                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
+                            <div className="font-bold text-indigo-700">ChEMBL EBI REST API</div>
+                            <div className="text-slate-700">
+                              Targets: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Max Phase:{' '}
                               {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
                             </div>
                           </div>
-                          <div className="bg-white border border-slate-900 p-2.5">
-                            <div className="font-bold text-blue-800">ClinicalTrials.gov v2 & openFDA</div>
-                            <div className="text-slate-800">
-                              Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} | FAERS Reports:{' '}
+                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
+                            <div className="font-bold text-rose-700">ClinicalTrials.gov v2 & openFDA</div>
+                            <div className="text-slate-700">
+                              Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} • FAERS Reports:{' '}
                               {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
                             </div>
                           </div>
@@ -1102,18 +1230,18 @@ export function App() {
 
             {/* MODE B: Upload PDF / CSV */}
             {step1Mode === 'upload' && (
-              <div className="dossier-card p-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 text-slate-900 font-black text-base uppercase tracking-tight mb-1">
-                  <Upload className="w-5 h-5 text-red-700" />
+              <div className="glass-panel rounded-3xl p-8 max-w-2xl mx-auto">
+                <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base mb-1">
+                  <Upload className="w-5 h-5 text-blue-600" />
                   Submit Dissertation PDF or Tabular Dataset
                 </div>
-                <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+                <p className="text-xs text-slate-500 mb-5 leading-relaxed">
                   Upload a local CSV, TSV, Excel, or Parquet dataset along with an optional dissertation PDF. The engine will execute 30+ LazyPredict models and advance to Stage 02.
                 </p>
 
                 <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                    <label className="block font-semibold text-slate-700 mb-1">
                       Study or Dissertation Title *
                     </label>
                     <input
@@ -1122,12 +1250,12 @@ export function App() {
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
                       placeholder="Enter study or dissertation title"
-                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                    <label className="block font-semibold text-slate-700 mb-1">
                       Institution (Optional)
                     </label>
                     <input
@@ -1135,37 +1263,37 @@ export function App() {
                       value={uploadUni}
                       onChange={(e) => setUploadUni(e.target.value)}
                       placeholder="e.g., MIT, Stanford"
-                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50">
-                      <label className="block font-bold uppercase tracking-wider text-slate-900 mb-1">
+                    <div className="border border-dashed border-blue-300 rounded-2xl p-4 bg-blue-50/40">
+                      <label className="block font-semibold text-blue-900 mb-1">
                         Dataset File (.csv, .xlsx, .tsv)
                       </label>
                       <input
                         type="file"
                         accept=".csv,.tsv,.xlsx,.parquet"
                         onChange={(e) => setUploadCsv(e.target.files?.[0] || null)}
-                        className="w-full text-slate-700 text-[11px]"
+                        className="w-full text-slate-600 text-[11px]"
                       />
                     </div>
-                    <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50">
-                      <label className="block font-bold uppercase tracking-wider text-slate-900 mb-1">
+                    <div className="border border-dashed border-indigo-300 rounded-2xl p-4 bg-indigo-50/40">
+                      <label className="block font-semibold text-indigo-900 mb-1">
                         Dissertation PDF (Optional)
                       </label>
                       <input
                         type="file"
                         accept=".pdf"
                         onChange={(e) => setUploadPdf(e.target.files?.[0] || null)}
-                        className="w-full text-slate-700 text-[11px]"
+                        className="w-full text-slate-600 text-[11px]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-800 mb-1">
+                    <label className="block font-semibold text-slate-700 mb-1">
                       Target Column to Predict (Leave blank for automatic selection)
                     </label>
                     <input
@@ -1173,14 +1301,14 @@ export function App() {
                       value={uploadTarget}
                       onChange={(e) => setUploadTarget(e.target.value)}
                       placeholder="Optional target column name"
-                      className="w-full bg-white border-2 border-slate-900 px-4 py-2.5 text-slate-900 focus:outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-amber-400 border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-[3px_3px_0px_#D97706] transition cursor-pointer"
+                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20 transition cursor-pointer"
                   >
                     {uploading ? (
                       <>
@@ -1198,7 +1326,7 @@ export function App() {
               </div>
             )}
 
-            {/* MODE C: Active Case Files */}
+            {/* MODE C: Saved Studies */}
             {step1Mode === 'saved' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dissertations.map((diss) => {
@@ -1207,28 +1335,28 @@ export function App() {
                     <div
                       key={diss.id}
                       onClick={() => handleSelectDissertation(diss)}
-                      className="dossier-card p-6 transition cursor-pointer flex flex-col justify-between hover:bg-stone-50"
+                      className="glass-panel rounded-3xl p-6 transition cursor-pointer flex flex-col justify-between hover:border-blue-400"
                     >
                       <div>
                         <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="px-2.5 py-0.5 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider">
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
                             {diss.university}
                           </span>
-                          <span className="text-slate-600 font-bold">{diss.publication_year}</span>
+                          <span className="text-slate-500 font-medium">{diss.publication_year}</span>
                         </div>
                         <h3 className="text-base font-bold text-slate-900 leading-snug">{diss.title}</h3>
-                        <p className="text-xs text-slate-600 mt-2 line-clamp-2">{diss.abstract}</p>
+                        <p className="text-xs text-slate-500 mt-2 line-clamp-2">{diss.abstract}</p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-300 flex items-center justify-between text-xs">
+                      <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
                         {run ? (
-                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-900 font-bold border border-emerald-700">
+                          <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">
                             Best Model: {run.best_model_name} ({run.best_score})
                           </span>
                         ) : (
-                          <span className="text-slate-500">Click to attach dataset</span>
+                          <span className="text-slate-400">Click to attach dataset</span>
                         )}
-                        <span className="font-bold text-red-700 uppercase tracking-wider flex items-center gap-1">
+                        <span className="font-semibold text-blue-600 flex items-center gap-1">
                           Open Audit <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>
@@ -1241,36 +1369,36 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 2: 30-MODEL SIGNAL AUDIT */}
+        {/* STAGE 02: 30-MODEL SIGNAL AUDIT */}
         {/* ===================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-6">
             {!selectedDiss ? (
-              <div className="dossier-card p-10 text-center max-w-lg mx-auto">
-                <BookOpen className="w-10 h-10 text-slate-900 mx-auto mb-3" />
-                <h3 className="text-lg font-black uppercase text-slate-900">
-                  No Active Case Selected
+              <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
+                <BookOpen className="w-10 h-10 text-blue-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-slate-900">
+                  No Active Study Selected
                 </h3>
-                <p className="text-xs text-slate-600 mt-1 mb-5">
+                <p className="text-xs text-slate-500 mt-1 mb-5">
                   Return to Stage 01 to converse with Gemini or stream a live dissertation dataset.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
                 >
                   Return to Stage 01
                 </button>
               </div>
             ) : !activeRun ? (
-              <div className="dossier-card p-8 max-w-xl mx-auto space-y-5">
+              <div className="glass-panel rounded-3xl p-8 max-w-xl mx-auto space-y-5">
                 <div className="text-center">
-                  <span className="px-3 py-1 bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider border border-slate-900">
+                  <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
                     Dataset Required
                   </span>
-                  <h3 className="text-lg font-black text-slate-900 mt-2">
+                  <h3 className="text-lg font-bold text-slate-900 mt-2">
                     Attach a Dataset to Execute the 30-Model Audit
                   </h3>
-                  <p className="text-xs text-slate-600 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Upload a CSV/Excel table or enter a Zenodo Record ID below to benchmark 30+ machine learning models automatically.
                   </p>
                 </div>
@@ -1281,19 +1409,19 @@ export function App() {
                     value={zenodoInput}
                     onChange={(e) => setZenodoInput(e.target.value)}
                     placeholder="Enter Zenodo Record ID or URL..."
-                    className="flex-1 bg-white border-2 border-slate-900 px-4 py-2.5 text-xs"
+                    className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs"
                   />
                   <button
                     type="submit"
                     disabled={attachingData}
-                    className="px-4 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
                   >
                     {attachingData ? 'Fetching...' : 'Fetch Zenodo CSV'}
                   </button>
                 </form>
 
-                <div className="border-2 border-dashed border-slate-900 p-4 bg-stone-50 text-center">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
+                <div className="border border-dashed border-indigo-300 rounded-2xl p-4 bg-indigo-50/40 text-center">
+                  <label className="block text-xs font-semibold text-indigo-900 mb-2">
                     Or Upload a Local Dataset File (.csv, .tsv, .xlsx, .parquet)
                   </label>
                   <input
@@ -1303,24 +1431,24 @@ export function App() {
                       const f = e.target.files?.[0];
                       if (f) handleAttachDatasetFile(f);
                     }}
-                    className="text-xs text-slate-700"
+                    className="text-xs text-slate-600"
                   />
                 </div>
               </div>
             ) : (
               <>
-                {/* Investigative Signal Takeaway Banner */}
-                <div className="dossier-card p-6">
+                {/* Signal Takeaway Banner */}
+                <div className="glass-panel rounded-3xl p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-slate-950 border border-slate-900 text-xs font-bold uppercase tracking-wider">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
                           <Search className="w-3.5 h-3.5" />
                           Empirical Signal & Confidence Report
                         </div>
                         {activeDataset && (
-                          <span className="px-3 py-1 bg-stone-100 border border-slate-900 text-slate-900 text-xs font-semibold">
-                            Dataset Provenance: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows x {activeDataset.col_count} cols)
+                          <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium">
+                            Dataset Provenance: {activeDataset.source_type.toUpperCase()} ({activeDataset.row_count} rows × {activeDataset.col_count} cols)
                           </span>
                         )}
                         {activeDataset?.source_url && (
@@ -1328,19 +1456,19 @@ export function App() {
                             href={activeDataset.source_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="px-3 py-1 bg-blue-50 border border-blue-800 text-blue-900 text-xs font-bold underline inline-flex items-center gap-1"
+                            className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold underline inline-flex items-center gap-1"
                           >
                             Dataset Origin Link <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>
-                      <h2 className="text-lg font-black text-slate-900">
+                      <h2 className="text-lg font-bold text-slate-900">
                         Audited {activeRun.models_tested_count} models on target column{' '}
-                        <code className="px-2 py-0.5 bg-stone-100 border border-slate-900 text-red-700 font-mono">
+                        <code className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700 font-mono">
                           {activeRun.target_column}
                         </code>
                       </h2>
-                      <p className="text-sm text-slate-700 leading-relaxed">
+                      <p className="text-sm text-slate-600 leading-relaxed">
                         {activeRun.overlooked_signal_summary}
                       </p>
                     </div>
@@ -1350,7 +1478,7 @@ export function App() {
                         setCurrentStep(3);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="px-5 py-3.5 bg-red-700 hover:bg-red-800 text-white border-2 border-slate-900 font-black uppercase tracking-wider text-xs flex items-center gap-2 shrink-0 shadow-[3px_3px_0px_#0F172A] transition cursor-pointer"
+                      className="px-5 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs flex items-center gap-2 shrink-0 shadow-sm shadow-blue-500/20 transition cursor-pointer"
                     >
                       Proceed to Actionable Dossier <ArrowRight className="w-4 h-4" />
                     </button>
@@ -1358,18 +1486,18 @@ export function App() {
 
                   {/* Target Switcher Pills */}
                   {activeDataset && activeDataset.lazy_runs.length > 1 && (
-                    <div className="mt-4 pt-3 border-t border-slate-300 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-bold uppercase tracking-wider text-slate-700">
+                    <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-semibold text-slate-600">
                         Audited Columns:
                       </span>
                       {activeDataset.lazy_runs.map((run) => (
                         <button
                           key={run.id}
                           onClick={() => setSelectedRunId(run.id)}
-                          className={`px-3 py-1 font-bold border transition cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-semibold border transition cursor-pointer ${
                             activeRun.id === run.id
-                              ? 'bg-slate-900 text-amber-400 border-slate-900'
-                              : 'bg-stone-50 text-slate-800 border-slate-400 hover:border-slate-900'
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
                           }`}
                         >
                           {run.target_column} ({run.best_score})
@@ -1379,15 +1507,15 @@ export function App() {
                   )}
                 </div>
 
-                {/* Inline Gemini Downstream Inference Bar inside Stage 02 */}
-                <div className="dossier-card p-5 bg-stone-50 space-y-3">
+                {/* Inline Gemini Downstream Inference Co-Pilot inside Stage 02 */}
+                <div className="glass-panel rounded-3xl p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900">
-                      <MessageSquare className="w-4 h-4 text-red-700" />
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                      <MessageSquare className="w-4 h-4 text-blue-600" />
                       Ask Gemini Co-Pilot About This 30-Model Audit & Downstream Inference
                     </div>
-                    <span className="text-[10px] font-bold uppercase text-slate-500">
-                      Has full visibility into {activeDataset?.name} & leaderboard
+                    <span className="text-[11px] font-medium text-slate-500">
+                      Connected to {activeDataset?.name} & leaderboard
                     </span>
                   </div>
                   <form
@@ -1402,23 +1530,23 @@ export function App() {
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder={`Ask why ${activeRun.best_model_name} won, which confounder to ablate, or which column in ${activeDataset?.name} to test next...`}
-                      className="flex-1 bg-white border-2 border-slate-900 px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
+                      className="flex-1 bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={chatLoading || !chatInput.trim()}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 border-2 border-slate-900 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       {chatLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                       Ask Gemini
                     </button>
                   </form>
                   {chatMessages.length > 1 && (
-                    <div className="bg-white border-2 border-slate-900 p-3.5 text-xs space-y-2">
-                      <div className="font-bold text-slate-900">
+                    <div className="glass-subpanel rounded-2xl p-4 text-xs space-y-2">
+                      <div className="font-bold text-blue-700">
                         {chatMessages[chatMessages.length - 1].model_used || 'Gemini Co-Pilot'}:
                       </div>
-                      <p className="text-slate-800 whitespace-pre-line leading-relaxed">
+                      <p className="text-slate-700 whitespace-pre-line leading-relaxed">
                         {chatMessages[chatMessages.length - 1].content}
                       </p>
                       {chatMessages[chatMessages.length - 1].suggested_actions && (
@@ -1427,7 +1555,7 @@ export function App() {
                             <button
                               key={i}
                               onClick={() => handleCopilotActionClick(act)}
-                              className="px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                             >
                               <Play className="w-3 h-3" /> {act.label}
                             </button>
@@ -1438,65 +1566,65 @@ export function App() {
                   )}
                 </div>
 
-                {/* 3 High-Contrast Investigative Evidence Cards */}
+                {/* 3 Evidence Cards (Sapphire, Indigo, Crimson-Rose — Zero Yellow/Green) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="dossier-card p-5 flex flex-col justify-between">
+                  <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
                     <div>
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         01. Classical Linear Baseline
                       </span>
-                      <div className="text-3xl font-black text-slate-900 mt-2">
+                      <div className="text-3xl font-extrabold text-slate-900 mt-2">
                         {activeRun.author_baseline_score}
                       </div>
-                      <div className="text-xs font-bold text-slate-700 mt-0.5">
+                      <div className="text-xs font-medium text-slate-600 mt-0.5">
                         Metric: {activeRun.primary_metric_name}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-600 mt-4 leading-relaxed">
+                    <p className="text-xs text-slate-500 mt-4 leading-relaxed">
                       Baseline performance of conventional linear statistical methods prior to nonlinear ensemble screening.
                     </p>
                   </div>
 
-                  <div className="dossier-card p-5 flex flex-col justify-between bg-amber-50/40">
+                  <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between border-blue-300/80">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
                           02. Top Model Identified
                         </span>
-                        <span className="px-2.5 py-0.5 bg-emerald-700 text-white text-[11px] font-bold uppercase">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-bold">
                           +{(activeRun.signal_gain_delta * 100).toFixed(1)}% Gain
                         </span>
                       </div>
-                      <div className="text-3xl font-black text-emerald-800 mt-2">
+                      <div className="text-3xl font-extrabold text-blue-700 mt-2">
                         {activeRun.best_score}
                       </div>
                       <div className="text-xs font-bold text-slate-900 mt-0.5">
                         Model: {activeRun.best_model_name}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-600 mt-4 leading-relaxed">
+                    <p className="text-xs text-slate-500 mt-4 leading-relaxed">
                       Selected after benchmarking {activeRun.models_tested_count} distinct machine learning architectures on identical folds.
                     </p>
                   </div>
 
-                  <div className="dossier-card p-5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                  <div className="glass-panel rounded-3xl p-5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
                       03. Primary Predictive Variables
                     </span>
                     <div className="space-y-3 mt-3">
                       {activeRun.top_features.slice(0, 3).map((tf, i) => (
-                        <div key={tf.feature} className="bg-stone-50 border border-slate-400 p-2.5">
+                        <div key={tf.feature} className="glass-subpanel rounded-xl p-2.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-900 truncate pr-2">
+                            <span className="font-bold text-slate-800 truncate pr-2">
                               #{i + 1} {tf.feature}
                             </span>
-                            <span className="font-bold text-red-700 shrink-0">
+                            <span className="font-semibold text-indigo-600 shrink-0">
                               {(tf.importance * 100).toFixed(0)}% weight
                             </span>
                           </div>
-                          <div className="w-full h-1.5 bg-slate-200 overflow-hidden mt-1.5">
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1.5">
                             <div
-                              className="h-full bg-slate-900"
+                              className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full"
                               style={{ width: `${Math.min(100, tf.importance * 180)}%` }}
                             />
                           </div>
@@ -1509,25 +1637,25 @@ export function App() {
                 {/* PROGRESSIVE DISCLOSURE DRAWERS */}
                 <div className="space-y-3 pt-2">
                   {/* Drawer 1: 5-Stage Deep Verification */}
-                  <div className="dossier-card overflow-hidden">
+                  <div className="glass-panel rounded-3xl overflow-hidden">
                     <button
                       onClick={() => handleEscalateDeepInference(activeRun.id)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
+                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-slate-900 text-amber-400 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
                           <ShieldCheck className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                          <div className="text-sm font-bold text-slate-900">
                             Verify Discovery (5-Stage Deep Verification Audit)
                           </div>
-                          <div className="text-xs text-slate-600">
+                          <div className="text-xs text-slate-500">
                             Executes 5-fold cross-validation, target-permutation null testing, Super-Learner stacking, and regime threshold extraction
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1.5 bg-amber-400 text-slate-950 border border-slate-900 text-xs font-bold uppercase tracking-wider shrink-0">
+                      <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold shrink-0">
                         {escalatingRunId === activeRun.id
                           ? 'Auditing...'
                           : escalationCache[activeRun.id]
@@ -1537,47 +1665,47 @@ export function App() {
                     </button>
 
                     {showDeepCheck && escalationCache[activeRun.id] && (
-                      <div className="px-6 pb-6 pt-3 border-t-2 border-slate-900 bg-stone-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="px-6 pb-6 pt-3 border-t border-slate-200/80 bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                         {(() => {
                           const esc = escalationCache[activeRun.id];
                           return (
                             <>
-                              <div className="bg-white border border-slate-900 p-4">
-                                <div className="font-bold uppercase tracking-wider text-slate-900 mb-1">
+                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                                <div className="font-bold text-blue-700 mb-1">
                                   01. Permutation & Leakage Audit
                                 </div>
-                                <p className="text-slate-700 leading-relaxed">
+                                <p className="text-slate-600 leading-relaxed">
                                   {esc.stage1_leakage_and_permutation_audit.audit_interpretation}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-slate-900 p-4">
-                                <div className="font-bold uppercase tracking-wider text-emerald-800 mb-1">
+                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                                <div className="font-bold text-indigo-700 mb-1">
                                   02. Super-Learner Stacking Score: {esc.stage2_super_learner_ensemble.super_learner_score}
                                 </div>
-                                <p className="text-slate-700 leading-relaxed">
+                                <p className="text-slate-600 leading-relaxed">
                                   Stacking LightGBM, XGBoost, ExtraTrees, and Random Forest achieved{' '}
                                   <strong>{esc.stage2_super_learner_ensemble.super_learner_score}</strong>.{' '}
                                   {esc.stage4_conformal_uncertainty.ood_note}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-slate-900 p-4">
-                                <div className="font-bold uppercase tracking-wider text-amber-800 mb-1">
+                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                                <div className="font-bold text-violet-700 mb-1">
                                   03. Mechanistic Regime Thresholds
                                 </div>
-                                <p className="text-slate-700 leading-relaxed">
+                                <p className="text-slate-600 leading-relaxed">
                                   {esc.stage3_mechanistic_regime_discovery.synergy_conclusion}
                                 </p>
                               </div>
 
-                              <div className="bg-white border border-slate-900 p-4">
-                                <div className="font-bold uppercase tracking-wider text-red-700 mb-1">
+                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                                <div className="font-bold text-rose-700 mb-1">
                                   04. Counterfactual Parameter Shifts
                                 </div>
-                                <ul className="space-y-1 text-slate-700 mt-1">
+                                <ul className="space-y-1 text-slate-600 mt-1">
                                   {esc.stage5_counterfactual_intervention.prescribed_parameter_shifts.map((s, idx) => (
-                                    <li key={idx}>- {s.intervention_action}</li>
+                                    <li key={idx}>• {s.intervention_action}</li>
                                   ))}
                                 </ul>
                               </div>
@@ -1589,26 +1717,26 @@ export function App() {
                   </div>
 
                   {/* Drawer 2: Full 30-Model Leaderboard */}
-                  <div className="dossier-card overflow-hidden">
+                  <div className="glass-panel rounded-3xl overflow-hidden">
                     <button
                       onClick={() => setShowAllModels(!showAllModels)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
+                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
                     >
-                      <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                      <div className="text-sm font-bold text-slate-900">
                         Inspect Full {activeRun.leaderboard.length}-Model Leaderboard & Confidence Intervals
                       </div>
                       {showAllModels ? (
-                        <ChevronUp className="w-5 h-5 text-slate-700" />
+                        <ChevronUp className="w-5 h-5 text-slate-500" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-700" />
+                        <ChevronDown className="w-5 h-5 text-slate-500" />
                       )}
                     </button>
 
                     {showAllModels && (
-                      <div className="px-6 pb-6 pt-2 border-t-2 border-slate-900 overflow-x-auto max-h-80">
+                      <div className="px-6 pb-6 pt-2 border-t border-slate-200/80 overflow-x-auto max-h-80">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
-                            <tr className="border-b-2 border-slate-900 text-slate-900 font-bold">
+                            <tr className="border-b border-slate-200 text-slate-600 font-semibold">
                               <th className="py-2 px-3">Rank</th>
                               {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
                                 <th key={col} className="py-2 px-3">
@@ -1617,11 +1745,11 @@ export function App() {
                               ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-200 font-mono">
+                          <tbody className="divide-y divide-slate-100 font-mono">
                             {activeRun.leaderboard.map((row, idx) => (
                               <tr
                                 key={idx}
-                                className={idx === 0 ? 'bg-amber-100 font-bold text-slate-950' : 'text-slate-800'}
+                                className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
                               >
                                 <td className="py-2 px-3">#{idx + 1}</td>
                                 {Object.entries(row).map(([k, val]) => (
@@ -1639,27 +1767,27 @@ export function App() {
 
                   {/* Drawer 3: Audit Another Column */}
                   {activeDataset && (
-                    <div className="dossier-card overflow-hidden">
+                    <div className="glass-panel rounded-3xl overflow-hidden">
                       <button
                         onClick={() => setShowMoreDataTools(!showMoreDataTools)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
+                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
                       >
-                        <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                        <div className="text-sm font-bold text-slate-900">
                           Audit Another Target Variable in This Dataset
                         </div>
                         {showMoreDataTools ? (
-                          <ChevronUp className="w-5 h-5 text-slate-700" />
+                          <ChevronUp className="w-5 h-5 text-slate-500" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-slate-700" />
+                          <ChevronDown className="w-5 h-5 text-slate-500" />
                         )}
                       </button>
 
                       {showMoreDataTools && (
-                        <div className="px-6 pb-6 pt-3 border-t-2 border-slate-900 flex flex-wrap items-center gap-3 text-xs">
+                        <div className="px-6 pb-6 pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-3 text-xs">
                           <select
                             value={customTargetCol}
                             onChange={(e) => setCustomTargetCol(e.target.value)}
-                            className="flex-1 bg-stone-50 border-2 border-slate-900 px-4 py-2.5 text-slate-900"
+                            className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-900"
                           >
                             <option value="">Select column from {activeDataset.name}...</option>
                             {activeDataset.column_metadata
@@ -1673,7 +1801,7 @@ export function App() {
                           <button
                             onClick={() => handleRunCustomTargetColumn(customTargetCol)}
                             disabled={!customTargetCol || runningCustomTarget}
-                            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 disabled:opacity-40 text-white font-semibold flex items-center gap-1.5 cursor-pointer"
                           >
                             {runningCustomTarget ? (
                               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1692,7 +1820,7 @@ export function App() {
                 <div className="flex items-center justify-between pt-4">
                   <button
                     onClick={() => setCurrentStep(1)}
-                    className="px-4 py-2.5 bg-white border-2 border-slate-900 text-slate-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" /> Stage 01
                   </button>
@@ -1701,7 +1829,7 @@ export function App() {
                       setCurrentStep(3);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="px-6 py-3 bg-red-700 hover:bg-red-800 text-white border-2 border-slate-900 text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-[3px_3px_0px_#0F172A] cursor-pointer"
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blue-500/20 cursor-pointer"
                   >
                     Continue to Stage 03: Actionable Dossier <ArrowRight className="w-4 h-4" />
                   </button>
@@ -1712,35 +1840,35 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STEP 3: ACTIONABLE DOSSIER & MARKET TRANSLATION */}
+        {/* STAGE 03: ACTIONABLE DOSSIER & MARKET TRANSLATION */}
         {/* ===================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-6">
             <div className="text-center max-w-xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-amber-400 text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold mb-2">
                 <Compass className="w-3.5 h-3.5" />
-                Stage 03 | Commercial & Clinical Translation
+                Stage 03 • Commercial & Clinical Translation
               </span>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                Investigative Translation Dossiers & Executable Roadmap
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                Translation Dossiers & Executable Roadmap
               </h2>
-              <p className="text-xs text-slate-600 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Every discovered empirical signal is cross-examined against live clinical trials, bioactivity registries, and high-urgency industry bottlenecks.
               </p>
             </div>
 
             {activeOpportunities.length === 0 ? (
-              <div className="dossier-card p-10 text-center max-w-lg mx-auto">
-                <Search className="w-10 h-10 text-slate-900 mx-auto mb-3" />
-                <h3 className="text-base font-black uppercase text-slate-900">
+              <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
+                <Search className="w-10 h-10 text-blue-600 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-900">
                   No Translation Dossiers Generated Yet
                 </h3>
-                <p className="text-xs text-slate-600 mt-1 mb-5">
+                <p className="text-xs text-slate-500 mt-1 mb-5">
                   Audit a dataset in Stage 02 first to synthesize market translation dossiers.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-5 py-2.5 bg-slate-900 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
                 >
                   Return to Stage 01
                 </button>
@@ -1748,51 +1876,51 @@ export function App() {
             ) : (
               <div className="space-y-6">
                 {activeOpportunities.map((opp) => (
-                  <div key={opp.id} className="dossier-card p-6 space-y-5">
+                  <div key={opp.id} className="glass-panel rounded-3xl p-6 space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="px-3 py-1 bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider border border-slate-900">
+                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
                         Translation Opportunity Score: {opp.overall_tos_score} / 100
                       </span>
-                      <span className="px-3 py-1 bg-slate-900 text-white text-xs font-bold uppercase tracking-wider">
+                      <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200">
                         {opp.opportunity_type}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-black text-slate-900 leading-snug">{opp.title}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 leading-snug">{opp.title}</h3>
 
-                    {/* 3 Investigative Case Notes */}
+                    {/* 3 Case Notes */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div className="dossier-subcard p-4">
-                        <div className="font-black uppercase tracking-wider text-red-700 mb-1.5">
+                      <div className="glass-subpanel rounded-2xl p-4">
+                        <div className="font-bold text-blue-700 mb-1.5">
                           01. Empirical Evidence Uncovered
                         </div>
-                        <p className="text-slate-800 leading-relaxed">{opp.untranslated_finding_summary}</p>
+                        <p className="text-slate-700 leading-relaxed">{opp.untranslated_finding_summary}</p>
                       </div>
 
-                      <div className="dossier-subcard p-4">
-                        <div className="font-black uppercase tracking-wider text-amber-800 mb-1.5">
+                      <div className="glass-subpanel rounded-2xl p-4">
+                        <div className="font-bold text-indigo-700 mb-1.5">
                           02. Academic Bottleneck Diagnosis
                         </div>
-                        <p className="text-slate-800 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
+                        <p className="text-slate-700 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
                       </div>
 
-                      <div className="dossier-subcard p-4">
-                        <div className="font-black uppercase tracking-wider text-blue-800 mb-1.5">
+                      <div className="glass-subpanel rounded-2xl p-4">
+                        <div className="font-bold text-rose-700 mb-1.5">
                           03. Live Registry Whitespace
                         </div>
-                        <p className="text-slate-800 leading-relaxed">
+                        <p className="text-slate-700 leading-relaxed">
                           <strong>ClinicalTrials.gov:</strong> {opp.clinical_trials_check?.whitespace_status}
                         </p>
-                        <p className="text-slate-800 mt-1.5 leading-relaxed">
+                        <p className="text-slate-700 mt-1.5 leading-relaxed">
                           <strong>Target / Modality:</strong> {opp.opentargets_chembl_check?.tractability_modality}
                         </p>
                       </div>
                     </div>
 
                     {/* Proposed Solution & Interactive 4-Step Action Plan */}
-                    <div className="bg-stone-100 border-2 border-slate-900 p-5 text-xs space-y-4">
+                    <div className="glass-subpanel rounded-2xl p-5 text-xs space-y-4">
                       <div>
-                        <div className="font-black text-slate-900 uppercase tracking-wider text-[11px] mb-1">
+                        <div className="font-bold text-indigo-700 uppercase tracking-wider text-[11px] mb-1">
                           Recommended Translation Strategy & Executable Verification Steps
                         </div>
                         <p className="text-slate-900 font-semibold text-sm">
@@ -1815,17 +1943,17 @@ export function App() {
                           return (
                             <div
                               key={i}
-                              className="bg-white border-2 border-slate-900 p-4 text-slate-800 flex flex-col justify-between gap-3"
+                              className="bg-white border border-slate-200/90 rounded-2xl p-4 text-slate-700 flex flex-col justify-between gap-3 shadow-2xs"
                             >
                               <div className="flex items-start gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-red-700 shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                                 <span className="leading-relaxed">{step}</span>
                               </div>
 
                               <button
                                 onClick={() => handleExecuteOpportunityStep(opp.id, i)}
                                 disabled={isRunning}
-                                className="self-start px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-amber-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                                className="self-start px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-semibold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
                               >
                                 {isRunning ? (
                                   <>
@@ -1842,15 +1970,15 @@ export function App() {
 
                               {/* Live Action Result Box */}
                               {stepRes && (
-                                <div className="mt-1 pt-3 border-t border-slate-300 space-y-2 text-[11px]">
-                                  <div className="font-bold text-slate-900 uppercase">{stepRes.action_title}</div>
-                                  <p className="text-slate-700">{stepRes.summary}</p>
+                                <div className="mt-1 pt-3 border-t border-slate-200 space-y-2 text-[11px]">
+                                  <div className="font-bold text-blue-700">{stepRes.action_title}</div>
+                                  <p className="text-slate-600">{stepRes.summary}</p>
 
                                   {stepRes.metrics && (
-                                    <div className="grid grid-cols-2 gap-1.5 bg-stone-100 border border-slate-400 p-2.5">
+                                    <div className="grid grid-cols-2 gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
                                       {Object.entries(stepRes.metrics).map(([k, v]) => (
                                         <div key={k}>
-                                          <span className="text-slate-600">{k}: </span>
+                                          <span className="text-slate-500">{k}: </span>
                                           <strong className="text-slate-900">{String(v)}</strong>
                                         </div>
                                       ))}
@@ -1858,16 +1986,16 @@ export function App() {
                                   )}
 
                                   {stepRes.provisional_patent_claim && (
-                                    <div className="bg-amber-50 border border-slate-900 p-2.5 text-slate-900 font-mono text-[10px]">
+                                    <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-slate-800 font-mono text-[10px]">
                                       {stepRes.provisional_patent_claim}
                                     </div>
                                   )}
 
                                   {stepRes.live_registry_checks && (
-                                    <div className="bg-stone-100 border border-slate-900 p-2.5 space-y-1">
+                                    <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-2.5 space-y-1">
                                       {Object.entries(stepRes.live_registry_checks).map(([k, v]) => (
                                         <div key={k}>
-                                          <span className="text-slate-600">{k}: </span>
+                                          <span className="text-slate-500">{k}: </span>
                                           <strong className="text-slate-900">{String(v)}</strong>
                                         </div>
                                       ))}
@@ -1883,7 +2011,7 @@ export function App() {
                                             stepRes.reproducible_python_code
                                           )
                                         }
-                                        className="px-3 py-1.5 bg-slate-900 text-amber-400 font-bold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
+                                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
                                       >
                                         <Download className="w-3 h-3" /> Download Python Model (.py)
                                       </button>
@@ -1894,7 +2022,7 @@ export function App() {
                                             stepRes.venture_dossier_markdown
                                           )
                                         }
-                                        className="px-3 py-1.5 bg-red-700 text-white font-bold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
+                                        className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
                                       >
                                         <Download className="w-3 h-3" /> Download Dossier (.md)
                                       </button>
@@ -1913,38 +2041,38 @@ export function App() {
             )}
 
             {/* Collapsible Moonshot Problem Bank Drawer */}
-            <div className="dossier-card overflow-hidden">
+            <div className="glass-panel rounded-3xl overflow-hidden">
               <button
                 onClick={() => setShowAllMoonshots(!showAllMoonshots)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
               >
                 <div>
-                  <div className="text-sm font-black uppercase tracking-tight text-slate-900">
+                  <div className="text-sm font-bold text-slate-900">
                     Inspect All {problems.length} Live Unmet Industry & Clinical Bottlenecks
                   </div>
-                  <div className="text-xs text-slate-600">
+                  <div className="text-xs text-slate-500">
                     Streamed from terminated ClinicalTrials.gov records and high-urgency engineering challenges
                   </div>
                 </div>
                 {showAllMoonshots ? (
-                  <ChevronUp className="w-5 h-5 text-slate-700" />
+                  <ChevronUp className="w-5 h-5 text-slate-500" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-700" />
+                  <ChevronDown className="w-5 h-5 text-slate-500" />
                 )}
               </button>
 
               {showAllMoonshots && (
-                <div className="p-6 border-t-2 border-slate-900 bg-stone-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="p-6 border-t border-slate-200/80 bg-slate-50/40 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   {problems.map((prob) => (
-                    <div key={prob.id} className="bg-white border-2 border-slate-900 p-4">
+                    <div key={prob.id} className="bg-white border border-slate-200 rounded-2xl p-4">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="px-2.5 py-0.5 bg-amber-400 text-slate-950 border border-slate-900 font-bold">
-                          {prob.code} | ${prob.tam_billions_usd}B Scale
+                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
+                          {prob.code} • ${prob.tam_billions_usd}B Scale
                         </span>
-                        <span className="text-slate-600 font-medium">{prob.sponsor_or_source}</span>
+                        <span className="text-slate-500 font-medium">{prob.sponsor_or_source}</span>
                       </div>
                       <div className="font-bold text-slate-900 text-sm">{prob.title}</div>
-                      <p className="text-slate-700 mt-1.5 leading-relaxed">{prob.description}</p>
+                      <p className="text-slate-600 mt-1.5 leading-relaxed">{prob.description}</p>
                     </div>
                   ))}
                 </div>
@@ -1954,13 +2082,13 @@ export function App() {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => setCurrentStep(2)}
-                className="px-4 py-2.5 bg-white border-2 border-slate-900 text-slate-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Return to Stage 02
               </button>
               <button
                 onClick={() => setCurrentStep(1)}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
               >
                 Investigate Another Dissertation (Stage 01)
               </button>
