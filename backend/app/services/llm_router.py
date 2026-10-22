@@ -209,22 +209,23 @@ class LLMRouter:
         """
         system_prompt = (
             "You are a research planner for ThesisOut.\n"
-            "Given a user's research question or topic, extract parameters to run the discovery and 30-model evaluation pipeline.\n"
+            "Given a user's research question across any scientific, engineering, quantitative, social, or physical discipline, extract parameters to run the discovery and 30-model evaluation pipeline.\n"
+            "Do not restrict or narrow the user's scientific concepts. Preserve their exact field and terminology.\n"
             "Write in a direct, plain human style. Do not use emojis, asterisks, semicolons, em-dashes, or AI buzzwords.\n"
             "Do not attribute authorship to any AI or LLM.\n"
             "Respond strictly in valid JSON with keys:\n"
-            '  "search_query": "2-4 core scientific keywords to query OpenAlex and Zenodo",\n'
-            '  "probe_entity": "1 specific gene symbol, protein, drug, or core technical term (e.g. EGFR, BRCA1, sepsis, CRISPR, lithium, transformer)",\n'
-            '  "domain": "biomedical" or "cs_ai",\n'
-            '  "hypothesis": "Plain, direct 1-sentence testable hypothesis"'
+            '  "search_query": "2-5 core scientific keywords from the user prompt to query OpenAlex and Zenodo",\n'
+            '  "probe_entity": "1 primary technical entity, phenomenon, molecule, gene, material, or concept from the prompt",\n'
+            '  "domain": "primary field name (e.g. astrophysics, climate, chemistry, economics, biomedical, cs_ai, physics, ecology)",\n'
+            '  "hypothesis": "Plain, direct 1-sentence testable hypothesis matching the user domain"'
         )
         try:
             res = await self._call_gemini_json(system_prompt, f"USER_PROMPT: {user_prompt}")
             if res and isinstance(res, dict) and res.get("search_query"):
                 return {
-                    "search_query": str(res.get("search_query", user_prompt[:45])).strip(),
-                    "probe_entity": str(res.get("probe_entity", "EGFR")).strip(),
-                    "domain": "cs_ai" if str(res.get("domain", "")).lower() == "cs_ai" else "biomedical",
+                    "search_query": str(res.get("search_query", user_prompt[:55])).strip(),
+                    "probe_entity": str(res.get("probe_entity", user_prompt.split()[0] if user_prompt.split() else "science")).strip(),
+                    "domain": str(res.get("domain", "general_science")).strip().lower(),
                     "hypothesis": str(res.get("hypothesis", f"Nonlinear interactions govern the primary outcome regime in {user_prompt}.")).strip(),
                 }
         except Exception as exc:

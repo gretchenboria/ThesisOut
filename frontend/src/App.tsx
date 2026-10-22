@@ -509,209 +509,143 @@ export function App() {
         >
           <defs>
             <clipPath id="lensClip1">
-              <circle cx="240" cy="210" r="82" />
+              <circle cx="210" cy="210" r="46" />
             </clipPath>
             <clipPath id="lensClip2">
-              <circle cx="1190" cy="360" r="94" />
+              <circle cx="1220" cy="370" r="52" />
             </clipPath>
             <clipPath id="lensClip3">
-              <circle cx="310" cy="720" r="66" />
+              <circle cx="260" cy="730" r="42" />
             </clipPath>
           </defs>
 
-          {/* Fast Animated Trajectory Dash Lines */}
+          {/* Calm Animated Trajectory Dash Lines */}
           <path
-            d="M -60 220 C 300 40, 660 400, 1040 160 C 1240 60, 1380 240, 1520 120"
+            d="M -60 220 C 300 60, 680 360, 1060 160 C 1250 70, 1390 230, 1520 130"
             stroke="#2563EB"
-            strokeWidth="3"
-            strokeOpacity="0.38"
+            strokeWidth="2.2"
+            strokeOpacity="0.26"
             className="trajectory-dash"
           />
           <path
-            d="M -40 620 C 360 420, 740 760, 1140 440 C 1300 320, 1410 470, 1520 390"
-            stroke="#7C3AED"
-            strokeWidth="2.8"
-            strokeOpacity="0.34"
+            d="M -40 640 C 380 460, 760 740, 1160 440 C 1310 330, 1420 460, 1520 390"
+            stroke="#4F46E5"
+            strokeWidth="2"
+            strokeOpacity="0.22"
             className="trajectory-dash-reverse"
           />
-          <path
-            d="M 120 980 C 460 660, 840 780, 1290 220"
-            stroke="#E11D48"
-            strokeWidth="2.8"
-            strokeOpacity="0.32"
-            className="trajectory-dash"
-          />
 
-          {/* Continuous Horizontal Scrolling Binary Streams (Seamless Loop 0 -> -1440px) */}
-          <g className="binary-scroll-left" opacity="0.48">
-            <text x="0" y="135" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="4">
+          {/* Slow Horizontal Scrolling Binary Streams */}
+          <g className="binary-scroll-left" opacity="0.28">
+            <text x="0" y="140" fill="#2563EB" fontSize="12" fontWeight="600" letterSpacing="5">
               01101101 10100110 01001110 10110010 01011010 11001010 01000001 11010010 01110100 01101101 10100110 01001110 10110010 01011010 11001010 01000001 11010010 01110100
             </text>
-            <text x="0" y="485" fill="#54250E" fontSize="14" fontWeight="700" letterSpacing="4">
+            <text x="0" y="830" fill="#54250E" fontSize="12" fontWeight="600" letterSpacing="5">
               10110010 01011010 11001010 01101101 10100110 01001110 11010110 00101101 10111001 10110010 01011010 11001010 01101101 10100110 01001110 11010110 00101101 10111001
             </text>
-            <text x="0" y="845" fill="#E11D48" fontSize="14" fontWeight="700" letterSpacing="4">
-              01110010 10101100 11000110 01011100 10010110 01100011 10011010 01101101 00110101 01110010 10101100 11000110 01011100 10010110 01100011 10011010 01101101 00110101
-            </text>
           </g>
 
-          <g className="binary-scroll-right" opacity="0.44">
-            <text x="0" y="295" fill="#4F46E5" fontSize="14" fontWeight="700" letterSpacing="4">
+          <g className="binary-scroll-right" opacity="0.26">
+            <text x="0" y="510" fill="#4F46E5" fontSize="12" fontWeight="600" letterSpacing="5">
               11010110 00101101 10111001 01011100 10010110 01100011 10011010 01101101 00110101 11010110 00101101 10111001 01011100 10010110 01100011 10011010 01101101 00110101
             </text>
-            <text x="0" y="665" fill="#2563EB" fontSize="14" fontWeight="700" letterSpacing="4">
-              01000001 11010010 01110100 11001011 01010010 10011101 01101101 10100110 01001110 01000001 11010010 01110100 11001011 01010010 10011101 01101101 10100110 01001110
-            </text>
           </g>
 
-          {/* Continuous Vertical Scrolling Binary Columns on Margins */}
-          <g className="binary-scroll-vert" opacity="0.34">
-            {[0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320, 1440, 1560, 1680, 1800].map((yPos, idx) => (
-              <g key={idx}>
-                <text x="24" y={yPos} fill="#54250E" fontSize="12" fontWeight="700" letterSpacing="2">
-                  {idx % 2 === 0 ? '01101' : '10110'}
-                </text>
-                <text x="1384" y={yPos} fill="#2563EB" fontSize="12" fontWeight="700" letterSpacing="2">
-                  {idx % 2 === 0 ? '10011' : '01101'}
-                </text>
-              </g>
-            ))}
-          </g>
-
-          {/* Trajectory Waypoint Nodes */}
-          <circle cx="320" cy="182" r="7" fill="#2563EB" fillOpacity="0.65" />
-          <circle cx="320" cy="182" r="16" stroke="#2563EB" strokeOpacity="0.35" strokeWidth="2" />
-          <circle cx="1040" cy="160" r="8" fill="#4F46E5" fillOpacity="0.65" />
-          <circle cx="1140" cy="440" r="7" fill="#E11D48" fillOpacity="0.65" />
-
-          {/* MAGNIFYING GLASS 1 (Top-Left Scanning Lens with Scrolling Binary Inside) */}
-          <g className="lens-float-1" opacity="0.56">
-            {/* Lens Glass Fill */}
-            <circle cx="240" cy="210" r="92" fill="#DBEAFE" fillOpacity="0.58" />
-            {/* Scrolling Magnified Binary Stream Clipped Inside Lens 1 */}
+          {/* MAGNIFYING GLASS 1 (Compact Top-Left Scanning Lens) */}
+          <g className="lens-float-1" opacity="0.46">
+            <circle cx="210" cy="210" r="52" fill="#DBEAFE" fillOpacity="0.48" />
             <g clipPath="url(#lensClip1)">
               <g className="binary-scroll-lens">
-                <text x="140" y="196" fill="#1D4ED8" fontSize="16" fontWeight="800" letterSpacing="2">
+                <text x="150" y="214" fill="#1D4ED8" fontSize="12" fontWeight="700" letterSpacing="2">
                   01101001 11010010 01011011 01101001 11010010 01011011
-                </text>
-                <text x="140" y="224" fill="#E11D48" fontSize="15" fontWeight="800" letterSpacing="2">
-                  101101 → CLUE → 011010 → CLUE → 101101 → CLUE
                 </text>
               </g>
             </g>
-            {/* Outer Rim & Inner Dashed Ring */}
-            <circle cx="240" cy="210" r="92" stroke="#3B1A08" strokeWidth="7" />
-            <circle cx="240" cy="210" r="84" stroke="#2563EB" strokeWidth="3" />
-            <circle cx="240" cy="210" r="68" stroke="#6B3410" strokeWidth="1.8" strokeDasharray="8 6" />
-            {/* Specular Glint Arc */}
+            <circle cx="210" cy="210" r="52" stroke="#3B1A08" strokeWidth="4.5" />
+            <circle cx="210" cy="210" r="46" stroke="#2563EB" strokeWidth="2" />
             <path
-              d="M 182 162 A 68 68 0 0 1 278 148"
+              d="M 178 182 A 38 38 0 0 1 232 174"
               stroke="#FFFFFF"
-              strokeWidth="6"
+              strokeWidth="3.5"
               strokeLinecap="round"
             />
-            {/* Vintage Mahogany Leather Handle with Stitch Detail */}
             <line
-              x1="306"
-              y1="276"
-              x2="386"
-              y2="356"
+              x1="247"
+              y1="247"
+              x2="292"
+              y2="292"
               stroke="#3B1A08"
-              strokeWidth="18"
-              strokeLinecap="round"
-            />
-            <line
-              x1="310"
-              y1="280"
-              x2="382"
-              y2="352"
-              stroke="#6B3410"
               strokeWidth="11"
               strokeLinecap="round"
             />
             <line
-              x1="314"
-              y1="284"
-              x2="378"
-              y2="348"
-              stroke="#D6B89C"
-              strokeWidth="1.8"
-              strokeDasharray="4 4"
+              x1="249"
+              y1="249"
+              x2="289"
+              y2="289"
+              stroke="#6B3410"
+              strokeWidth="6.5"
               strokeLinecap="round"
             />
           </g>
 
-          {/* MAGNIFYING GLASS 2 (Right-Center Scanning Lens with Scrolling Binary Inside) */}
-          <g className="lens-float-2" opacity="0.52">
-            <circle cx="1190" cy="360" r="105" fill="#EDE9FE" fillOpacity="0.58" />
+          {/* MAGNIFYING GLASS 2 (Compact Right-Center Scanning Lens) */}
+          <g className="lens-float-2" opacity="0.44">
+            <circle cx="1220" cy="370" r="58" fill="#EDE9FE" fillOpacity="0.48" />
             <g clipPath="url(#lensClip2)">
               <g className="binary-scroll-lens">
-                <text x="1080" y="346" fill="#4F46E5" fontSize="17" fontWeight="800" letterSpacing="2">
+                <text x="1150" y="374" fill="#4F46E5" fontSize="12" fontWeight="700" letterSpacing="2">
                   10101100 01101001 11001010 10101100 01101001 11001010
-                </text>
-                <text x="1080" y="376" fill="#2563EB" fontSize="15" fontWeight="800" letterSpacing="2">
-                  010110 → SIGNAL → 101100 → SIGNAL → 010110 → SIGNAL
                 </text>
               </g>
             </g>
-            <circle cx="1190" cy="360" r="105" stroke="#3B1A08" strokeWidth="7" />
-            <circle cx="1190" cy="360" r="96" stroke="#7C3AED" strokeWidth="3" />
-            <circle cx="1190" cy="360" r="76" stroke="#6B3410" strokeWidth="2" strokeDasharray="10 8" />
+            <circle cx="1220" cy="370" r="58" stroke="#3B1A08" strokeWidth="4.5" />
+            <circle cx="1220" cy="370" r="52" stroke="#7C3AED" strokeWidth="2" />
             <path
-              d="M 1125 305 A 78 78 0 0 1 1235 288"
+              d="M 1184 338 A 42 42 0 0 1 1244 330"
               stroke="#FFFFFF"
-              strokeWidth="6"
+              strokeWidth="3.5"
               strokeLinecap="round"
             />
             <line
-              x1="1265"
-              y1="435"
-              x2="1360"
-              y2="530"
+              x1="1261"
+              y1="411"
+              x2="1312"
+              y2="462"
               stroke="#3B1A08"
-              strokeWidth="20"
-              strokeLinecap="round"
-            />
-            <line
-              x1="1269"
-              y1="439"
-              x2="1355"
-              y2="525"
-              stroke="#5C2C12"
               strokeWidth="12"
               strokeLinecap="round"
             />
             <line
-              x1="1273"
-              y1="443"
-              x2="1350"
-              y2="520"
-              stroke="#D6B89C"
-              strokeWidth="1.8"
-              strokeDasharray="4 4"
+              x1="1263"
+              y1="413"
+              x2="1309"
+              y2="459"
+              stroke="#5C2C12"
+              strokeWidth="7"
               strokeLinecap="round"
             />
           </g>
 
-          {/* MAGNIFYING GLASS 3 (Bottom-Left Scanning Lens with Scrolling Binary Inside) */}
-          <g className="lens-float-3" opacity="0.48">
-            <circle cx="310" cy="720" r="76" fill="#FFE4E6" fillOpacity="0.55" />
+          {/* MAGNIFYING GLASS 3 (Compact Bottom-Left Scanning Lens) */}
+          <g className="lens-float-3" opacity="0.4">
+            <circle cx="260" cy="730" r="46" fill="#FFE4E6" fillOpacity="0.45" />
             <g clipPath="url(#lensClip3)">
               <g className="binary-scroll-lens">
-                <text x="220" y="724" fill="#E11D48" fontSize="15" fontWeight="800" letterSpacing="2">
+                <text x="205" y="734" fill="#E11D48" fontSize="11.5" fontWeight="700" letterSpacing="2">
                   01100101 10110100 01011001 01100101 10110100 01011001
                 </text>
               </g>
             </g>
-            <circle cx="310" cy="720" r="76" stroke="#3B1A08" strokeWidth="6" />
-            <circle cx="310" cy="720" r="68" stroke="#E11D48" strokeWidth="2.5" />
+            <circle cx="260" cy="730" r="46" stroke="#3B1A08" strokeWidth="4" />
+            <circle cx="260" cy="730" r="40" stroke="#E11D48" strokeWidth="1.8" />
             <line
-              x1="364"
-              y1="774"
-              x2="430"
-              y2="840"
+              x1="293"
+              y1="763"
+              x2="332"
+              y2="802"
               stroke="#5C2C12"
-              strokeWidth="15"
+              strokeWidth="9.5"
               strokeLinecap="round"
             />
           </g>
@@ -861,7 +795,7 @@ export function App() {
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Enter a research question (for example: overlooked biomarkers for sepsis survival)"
+              placeholder="Enter any research question across any scientific, engineering, or quantitative field"
               className="flex-1 px-4 py-3.5 rounded-2xl bg-slate-50 border-2 border-slate-900 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white font-medium"
             />
             <button
@@ -883,24 +817,24 @@ export function App() {
             </button>
           </form>
 
-          {/* Practical Query Guidance (replaces canned buttons) */}
+          {/* Open-Ended Query Guidance Across Any Discipline */}
           <div className="pop-subcard rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div>
-              <div className="font-extrabold text-slate-900">1. Name the Condition or System</div>
+              <div className="font-extrabold text-slate-900">1. Any Field or Phenomenon</div>
               <p className="text-slate-600 mt-0.5 leading-relaxed">
-                Specify the exact disease, biological pathway, or engineering material (such as bacterial sepsis, CAR-T exhaustion, or solid-state lithium anodes).
+                Ask about any discipline: medicine, physics, climate, chemistry, economics, ecology, astrophysics, or materials science.
               </p>
             </div>
             <div>
-              <div className="font-extrabold text-slate-900">2. State the Target Outcome</div>
+              <div className="font-extrabold text-slate-900">2. What You Want to Predict</div>
               <p className="text-slate-600 mt-0.5 leading-relaxed">
-                Include the measurable endpoint you want the 30 models to predict (such as ICU survival, IC50 drug response, or cycle-life degradation).
+                Mention the outcome or relationship you want 30 cross-validated models to test inside the raw dataset.
               </p>
             </div>
             <div>
-              <div className="font-extrabold text-slate-900">3. Or Upload Your Own CSV</div>
+              <div className="font-extrabold text-slate-900">3. Or Bring Your Own Data</div>
               <p className="text-slate-600 mt-0.5 leading-relaxed">
-                Have a raw lab spreadsheet or thesis PDF ready? Click Upload Thesis CSV in the top right to audit your own file directly.
+                Click Upload Thesis CSV in the top right to run the full 30-model sweep on your own spreadsheet or thesis PDF.
               </p>
             </div>
           </div>

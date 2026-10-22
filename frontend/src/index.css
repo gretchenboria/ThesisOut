@@ -76,40 +76,31 @@ body {
   }
 }
 
-/* Playful, clearly noticeable magnifying glass scanning animations */
+/* Calm, unhurried magnifying glass scanning animations */
 @keyframes lensScanPrimary {
   0%, 100% {
-    transform: translate(0px, 0px) rotate(-6deg) scale(1);
-  }
-  25% {
-    transform: translate(110px, 35px) rotate(8deg) scale(1.08);
+    transform: translate(0px, 0px) rotate(-4deg);
   }
   50% {
-    transform: translate(65px, 95px) rotate(-4deg) scale(1.03);
-  }
-  75% {
-    transform: translate(-55px, 45px) rotate(6deg) scale(1.06);
+    transform: translate(55px, 35px) rotate(4deg);
   }
 }
 
 @keyframes lensScanSecondary {
   0%, 100% {
-    transform: translate(0px, 0px) rotate(5deg) scale(1);
+    transform: translate(0px, 0px) rotate(4deg);
   }
-  33% {
-    transform: translate(-120px, 50px) rotate(-10deg) scale(1.1);
-  }
-  66% {
-    transform: translate(-45px, -65px) rotate(7deg) scale(1.04);
+  50% {
+    transform: translate(-60px, 30px) rotate(-5deg);
   }
 }
 
 @keyframes lensScanTertiary {
   0%, 100% {
-    transform: translate(0px, 0px) rotate(-4deg) scale(1);
+    transform: translate(0px, 0px) rotate(-3deg);
   }
   50% {
-    transform: translate(95px, -70px) rotate(9deg) scale(1.12);
+    transform: translate(45px, -35px) rotate(5deg);
   }
 }
 
@@ -137,62 +128,48 @@ body {
     transform: translateX(0px);
   }
   100% {
-    transform: translateX(-420px);
-  }
-}
-
-@keyframes binaryScrollVertical {
-  0% {
-    transform: translateY(0px);
-  }
-  100% {
-    transform: translateY(-960px);
+    transform: translateX(-320px);
   }
 }
 
 .trajectory-dash {
-  stroke-dasharray: 14 10;
-  animation: trajectoryFlowFast 3.2s linear infinite;
+  stroke-dasharray: 14 12;
+  animation: trajectoryFlowFast 11s linear infinite;
 }
 
 .trajectory-dash-reverse {
-  stroke-dasharray: 10 12;
-  animation: trajectoryFlowReverseFast 3.8s linear infinite;
+  stroke-dasharray: 10 14;
+  animation: trajectoryFlowReverseFast 13s linear infinite;
 }
 
 .lens-float-1 {
-  animation: lensScanPrimary 7s ease-in-out infinite;
+  animation: lensScanPrimary 19s ease-in-out infinite;
   transform-origin: center;
 }
 
 .lens-float-2 {
-  animation: lensScanSecondary 8.5s ease-in-out infinite;
+  animation: lensScanSecondary 23s ease-in-out infinite;
   transform-origin: center;
 }
 
 .lens-float-3 {
-  animation: lensScanTertiary 6.5s ease-in-out infinite;
+  animation: lensScanTertiary 21s ease-in-out infinite;
   transform-origin: center;
 }
 
 .binary-scroll-left {
   font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryScrollLeft 14s linear infinite;
+  animation: binaryScrollLeft 38s linear infinite;
 }
 
 .binary-scroll-right {
   font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryScrollRight 16s linear infinite;
+  animation: binaryScrollRight 44s linear infinite;
 }
 
 .binary-scroll-lens {
   font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryScrollLens 5.5s linear infinite;
-}
-
-.binary-scroll-vert {
-  font-family: 'Google Sans Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  animation: binaryScrollVertical 15s linear infinite;
+  animation: binaryScrollLens 16s linear infinite;
 }
 
 /* High-contrast case-file cards with burnished leather spine */
