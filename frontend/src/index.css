@@ -26,35 +26,86 @@ body {
   overflow-x: hidden;
 }
 
-/* Authentic Full-Grain Pebbled Vintage Leather (Organic SVG Fractal Noise Pore Texture, Zero Stripes) */
+/* Authentic 3D Embossed Full-Grain Pebbled Vintage Leather (Specular Diffuse Lighting + Pore Creases) */
 .leather-bar {
-  background-color: #4A200B;
+  background-color: #461E0A;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='pebble'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.16  0 0 0 0 0.06  0 0 0 0 0.02  0 0 0 0.32 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23pebble)'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 25% 0%, rgba(154, 82, 40, 0.42) 0%, transparent 65%),
-    radial-gradient(ellipse at 80% 100%, rgba(28, 10, 3, 0.55) 0%, transparent 70%),
-    linear-gradient(180deg, #5E2B11 0%, #3D1A08 55%, #2B1104 100%);
-  border-bottom: 3px solid #1C0A02;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='leather3d' x='0%25' y='0%25' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.045 0.055' numOctaves='4' seed='14' stitchTiles='stitch' result='pebbles'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='3' seed='7' stitchTiles='stitch' result='pores'/%3E%3CfeBlend mode='multiply' in='pebbles' in2='pores' result='grain'/%3E%3CfeDiffuseLighting in='grain' lighting-color='%23b56738' surfaceScale='3.2' diffuseConstant='1.15' result='lit'%3E%3CfeDistantLight azimuth='135' elevation='48'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer in='lit'%3E%3CfeFuncA type='linear' slope='0.34'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23leather3d)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 22% 0%, rgba(168, 88, 42, 0.45) 0%, transparent 62%),
+    radial-gradient(ellipse at 82% 100%, rgba(20, 7, 2, 0.65) 0%, transparent 68%),
+    linear-gradient(180deg, #632D12 0%, #431C09 54%, #280F03 100%);
+  border-bottom: 3px solid #1A0801;
   box-shadow:
-    inset 0 1px 1px rgba(255, 224, 194, 0.25),
-    inset 0 -3px 8px rgba(15, 5, 1, 0.65),
-    0 4px 14px rgba(43, 17, 4, 0.26);
+    inset 0 1.5px 1px rgba(255, 224, 194, 0.3),
+    inset 0 -4px 10px rgba(12, 4, 1, 0.72),
+    0 5px 16px rgba(43, 17, 4, 0.3);
 }
 
 .leather-badge {
-  background-color: #58270E;
+  background-color: #54240C;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.18  0 0 0 0 0.07  0 0 0 0 0.02  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23grain)'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 30% 20%, rgba(168, 90, 44, 0.38) 0%, transparent 65%),
-    linear-gradient(145deg, #6E3415 0%, #481F0A 60%, #331405 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='badgeleather' x='0%25' y='0%25' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.06 0.07' numOctaves='4' seed='9' stitchTiles='stitch' result='pebbles'/%3E%3CfeDiffuseLighting in='pebbles' lighting-color='%23c47442' surfaceScale='2.8' diffuseConstant='1.2' result='lit'%3E%3CfeDistantLight azimuth='125' elevation='52'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer in='lit'%3E%3CfeFuncA type='linear' slope='0.36'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23badgeleather)'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 30% 18%, rgba(178, 96, 48, 0.42) 0%, transparent 65%),
+    linear-gradient(145deg, #6E3415 0%, #481F0A 58%, #2E1104 100%);
   color: #FAF6F0;
   border: 2px solid #220D03;
-  outline: 1.5px dashed rgba(216, 185, 156, 0.6);
+  outline: 1.5px dashed rgba(224, 192, 162, 0.7);
   outline-offset: -4px;
   box-shadow:
-    inset 0 1px 2px rgba(255, 228, 200, 0.28),
-    inset 0 -2px 5px rgba(18, 6, 1, 0.6),
+    inset 0 1px 2px rgba(255, 230, 204, 0.32),
+    inset 0 -2px 6px rgba(18, 6, 1, 0.65),
     3px 3px 0px #220D03;
+}
+
+/* Occasional Brand-Compatible Gem Reveal Animation (appears every ~18s, sparkles, fades) */
+@keyframes gemRevealCycle1 {
+  0%, 66%, 100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.72) rotate(-10deg);
+  }
+  74% {
+    opacity: 0.72;
+    transform: translateY(-4px) scale(1.04) rotate(0deg);
+  }
+  82% {
+    opacity: 0.78;
+    transform: translateY(-8px) scale(1) rotate(5deg);
+  }
+  90% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.82) rotate(12deg);
+  }
+}
+
+@keyframes gemRevealCycle2 {
+  0%, 30%, 64%, 100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.72) rotate(8deg);
+  }
+  40% {
+    opacity: 0.68;
+    transform: translateY(-5px) scale(1.03) rotate(-3deg);
+  }
+  48% {
+    opacity: 0.74;
+    transform: translateY(-9px) scale(0.98) rotate(-6deg);
+  }
+  56% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.8) rotate(-12deg);
+  }
+}
+
+.gem-episodic-1 {
+  animation: gemRevealCycle1 18s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.gem-episodic-2 {
+  animation: gemRevealCycle2 22s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 /* Fast, noticeable trajectory dash animations */

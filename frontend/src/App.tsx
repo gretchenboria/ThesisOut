@@ -650,6 +650,51 @@ export function App() {
               strokeLinecap="round"
             />
           </g>
+
+          {/* EPISODIC BRAND GEM 1: Royal Sapphire Faceted Gem (Appears occasionally in top-right field) */}
+          <g className="gem-episodic-1">
+            {/* Outer Faceted Cut */}
+            <polygon
+              points="1080,155 1098,170 1091,194 1069,194 1062,170"
+              fill="#DBEAFE"
+              stroke="#2563EB"
+              strokeWidth="2.2"
+            />
+            {/* Inner Crown & Pavilion Facets */}
+            <polygon
+              points="1080,161 1092,172 1080,189 1068,172"
+              fill="#3B82F6"
+              fillOpacity="0.65"
+            />
+            <line x1="1062" y1="170" x2="1098" y2="170" stroke="#1D4ED8" strokeWidth="1.4" />
+            <line x1="1080" y1="155" x2="1080" y2="194" stroke="#1D4ED8" strokeWidth="1.2" />
+            {/* Crisp Glint Star */}
+            <path
+              d="M 1106 150 L 1108 156 L 1114 158 L 1108 160 L 1106 166 L 1104 160 L 1098 158 L 1104 156 Z"
+              fill="#2563EB"
+            />
+          </g>
+
+          {/* EPISODIC BRAND GEM 2: Crimson-Indigo Faceted Gem (Appears occasionally in lower-right field) */}
+          <g className="gem-episodic-2">
+            <polygon
+              points="1130,680 1146,694 1140,716 1120,716 1114,694"
+              fill="#FFE4E6"
+              stroke="#E11D48"
+              strokeWidth="2.2"
+            />
+            <polygon
+              points="1130,685 1141,695 1130,711 1119,695"
+              fill="#E11D48"
+              fillOpacity="0.58"
+            />
+            <line x1="1114" y1="694" x2="1146" y2="694" stroke="#BE123C" strokeWidth="1.4" />
+            <line x1="1130" y1="680" x2="1130" y2="716" stroke="#BE123C" strokeWidth="1.2" />
+            <path
+              d="M 1153 675 L 1155 680 L 1160 682 L 1155 684 L 1153 689 L 1151 684 L 1146 682 L 1151 680 Z"
+              fill="#4F46E5"
+            />
+          </g>
         </svg>
       </div>
 
