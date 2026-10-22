@@ -1,0 +1,9 @@
+name = "thesisout-edge"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+workers_dev = false
+
+routes = [
+  { pattern = "thesisout.com", custom_domain = true },
+  { pattern = "www.thesisout.com", custom_domain = true }
+]
