@@ -208,9 +208,10 @@ export function App() {
   const [attachingData, setAttachingData] = useState<boolean>(false);
 
   // Live Harvester state
-  const [harvestQuery, setHarvestQuery] = useState<string>('breast cancer');
+  const [harvestQuery, setHarvestQuery] = useState<string>('');
   const [harvestDomain, setHarvestDomain] = useState<string>('biomedical');
   const [harvesting, setHarvesting] = useState<boolean>(false);
+  const [streamEvents, setStreamEvents] = useState<string[]>([]);
 
   // Upload state
   const [uploadTitle, setUploadTitle] = useState<string>('');
@@ -367,31 +368,48 @@ export function App() {
     if (!harvestQuery.trim()) return;
     setHarvesting(true);
     setErrorMsg(null);
-    try {
-      const res = await fetch('/api/harvest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: harvestQuery,
-          domain: harvestDomain,
-          min_year: 2018,
-          max_results: 3,
-          top_science_only: true,
-          auto_run_lazypredict: true,
-        }),
-      });
-      if (res.ok) {
-        const created: Dissertation[] = await res.json();
-        await fetchAllData();
-        if (created.length > 0) {
-          handleSelectDissertation(created[0]);
+    setStreamEvents(['Connecting to live OpenAlex, ClinicalTrials.gov & Zenodo streams...']);
+
+    const url = `/api/harvest/stream?query=${encodeURIComponent(harvestQuery.trim())}&domain=${encodeURIComponent(harvestDomain)}&min_year=2018&max_results=3`;
+    const evtSource = new EventSource(url);
+
+    evtSource.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          setStreamEvents((prev) => [...prev, data.message]);
         }
+        if (data.step === 'complete') {
+          evtSource.close();
+          await fetchAllData();
+          setHarvesting(false);
+          const createdIds: number[] = data.payload?.dissertation_ids || [];
+          if (createdIds.length > 0) {
+            setSelectedDissId(createdIds[0]);
+            setCurrentStep(2);
+          }
+        }
+      } catch (err) {
+        console.error('Stream parse error:', err);
       }
-    } catch (err) {
-      setErrorMsg('Live OpenAlex/Zenodo search encountered a connection error.');
-    } finally {
+    };
+
+    evtSource.onerror = async () => {
+      evtSource.close();
+      await fetchAllData();
       setHarvesting(false);
-    }
+    };
+  };
+
+  const handleResetWorkspace = async () => {
+    await fetch('/api/workspace/reset', { method: 'DELETE' });
+    setDissertations([]);
+    setOpportunities([]);
+    setProblems([]);
+    setSelectedDissId(null);
+    setSelectedRunId(null);
+    setStreamEvents([]);
+    setCurrentStep(1);
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -454,6 +472,14 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2 text-xs">
+            {dissertations.length > 0 && (
+              <button
+                onClick={handleResetWorkspace}
+                className="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium transition cursor-pointer"
+              >
+                Clear Workspace
+              </button>
+            )}
             <span className="px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-purple-500" />
               Gemini 4 Argon + Opus 5.5
@@ -695,22 +721,37 @@ export function App() {
 
                   <button
                     type="submit"
-                    disabled={harvesting}
-                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-pink-200 transition cursor-pointer"
+                    disabled={harvesting || !harvestQuery.trim()}
+                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-pink-200 transition cursor-pointer"
                   >
                     {harvesting ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        Searching OpenAlex & Zenodo and running 30+ models...
+                        Streaming Live from OpenAlex, ClinicalTrials.gov & Zenodo...
                       </>
                     ) : (
                       <>
                         <Wand2 className="w-4 h-4" />
-                        Find Real Theses & Run Data Check →
+                        Stream Real Theses & Auto-Test Data →
                       </>
                     )}
                   </button>
                 </form>
+
+                {/* Live SSE Stream Progress Log */}
+                {streamEvents.length > 0 && (
+                  <div className="mt-5 bg-sky-50/70 border border-sky-200 rounded-2xl p-4 space-y-1.5 text-xs">
+                    <div className="font-bold text-sky-800 uppercase tracking-wider text-[10px]">
+                      Live API Stream Status
+                    </div>
+                    {streamEvents.map((msg, i) => (
+                      <div key={i} className="flex items-center gap-2 text-slate-700">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span>{msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.agents.data_scientist import data_scientist_agent
@@ -92,9 +93,8 @@ def get_dissertation(dissertation_id: int, db: Session = Depends(get_db)):
 @router.post("/harvest", response_model=List[DissertationSchema])
 async def harvest_dissertations(req: HarvestQueryRequest, db: Session = Depends(get_db)):
     """
-    Live harvests Top-Science dissertations from OpenAlex/EuropePMC/arXiv, resolves or synthesizes
-    empirical datasets, runs 30+ LazyPredict models (Primary + Rotated Secondary targets),
-    and generates Giant-Impact Market Translation Dossiers.
+    Live harvests Top-Science dissertations from OpenAlex/EuropePMC/arXiv, resolves real Zenodo
+    datasets, runs 30+ LazyPredict models, and generates Market Translation Dossiers.
     """
     results = await orchestrator.harvest_and_analyze_live(
         db=db,
@@ -105,6 +105,49 @@ async def harvest_dissertations(req: HarvestQueryRequest, db: Session = Depends(
         top_science_only=req.top_science_only,
     )
     return results
+
+
+@router.get("/harvest/stream")
+async def stream_harvest_dissertations(
+    query: str = Query(...),
+    domain: str = Query("biomedical"),
+    min_year: int = Query(2018),
+    max_results: int = Query(3),
+    db: Session = Depends(get_db),
+):
+    """
+    Streams real-time Server-Sent Events (SSE) as ThesisOut queries OpenAlex, ClinicalTrials.gov,
+    and Zenodo APIs and runs LazyPredict on real downloaded datasets.
+    """
+    return StreamingResponse(
+        orchestrator.stream_harvest_and_analyze(
+            db=db,
+            query=query,
+            domain=domain,
+            min_year=min_year,
+            max_results=max_results,
+            top_science_only=True,
+        ),
+        media_type="text/event-stream",
+    )
+
+
+@router.delete("/workspace/reset")
+def reset_workspace(db: Session = Depends(get_db)) -> Dict[str, str]:
+    """Wipes all indexed dissertations, datasets, runs, problems, and opportunities for a clean slate."""
+    db.query(MarketOpportunity).delete()
+    db.query(LazyPredictRun).delete()
+    db.query(DatasetArtifact).delete()
+    db.query(Dissertation).delete()
+    db.query(IndustryProblem).delete()
+    db.commit()
+    for f in settings.DATASET_DIR.glob("*"):
+        if f.name != ".gitkeep" and f.is_file():
+            f.unlink(missing_ok=True)
+    for f in settings.PDF_DIR.glob("*"):
+        if f.name != ".gitkeep" and f.is_file():
+            f.unlink(missing_ok=True)
+    return {"status": "reset", "message": "Workspace completely cleared."}
 
 
 @router.post("/upload-dissertation", response_model=DissertationSchema)

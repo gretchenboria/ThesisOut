@@ -13,11 +13,11 @@ def test_real_data_only_pipeline():
         assert r_health.json()["primary_llm"] == "gemini-4-argon"
         assert r_health.json()["fallback_llm"] == "claude-opus-5-5"
 
-        # 2. Verify zero synthetic dissertations are pre-populated on startup
+        # 2. Verify zero synthetic dissertations or problems are hardcoded on startup
         r_stats = client.get("/api/stats")
         assert r_stats.status_code == 200
         stats = r_stats.json()
-        assert stats["giant_impact_problems_count"] >= 15
+        assert stats["dissertations_indexed"] == 0
 
         # 3. Upload the real UCI Wisconsin Breast Cancer Diagnostic dataset (569 real clinical biopsy samples, 30 features)
         bc = load_breast_cancer(as_frame=True)
@@ -51,3 +51,8 @@ def test_real_data_only_pipeline():
         assert "stage1_leakage_and_permutation_audit" in esc
         assert "stage2_super_learner_ensemble" in esc
         assert esc["stage2_super_learner_ensemble"]["super_learner_score"] > 0.90
+
+        # 5. Reset workspace so DB remains completely clean
+        r_reset = client.delete("/api/workspace/reset")
+        assert r_reset.status_code == 200
+        assert client.get("/api/stats").json()["dissertations_indexed"] == 0

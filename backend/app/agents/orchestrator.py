@@ -1,19 +1,22 @@
 """
-Multi-Agent Orchestrator for ThesisOut (100% Real Data Only).
-Coordinates:
-1. Real Dissertation Ingestion (via OpenAlex Live API or Direct PDF + CSV/TSV/XLSX/Parquet Upload)
-2. Real Dataset Resolution from Zenodo API or Embedded PDF Table Extraction (`pdfplumber`)
-3. Dataset Profiling & Multi-Target LazyPredict Sweeps (Primary Target + Secondary Rotated Targets)
-4. Market Translation & Giant-Impact Reverse Matching (via Gemini 4 Argon / Opus 5.5 + ClinicalTrials.gov & OpenTargets APIs)
+Multi-Agent Orchestrator for ThesisOut (100% Live Streaming & Real Data Only).
+Zero hardcoded records. Supports both standard async execution and real-time Server-Sent Events (SSE)
+streaming across:
+1. Live OpenAlex Dissertation Discovery (`api.openalex.org/works`)
+2. Live Zenodo Open-Access Tabular Dataset Resolution (`zenodo.org/api/records`)
+3. Live ClinicalTrials.gov & OpenAlex Unmet Challenge Discovery
+4. Autonomous 30-Model LazyPredict Sweeps + Market Translation Synthesis
 """
+import json
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import AsyncGenerator, List, Optional
 from sqlalchemy.orm import Session
 
 from app.agents.data_scientist import data_scientist_agent
 from app.agents.harvester_agent import harvester_agent
 from app.agents.pdf_extractor import pdf_extractor_agent
+from app.agents.problem_harvester import live_problem_harvester
 from app.agents.translation_agent import translation_agent
 from app.config import settings
 from app.models import DatasetArtifact, Dissertation, IndustryProblem, LazyPredictRun, MarketOpportunity
@@ -35,10 +38,6 @@ class PipelineOrchestrator:
         author_discussed_features: Optional[List[str]] = None,
         max_secondary_targets: int = 1,
     ) -> Optional[DatasetArtifact]:
-        """
-        Loads a real dataset from disk, profiles its schema, runs LazyPredict on the primary target
-        plus rotated secondary targets, and generates Market Translation Opportunities.
-        """
         df = data_scientist_agent.load_dataframe(dataset_path)
         if len(df) < 10 or len(df.columns) < 2:
             logger.warning("Dataset %s has insufficient rows/columns (%s) for LazyPredict", dataset_name, df.shape)
@@ -67,7 +66,14 @@ class PipelineOrchestrator:
             max_secondary_targets=max_secondary_targets,
         )
 
-        problems = db.query(IndustryProblem).all()
+        # Ensure live unmet challenges exist for this domain/topic from OpenAlex & ClinicalTrials.gov
+        problems = db.query(IndustryProblem).filter(IndustryProblem.domain == dissertation.domain).all()
+        if not problems:
+            problems = await live_problem_harvester.fetch_live_clinical_and_tech_challenges(
+                db=db,
+                query=dissertation.subdomain or dissertation.title[:40],
+                domain=dissertation.domain,
+            )
 
         for t_info in targets:
             t_col = t_info["target_column"]
@@ -124,7 +130,7 @@ class PipelineOrchestrator:
         db.refresh(ds_artifact)
         return ds_artifact
 
-    async def harvest_and_analyze_live(
+    async def stream_harvest_and_analyze(
         self,
         db: Session,
         query: str,
@@ -132,12 +138,18 @@ class PipelineOrchestrator:
         min_year: int = 2018,
         max_results: int = 3,
         top_science_only: bool = True,
-    ) -> List[Dissertation]:
+    ) -> AsyncGenerator[str, None]:
         """
-        Searches OpenAlex for real Top-Science dissertations matching `query` and searches Zenodo's live API
-        for real open-access CSV datasets associated with the dissertation or query.
-        Never generates synthetic data.
+        Streams real-time Server-Sent Events (SSE) as each live API stage progresses:
+        - Live OpenAlex Dissertation Search
+        - Live ClinicalTrials.gov / OpenAlex Unmet Challenge Stream
+        - Live Zenodo Dataset Download
+        - Live 30-Model LazyPredict Execution & Market Synthesis
         """
+        def sse(step: str, message: str, payload: dict | None = None) -> str:
+            return f"data: {json.dumps({'step': step, 'message': message, 'payload': payload or {}})}\n\n"
+
+        yield sse("openalex", f"Streaming live dissertations for '{query}' from OpenAlex API...")
         harvested_items = await harvester_agent.search_openalex_dissertations(
             query=query,
             domain=domain,
@@ -145,54 +157,62 @@ class PipelineOrchestrator:
             max_results=max_results,
             top_science_only=top_science_only,
         )
-        created_dissertations: List[Dissertation] = []
+        yield sse("openalex_done", f"Found {len(harvested_items)} real dissertations on OpenAlex.")
 
-        # Also query Zenodo once for real open-access CSV datasets matching this research topic
+        yield sse("challenges", f"Streaming live unmet clinical & industry bottlenecks for '{query}'...")
+        live_probs = await live_problem_harvester.fetch_live_clinical_and_tech_challenges(
+            db=db, query=query, domain=domain
+        )
+        yield sse("challenges_done", f"Indexed {len(live_probs)} real unmet problems from ClinicalTrials.gov & OpenAlex.")
+
+        yield sse("zenodo", f"Searching Zenodo API for open-access CSV datasets matching '{query}'...")
         real_zenodo_files = await harvester_agent.fetch_real_zenodo_datasets(
             query=query,
             target_dir=settings.DATASET_DIR,
             max_files=1,
         )
+        if real_zenodo_files:
+            yield sse("zenodo_done", f"Downloaded real dataset: {real_zenodo_files[0]['name']}")
+        else:
+            yield sse("zenodo_done", "No direct CSV found on Zenodo for this exact query (you can attach any CSV/Zenodo ID in Step 2).")
 
+        created_ids: List[int] = []
         for idx, item in enumerate(harvested_items):
             ext_id = item.get("external_id")
-            if ext_id:
-                existing = db.query(Dissertation).filter(Dissertation.external_id == ext_id).first()
-                if existing:
-                    created_dissertations.append(existing)
-                    continue
+            existing = db.query(Dissertation).filter(Dissertation.external_id == ext_id).first() if ext_id else None
+            if existing:
+                diss = existing
+            else:
+                links = pdf_extractor_agent.extract_repository_links(item.get("abstract") or "")
+                claims = pdf_extractor_agent.extract_key_claims(item.get("abstract") or "")
+                stat_method = pdf_extractor_agent.detect_author_statistical_method(item.get("abstract") or "")
+                diss = Dissertation(
+                    external_id=ext_id,
+                    title=item["title"],
+                    authors=item["authors"],
+                    university=item["university"],
+                    publication_year=item["publication_year"],
+                    domain=domain,
+                    subdomain=query,
+                    source_repo=item["source_repo"],
+                    source_url=item["source_url"],
+                    institution_tier=item["institution_tier"],
+                    scientific_rigor_score=item["scientific_rigor_score"],
+                    citation_velocity=item["citation_velocity"],
+                    abstract=item["abstract"],
+                    author_Statistical_method=stat_method,
+                    extracted_claims=claims,
+                    data_availability_links=links,
+                    key_entities={"targets": [w for w in query.split() if len(w) > 3][:3]},
+                    status="ingested",
+                )
+                db.add(diss)
+                db.commit()
+                db.refresh(diss)
 
-            links = pdf_extractor_agent.extract_repository_links(item.get("abstract") or "")
-            claims = pdf_extractor_agent.extract_key_claims(item.get("abstract") or "")
-            stat_method = pdf_extractor_agent.detect_author_statistical_method(item.get("abstract") or "")
-
-            diss = Dissertation(
-                external_id=ext_id,
-                title=item["title"],
-                authors=item["authors"],
-                university=item["university"],
-                publication_year=item["publication_year"],
-                domain=domain,
-                subdomain=query,
-                source_repo=item["source_repo"],
-                source_url=item["source_url"],
-                institution_tier=item["institution_tier"],
-                scientific_rigor_score=item["scientific_rigor_score"],
-                citation_velocity=item["citation_velocity"],
-                abstract=item["abstract"],
-                author_Statistical_method=stat_method,
-                extracted_claims=claims,
-                data_availability_links=links,
-                key_entities={"targets": [w for w in query.split() if len(w) > 3][:3]},
-                status="ingested",
-            )
-            db.add(diss)
-            db.commit()
-            db.refresh(diss)
-
-            # If real Zenodo datasets were found for this query (attach to the top dissertation), run LazyPredict
-            if idx == 0 and real_zenodo_files:
+            if idx == 0 and real_zenodo_files and not diss.datasets:
                 zf = real_zenodo_files[0]
+                yield sse("lazypredict", f"Running 30+ LazyPredict models on {zf['name']}...")
                 ds_art = await self.process_dataset_with_lazypredict_and_translation(
                     db=db,
                     dissertation=diss,
@@ -206,10 +226,32 @@ class PipelineOrchestrator:
                     diss.status = "analyzed"
                     db.commit()
 
-            db.refresh(diss)
-            created_dissertations.append(diss)
+            created_ids.append(diss.id)
 
-        return created_dissertations
+        yield sse("complete", "Live pipeline complete!", {"dissertation_ids": created_ids})
+
+    async def harvest_and_analyze_live(
+        self,
+        db: Session,
+        query: str,
+        domain: str = "biomedical",
+        min_year: int = 2018,
+        max_results: int = 3,
+        top_science_only: bool = True,
+    ) -> List[Dissertation]:
+        created_ids: List[int] = []
+        async for chunk in self.stream_harvest_and_analyze(
+            db=db,
+            query=query,
+            domain=domain,
+            min_year=min_year,
+            max_results=max_results,
+            top_science_only=top_science_only,
+        ):
+            if '"step": "complete"' in chunk:
+                data = json.loads(chunk.removeprefix("data: ").strip())
+                created_ids = data.get("payload", {}).get("dissertation_ids", [])
+        return db.query(Dissertation).filter(Dissertation.id.in_(created_ids)).all() if created_ids else []
 
 
 orchestrator = PipelineOrchestrator()
