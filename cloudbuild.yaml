@@ -1,0 +1,26 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/thesisout:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/thesisout:latest', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/thesisout:latest']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'thesisout'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/thesisout:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--port'
+      - '8080'
+images:
+  - 'gcr.io/$PROJECT_ID/thesisout:latest'
