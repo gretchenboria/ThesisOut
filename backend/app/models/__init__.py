@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, JSON, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 from app.database import Base
 
 
@@ -32,6 +32,7 @@ class Dissertation(Base):
     abstract = Column(Text, nullable=False)
     author_primary_hypothesis = Column(Text, nullable=True)
     author_Statistical_method = Column(String(255), nullable=True)
+    author_statistical_method = synonym("author_Statistical_method")
     author_primary_target = Column(String(150), nullable=True)
     author_reported_baseline_metric = Column(String(100), nullable=True)
     author_reported_baseline_score = Column(Float, nullable=True)

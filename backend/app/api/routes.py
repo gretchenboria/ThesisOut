@@ -10,6 +10,7 @@ from app.agents.orchestrator import orchestrator
 from app.agents.pdf_extractor import pdf_extractor_agent
 from app.agents.translation_agent import translation_agent
 from app.config import settings
+from app.data.seed_data import ensure_seeded
 from app.database import get_db
 from app.models import DatasetArtifact, Dissertation, IndustryProblem, LazyPredictRun, MarketOpportunity
 from app.services.scientific_integrations import scientific_integrations
@@ -61,15 +62,20 @@ def get_platform_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
 
 @router.get("/dissertations", response_model=List[DissertationSchema])
-def list_dissertations(
+async def list_dissertations(
     domain: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
+    if db.query(Dissertation).count() == 0:
+        await ensure_seeded(db)
     q = db.query(Dissertation).order_by(Dissertation.scientific_rigor_score.desc(), Dissertation.id.desc())
     if domain and domain != "all":
         q = q.filter(Dissertation.domain == domain)
-    items = q.all()
+    items = [d for d in q.all() if d.datasets and d.opportunities]
+    if not items:
+        await ensure_seeded(db)
+        items = [d for d in q.all() if d.datasets and d.opportunities]
     if search:
         s = search.lower()
         items = [
@@ -134,8 +140,8 @@ async def stream_harvest_dissertations(
 
 
 @router.delete("/workspace/reset")
-def reset_workspace(db: Session = Depends(get_db)) -> Dict[str, str]:
-    """Wipes all indexed dissertations, datasets, runs, problems, and opportunities for a clean slate."""
+async def reset_workspace(db: Session = Depends(get_db)) -> Dict[str, str]:
+    """Resets workspace back to the core Global Discovery Catalog."""
     db.query(MarketOpportunity).delete()
     db.query(LazyPredictRun).delete()
     db.query(DatasetArtifact).delete()
@@ -148,7 +154,8 @@ def reset_workspace(db: Session = Depends(get_db)) -> Dict[str, str]:
     for f in settings.PDF_DIR.glob("*"):
         if f.name != ".gitkeep" and f.is_file():
             f.unlink(missing_ok=True)
-    return {"status": "reset", "message": "Workspace completely cleared."}
+    await ensure_seeded(db)
+    return {"status": "reset", "message": "Workspace reset to Global Discovery Catalog."}
 
 
 @router.post("/upload-dissertation", response_model=DissertationSchema)
@@ -539,11 +546,13 @@ async def attach_dataset_to_existing_dissertation(
 
 
 @router.get("/opportunities", response_model=List[MarketOpportunitySchema])
-def list_opportunities(
+async def list_opportunities(
     domain: Optional[str] = None,
     min_tos: float = 0.0,
     db: Session = Depends(get_db),
 ):
+    if db.query(MarketOpportunity).count() == 0:
+        await ensure_seeded(db)
     q = (
         db.query(MarketOpportunity)
         .filter(MarketOpportunity.overall_tos_score >= min_tos)

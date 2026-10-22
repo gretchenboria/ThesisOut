@@ -1,28 +1,28 @@
 1
-00:00:00,000 --> 00:00:13,833
-Welcome to ThesisOut at thesisout.com. We start at the private research workspace, protected by Cloudflare edge bot filtering. Enter the access code and click Unlock ThesisOut to open the discovery canvas.
+00:00:00,000 --> 00:00:14,375
+Welcome to ThesisOut at thesisout.com. We begin at the private research workspace, protected by Cloudflare edge bot filtering. Enter the access code and click Unlock ThesisOut to enter the global discovery engine.
 
 2
-00:00:13,833 --> 00:00:32,542
-Now you see the main investigation bar. You can ask a research question in any scientific or quantitative field, or click Upload in the top bar to drop a thesis PDF or CSV with zero manual typing. Watch as we type a sepsis biomarker query and click Investigate and Reveal.
+00:00:14,375 --> 00:00:33,708
+There is no need to formulate a hypothesis. ThesisOut runs a global search across university repositories and pulls the highest-signal findings automatically. Use the All Global Findings button in the top bar, filter by discipline, or drop a thesis PDF or CSV with zero manual typing.
 
 3
-00:00:32,542 --> 00:00:51,375
-Immediately, Gemini 3.8 Flash formulates a testable hypothesis and streams live repository hits. It pulls matching doctoral theses from OpenAlex, downloads the raw tabular dataset from Zenodo, and prepares an in-fold cross-validation split with zero data leakage.
+00:00:33,708 --> 00:00:51,167
+Right below, Section Zero One makes the revealed dissertations and high-value opportunities immediately obvious and clear. Each card pairs the source university thesis and overlooked variable with the commercial product to build, model signal gain, and Translation Score.
 
 4
-00:00:51,375 --> 00:01:12,125
-Next, the Clue Board reveals the thirty-model cross-validated showdown. Every model is scored out of fold using probability-based ROC AUC, Balanced Accuracy, Precision, Recall, and ninety-five percent confidence intervals. Notice how ExtraTrees beats the author's linear baseline by four point four percent.
+00:00:51,167 --> 00:01:12,375
+Clicking any card opens Section Zero Two, the High-Value Opportunity Dossier. It details the overlooked empirical finding, why the original thesis missed it, and live registry whitespace. Four action buttons let you run five-fold verification, draft a patent claim, audit live registries, and download the Python model.
 
 5
-00:01:12,125 --> 00:01:29,208
-Scrolling to the feature audit, red badges flag the exact overlooked clues the original thesis author never modeled. When we click Run Five-Stage Proof, ThesisOut runs target-permutation null testing, Super-Learner stacking, and ninety percent conformal calibration.
+00:01:12,375 --> 00:01:31,708
+Section Zero Three is the thirty-model Empirical Clue Board. Every architecture is evaluated out of fold with ninety-five percent confidence intervals. Here ExtraTreesRegressor lifts R-squared from the author's zero point six one baseline to zero point nine one four, a thirty point four percent gain.
 
 6
-00:01:29,208 --> 00:01:49,750
-Now look at the Moonshot Reveal card. ThesisOut cross-checks nine live registries including ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to confirm commercial whitespace. With one click, we generate a provisional patent claim and download the standalone Python model and venture dossier.
+00:01:31,708 --> 00:01:51,167
+In the feature importance audit, crimson badges highlight the exact overlooked clues driving the outcome, such as sub-threshold voltage ripple and die-edge thermal gradient. Clicking Run Five-Stage Proof executes target-permutation null testing, Super-Learner stacking, and conformal calibration.
 
 7
-00:01:49,750 --> 00:02:06,125
-Finally, at the bottom of the page, the system schematic maps the entire compute pipeline and SQLAlchemy relational database schema. Visit thesisout.com to unlock the workspace and turn forgotten thesis data into verified discoveries.
+00:01:51,167 --> 00:02:12,833
+Finally, at the bottom of the workspace, Section Zero Five keeps the System Architecture and Data Schema collapsed by default so the interface stays clean, yet one click expands the full Cloudflare, FastAPI, Gemini 3.8 Flash, and SQLAlchemy relational schema. Visit thesisout.com to explore.
 
