@@ -188,6 +188,17 @@ class HarvesterAgent:
                             if dl_url:
                                 r_file = await client.get(dl_url)
                                 if r_file.status_code == 200:
+                                    # Verify the CSV has meaningful column headers before saving
+                                    preview_line = r_file.text.splitlines()[0] if r_file.text else ""
+                                    headers = [h.strip().strip('"') for h in preview_line.split(",") if h.strip()]
+                                    meaningful_headers = [
+                                        h for h in headers
+                                        if not h.lower().startswith("unnamed")
+                                        and not re.search(r"\.\d+$", h)
+                                        and len(h) >= 2
+                                    ]
+                                    if len(meaningful_headers) < 3:
+                                        continue
                                     safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", Path(key).name)
                                     out_path = target_dir / f"zenodo_{rec_id}_{safe_name}"
                                     out_path.write_bytes(r_file.content)

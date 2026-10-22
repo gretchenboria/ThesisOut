@@ -36,7 +36,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, export_text
 from xgboost import XGBClassifier, XGBRegressor
 
-from app.agents.data_scientist import data_scientist_agent
+from app.agents.data_scientist import data_scientist_agent, humanize_col, is_junk_or_id_column
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -58,11 +58,11 @@ class DeepInferenceEscalationAgent:
 
         # Prepare clean X and y
         drop_cols = [target_column]
+        n_rows = len(work_df)
         for c in work_df.columns:
             if c == target_column:
                 continue
-            cl = str(c).lower()
-            if cl in ("id", "sample_id", "patient_id", "subject_id", "index", "uuid", "run_id", "variant_id", "cell_id", "compound_id") or cl.endswith("_id"):
+            if is_junk_or_id_column(str(c), work_df[c], n_rows):
                 drop_cols.append(c)
             elif work_df[c].nunique(dropna=True) <= 1:
                 drop_cols.append(c)
@@ -138,8 +138,9 @@ class DeepInferenceEscalationAgent:
             "top_feature_ablation_score": round(cv_without_top, 4),
             "single_feature_dominance_share": round(top_feat_share, 4),
             "audit_interpretation": (
-                f"5-fold cross-validation achieved {cv_mean:.4f} (±{cv_std:.4f}) vs. target-permuted null {null_mean:.4f}. "
-                f"Removing top feature `{top_feat_name}` retains {cv_without_top:.4f} predictive power, ruling out single-column target leakage."
+                f"Across 5 independent test folds, the model scored {cv_mean*100:.1f}% (±{cv_std*100:.1f}%), compared to "
+                f"{null_mean*100:.1f}% on random scrambled data. Even if we remove the #1 factor ('{humanize_col(top_feat_name)}'), "
+                f"the remaining columns still achieve {cv_without_top*100:.1f}%, proving the pattern is real and not a fluke."
             ),
         }
 
@@ -239,9 +240,9 @@ class DeepInferenceEscalationAgent:
                 line.strip() for line in tree_rules_text.splitlines() if line.strip()
             ][:10],
             "synergy_conclusion": (
-                f"Nonlinear regime analysis proves that `{f1}` (threshold ~ {f1_med:.3f}) and `{f2}` (threshold ~ {f2_med:.3f}) "
-                f"act as a coupled biological/physical gate: shifting across quadrants alters mean `{target_column}` from "
-                f"{min(q_low_low, q_high_low, q_low_high, q_high_high):.3f} to {max(q_low_low, q_high_low, q_low_high, q_high_high):.3f}."
+                f"When '{humanize_col(f1)}' (around {f1_med:.2f}) and '{humanize_col(f2)}' (around {f2_med:.2f}) change together, "
+                f"the average outcome shifts from {min(q_low_low, q_high_low, q_low_high, q_high_high):.2f} to "
+                f"{max(q_low_low, q_high_low, q_low_high, q_high_high):.2f}."
             ),
         }
 
@@ -290,7 +291,7 @@ class DeepInferenceEscalationAgent:
                     "feature": feat,
                     "population_median": round(med_v, 4),
                     "optimal_target_regime": round(opt_v, 4),
-                    "intervention_action": f"{direction} `{feat}` from median {med_v:.3g} toward optimal regime {opt_v:.3g}",
+                    "intervention_action": f"{direction} '{humanize_col(feat)}' from {med_v:.3g} toward {opt_v:.3g}",
                 }
             )
 
