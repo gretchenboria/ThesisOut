@@ -1,20 +1,28 @@
 1
-00:00:00,000 --> 00:00:19,578
-Think about how many doctoral theses sit on university servers right now. Inside those PDFs and raw spreadsheets are breakthroughs across medicine, physics, climate, and engineering that never leave the lab. At thesisout.com, you unlock the private research workspace and pull those discoveries out into the world.
+00:00:00,000 --> 00:00:13,833
+Welcome to ThesisOut at thesisout.com. We start at the private research workspace, protected by Cloudflare edge bot filtering. Enter the access code and click Unlock ThesisOut to open the discovery canvas.
 
 2
-00:00:19,578 --> 00:00:37,500
-Ask a question in any field, or drop your own thesis file directly. You never have to type titles or metadata by hand. Gemini 3.8 Flash formulates a testable hypothesis, pulls the matching university dataset, and prepares a leak-free cross-validation split.
+00:00:13,833 --> 00:00:32,542
+Now you see the main investigation bar. You can ask a research question in any scientific or quantitative field, or click Upload in the top bar to drop a thesis PDF or CSV with zero manual typing. Watch as we type a sepsis biomarker query and click Investigate and Reveal.
 
 3
-00:00:37,500 --> 00:00:54,438
-Next, look at the Clue Board. Instead of trusting one linear regression, ThesisOut tests thirty machine learning models out of fold. You get probability-based ROC AUC, Balanced Accuracy, Precision, Recall, and ninety-five percent confidence intervals.
+00:00:32,542 --> 00:00:51,375
+Immediately, Gemini 3.8 Flash formulates a testable hypothesis and streams live repository hits. It pulls matching doctoral theses from OpenAlex, downloads the raw tabular dataset from Zenodo, and prepares an in-fold cross-validation split with zero data leakage.
 
 4
-00:00:54,438 --> 00:01:08,808
-Why did the top ensemble beat the author's baseline by more than four points? The feature audit highlights the exact variables the original paper overlooked, and verifies them with five-stage permutation testing and conformal calibration.
+00:00:51,375 --> 00:01:12,125
+Next, the Clue Board reveals the thirty-model cross-validated showdown. Every model is scored out of fold using probability-based ROC AUC, Balanced Accuracy, Precision, Recall, and ninety-five percent confidence intervals. Notice how ExtraTrees beats the author's linear baseline by four point four percent.
 
 5
-00:01:08,808 --> 00:01:23,658
-At the bottom, the system schematic maps the entire inference pipeline and relational database schema. ThesisOut cross-checks nine live registries and lets you download the standalone Python model and venture dossier in one click.
+00:01:12,125 --> 00:01:29,208
+Scrolling to the feature audit, red badges flag the exact overlooked clues the original thesis author never modeled. When we click Run Five-Stage Proof, ThesisOut runs target-permutation null testing, Super-Learner stacking, and ninety percent conformal calibration.
+
+6
+00:01:29,208 --> 00:01:49,750
+Now look at the Moonshot Reveal card. ThesisOut cross-checks nine live registries including ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to confirm commercial whitespace. With one click, we generate a provisional patent claim and download the standalone Python model and venture dossier.
+
+7
+00:01:49,750 --> 00:02:06,125
+Finally, at the bottom of the page, the system schematic maps the entire compute pipeline and SQLAlchemy relational database schema. Visit thesisout.com to unlock the workspace and turn forgotten thesis data into verified discoveries.
 
