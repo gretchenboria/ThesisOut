@@ -38,7 +38,7 @@ class PipelineOrchestrator:
         max_secondary_targets: int = 0,
     ) -> Optional[DatasetArtifact]:
         df = await asyncio.to_thread(data_scientist_agent.load_dataframe, dataset_path)
-        if len(df) < 10 or len(df.columns) < 2:
+        if len(df) < 5 or len(df.columns) < 2:
             logger.warning("Dataset %s has insufficient rows/columns (%s) for LazyPredict", dataset_name, df.shape)
             return None
 
@@ -62,17 +62,20 @@ class PipelineOrchestrator:
         targets = data_scientist_agent.select_targets_for_sweep(
             df,
             author_primary_target=author_primary_target or dissertation.author_primary_target,
-            max_secondary_targets=max(1, max_secondary_targets),
+            max_secondary_targets=max(4, max_secondary_targets + 2),
         )
 
         problems = db.query(IndustryProblem).filter(IndustryProblem.domain == dissertation.domain).all()
         if not problems:
             problems = db.query(IndustryProblem).all()
 
+        desired_count = max_secondary_targets + 1
         candidate_results: list[dict] = []
-        for t_info in targets[: max_secondary_targets + 1]:
+        for t_info in targets:
+            if len(candidate_results) >= desired_count:
+                break
             t_col = t_info["target_column"]
-            is_primary = t_info["is_author_primary_target"]
+            is_primary = t_info["is_author_primary_target"] or (len(candidate_results) == 0)
             baseline_to_pass = (
                 (author_baseline_score or dissertation.author_reported_baseline_score)
                 if is_primary

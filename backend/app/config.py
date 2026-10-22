@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
 
     # Gemini 4 Argon Cost & Rate Guardrails
-    GEMINI_ARGON_MAX_OUTPUT_TOKENS: int = 1024
+    GEMINI_ARGON_MAX_OUTPUT_TOKENS: int = 2048
     GEMINI_ARGON_MAX_INPUT_CHARS: int = 12000
     GEMINI_ARGON_RPM_LIMIT: int = 10
     GEMINI_ARGON_DAILY_CALL_BUDGET: int = 200

@@ -214,16 +214,37 @@ async def upload_dissertation_and_dataset(
     )
     slug = f"upload_{abs(hash(seed_name)) % 100000}"
 
-    if pdf_file and pdf_file.filename:
-        pdf_dest = settings.PDF_DIR / f"{slug}_{Path(pdf_file.filename).name}"
-        pdf_dest.write_bytes(await pdf_file.read())
+    # Read uploaded file bytes and auto-detect PDF vs Tabular (CSV/TSV/Excel/Parquet/JSON) even if slots were swapped
+    pdf_bytes: Optional[bytes] = None
+    pdf_filename: Optional[str] = None
+    ds_bytes: Optional[bytes] = None
+    ds_filename: Optional[str] = None
+
+    for up_f in (pdf_file, dataset_file):
+        if up_f and up_f.filename:
+            raw_b = await up_f.read()
+            if not raw_b:
+                continue
+            fname = Path(up_f.filename).name
+            is_pdf = fname.lower().endswith(".pdf") or raw_b[:5] == b"%PDF-"
+            if is_pdf and pdf_bytes is None:
+                pdf_bytes = raw_b
+                pdf_filename = fname
+            else:
+                ds_bytes = raw_b
+                ds_filename = fname
+
+    if pdf_bytes and pdf_filename:
+        pdf_dest = settings.PDF_DIR / f"{slug}_{pdf_filename}"
+        pdf_dest.parent.mkdir(parents=True, exist_ok=True)
+        pdf_dest.write_bytes(pdf_bytes)
         pdf_saved_path = str(pdf_dest)
         try:
             extracted_meta = pdf_extractor_agent.extract_text_and_metadata(pdf_dest)
             if not abstract:
                 abstract = extracted_meta.get("text_preview", "")[:1500]
-        except Exception:
-            pass
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Failed to parse PDF file '{pdf_filename}': {exc}")
 
     fallback_file_title = Path(seed_name).stem.replace("_", " ").replace("-", " ").strip().title()
     final_title = (title or "").strip() or extracted_meta.get("parsed_title") or fallback_file_title or "Uploaded Study"
@@ -244,7 +265,7 @@ async def upload_dissertation_and_dataset(
         institution_tier="Uploaded",
         scientific_rigor_score=0.999,
         citation_velocity=15.0,
-        abstract=abstract[:300] if abstract else final_title,
+        abstract=abstract[:500] if abstract else final_title,
         author_primary_hypothesis=final_title,
         author_statistical_method=extracted_meta.get("author_statistical_method", "OLS Linear Fit"),
         author_primary_target=author_primary_target,
@@ -260,35 +281,44 @@ async def upload_dissertation_and_dataset(
     db.refresh(diss)
 
     # 1. Process uploaded dataset file if provided
-    if dataset_file and dataset_file.filename:
+    if ds_bytes and ds_filename:
         record_agent_invocation(db, "ml-rigor-scientist")
         record_agent_invocation(db, "translation-whitespace-agent")
-        ds_dest = settings.DATASET_DIR / f"{slug}_{Path(dataset_file.filename).name}"
-        ds_dest.write_bytes(await dataset_file.read())
+        ds_dest = settings.DATASET_DIR / f"{slug}_{ds_filename}"
+        ds_dest.parent.mkdir(parents=True, exist_ok=True)
+        ds_dest.write_bytes(ds_bytes)
         await orchestrator.process_dataset_with_lazypredict_and_translation(
             db=db,
             dissertation=diss,
             dataset_path=ds_dest,
-            dataset_name=Path(dataset_file.filename).name,
+            dataset_name=ds_filename,
             source_type="upload",
             author_primary_target=author_primary_target,
             author_baseline_score=author_baseline_score,
             max_secondary_targets=0,
         )
+        db.refresh(diss)
+        if not diss.datasets or not diss.datasets[0].lazy_runs:
+            db.delete(diss)
+            db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not benchmark '{ds_filename}': dataset must contain at least 5 rows and 2 columns with numeric or categorical variance.",
+            )
 
+    # 2. If a PDF was uploaded without a dataset (or to extract embedded PDF tables), parse tables from the PDF
     db.refresh(diss)
     if not diss.datasets and pdf_saved_path:
-        # 2. Extract real embedded tables from PDF (grid, borderless text-aligned, or whitespace numeric rows)
         pdf_tables = pdf_extractor_agent.extract_tables_from_pdf(
             pdf_saved_path,
             slug,
             fallback_text=abstract,
             fallback_title=final_title,
         )
-        for tbl in pdf_tables[:1]:
+        for tbl in pdf_tables:
             record_agent_invocation(db, "ml-rigor-scientist")
             record_agent_invocation(db, "translation-whitespace-agent")
-            await orchestrator.process_dataset_with_lazypredict_and_translation(
+            ds_art = await orchestrator.process_dataset_with_lazypredict_and_translation(
                 db=db,
                 dissertation=diss,
                 dataset_path=tbl["file_path"],
@@ -299,10 +329,12 @@ async def upload_dissertation_and_dataset(
                 author_baseline_score=author_baseline_score,
                 max_secondary_targets=0,
             )
+            if ds_art and ds_art.lazy_runs:
+                break
 
+    # 3. If PDF had no embedded table, check explicit Data Availability / repository links inside the PDF
     db.refresh(diss)
-    if not diss.datasets:
-        # 3. Resolve dataset via Full-Text Data Availability DOIs, Author ORCID/Lab Graph, and Multi-Repository Harvesters (Zenodo, Figshare, Dataverse, Dryad)
+    if (not diss.datasets or not diss.datasets[0].lazy_runs) and diss.data_availability_links:
         record_agent_invocation(db, "harvester-agent")
         zenodo_files = await harvester_agent.resolve_multi_repository_datasets(
             query=final_title,
@@ -317,19 +349,6 @@ async def upload_dissertation_and_dataset(
             extracted_links=diss.data_availability_links or [],
             max_files=1,
         )
-        if not zenodo_files:
-            # Use verified real Zenodo dataset on disk if live search returned 0 matching records
-            real_disk_csvs = sorted(settings.DATASET_DIR.glob("zenodo_*.csv"))
-            if real_disk_csvs:
-                rc = real_disk_csvs[0]
-                zenodo_files = [
-                    {
-                        "name": rc.name,
-                        "source_type": "zenodo",
-                        "source_url": "https://zenodo.org/",
-                        "file_path": str(rc),
-                    }
-                ]
         for zf in zenodo_files[:1]:
             record_agent_invocation(db, "ml-rigor-scientist")
             record_agent_invocation(db, "translation-whitespace-agent")
@@ -346,7 +365,15 @@ async def upload_dissertation_and_dataset(
             )
 
     db.refresh(diss)
-    first_run = diss.datasets[0].lazy_runs[0] if (diss.datasets and diss.datasets[0].lazy_runs) else None
+    if not diss.datasets or not diss.datasets[0].lazy_runs:
+        db.delete(diss)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="No quantitative tables, numerical measurements, or linked open-access datasets could be extracted from the uploaded file.",
+        )
+
+    first_run = diss.datasets[0].lazy_runs[0]
     if first_run:
         diss.author_primary_target = first_run.target_column
         diss.author_reported_baseline_score = first_run.author_baseline_score

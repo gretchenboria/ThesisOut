@@ -408,16 +408,19 @@ class LLMRouter:
             if api_key:
                 for model_name in model_cascade:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                    async with httpx.AsyncClient(timeout=20.0) as client:
-                        resp = await client.post(url, json=payload)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            text = data["candidates"][0]["content"]["parts"][0]["text"]
-                            parsed = json.loads(text)
-                            self._response_cache[cache_key] = parsed
-                            if len(self._response_cache) > self._max_cache_size:
-                                self._response_cache.popitem(last=False)
-                            return parsed
+                    try:
+                        async with httpx.AsyncClient(timeout=20.0) as client:
+                            resp = await client.post(url, json=payload)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                                parsed = json.loads(text)
+                                self._response_cache[cache_key] = parsed
+                                if len(self._response_cache) > self._max_cache_size:
+                                    self._response_cache.popitem(last=False)
+                                return parsed
+                    except Exception:
+                        continue
 
             # 2. Try Google Cloud ADC / Cloud Run Service Account via Vertex AI
             token = await self._get_gcp_access_token()
@@ -428,20 +431,23 @@ class LLMRouter:
                         f"{self.gcp_project}/locations/{self.gcp_location}/publishers/google/models/"
                         f"{model_name}:generateContent"
                     )
-                    async with httpx.AsyncClient(timeout=20.0) as client:
-                        resp = await client.post(
-                            url,
-                            headers={"Authorization": f"Bearer {token}"},
-                            json=payload,
-                        )
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            text = data["candidates"][0]["content"]["parts"][0]["text"]
-                            parsed = json.loads(text)
-                            self._response_cache[cache_key] = parsed
-                            if len(self._response_cache) > self._max_cache_size:
-                                self._response_cache.popitem(last=False)
-                            return parsed
+                    try:
+                        async with httpx.AsyncClient(timeout=20.0) as client:
+                            resp = await client.post(
+                                url,
+                                headers={"Authorization": f"Bearer {token}"},
+                                json=payload,
+                            )
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                                parsed = json.loads(text)
+                                self._response_cache[cache_key] = parsed
+                                if len(self._response_cache) > self._max_cache_size:
+                                    self._response_cache.popitem(last=False)
+                                return parsed
+                    except Exception:
+                        continue
 
         return None
 

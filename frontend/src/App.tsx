@@ -636,10 +636,11 @@ export function App() {
         setUploadPdf(null);
         setUploadCsv(null);
       } else {
-        setErrorMsg('Upload failed.');
+        const errBody = await res.json().catch(() => ({}));
+        setErrorMsg(errBody.detail || `Upload failed (HTTP ${res.status}).`);
       }
-    } catch (err) {
-      setErrorMsg('Upload failed.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Upload failed.');
     } finally {
       setUploading(false);
     }
@@ -1502,6 +1503,22 @@ export function App() {
               {showUploadBox && (
                 <form
                   onSubmit={handleUploadSubmit}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const files = Array.from(e.dataTransfer.files || []);
+                    for (const f of files) {
+                      if (f.name.toLowerCase().endsWith('.pdf')) {
+                        setUploadPdf(f);
+                      } else {
+                        setUploadCsv(f);
+                      }
+                    }
+                  }}
                   className="pop-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex flex-wrap items-center gap-2.5">
@@ -1514,7 +1531,7 @@ export function App() {
                           ? uploadCsv.name
                           : uploadPdf
                             ? uploadPdf.name
-                            : 'Select CSV, TSV, Excel, or Thesis PDF'}
+                            : 'Select or Drop CSV, TSV, Excel, or Thesis PDF'}
                       <input
                         type="file"
                         multiple
@@ -1527,8 +1544,9 @@ export function App() {
                               setUploadCsv(f);
                             }
                           }
+                          e.currentTarget.value = '';
                         }}
-                        className="hidden"
+                        className="sr-only"
                       />
                     </label>
                     {(uploadPdf || uploadCsv) && (
@@ -1548,7 +1566,7 @@ export function App() {
                       disabled={uploading || (!uploadPdf && !uploadCsv)}
                       className="pop-btn px-4 py-2 rounded-xl bg-[#2B4257] disabled:opacity-50 text-white font-extrabold cursor-pointer"
                     >
-                      {uploading ? 'Running 30 Models' : 'Audit File'}
+                      {uploading ? 'Running 30 Models...' : 'Audit File'}
                     </button>
                   </div>
                   <button

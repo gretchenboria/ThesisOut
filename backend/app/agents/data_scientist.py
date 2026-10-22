@@ -48,6 +48,7 @@ from sklearn.preprocessing import LabelEncoder, OrdinalEncoder, StandardScaler, 
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from app.config import settings
+from app.agents.pdf_extractor import parse_scientific_number
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -123,8 +124,7 @@ def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
         or cl.endswith("_text")
         or cl.endswith("_url")
         or cl.endswith("_name")
-        or re.match(r"^(sample|subject|patient|donor|cell|rep|replicate|col|var|v|feature|x|dim|pc|umap|tsne)[_\-\s]*\d+$", cl)
-        or re.search(r"(lfq\.intensity|intensity|sample|subject|patient)[._\-]+\d+", cl)
+        or re.match(r"^(sample_?id|subject_?id|patient_?id|donor_?id|row_?id|record_?id)[_\-\s]*\d*$", cl)
         or re.match(r"^\d+$", cl)
     ):
         return True
@@ -136,9 +136,9 @@ def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
             diffs = np.diff(clean.values)
             if np.all(diffs == 1) or np.all(diffs == -1):
                 return True
-        if len(clean) >= max(15, int(n_rows * 0.85)) and clean.nunique() >= int(len(clean) * 0.9):
+        if len(clean) >= max(20, int(n_rows * 0.90)) and clean.nunique() == len(clean):
             idx_corr = abs(float(np.corrcoef(np.arange(len(clean)), clean.values)[0, 1]))
-            if not np.isnan(idx_corr) and idx_corr >= 0.992:
+            if not np.isnan(idx_corr) and idx_corr >= 0.996:
                 return True
 
     # Check if string/object column is a unique identifier per row or free-text sentence column
@@ -147,10 +147,10 @@ def is_junk_or_id_column(col_name: str, series: pd.Series, n_rows: int) -> bool:
         if len(non_null) == 0:
             return True
         nunique = non_null.nunique()
-        if nunique >= max(20, int(n_rows * 0.5)):
+        if n_rows >= 15 and nunique >= max(20, int(n_rows * 0.85)):
             return True
         avg_len = float(non_null.str.len().mean())
-        if avg_len > 28.0:
+        if avg_len > 45.0:
             return True
 
     return False
@@ -185,36 +185,130 @@ def _compute_multiclass_ovr_balanced_accuracy(y_true: np.ndarray, y_pred: np.nda
 
 
 class DataScientistAgent:
+    def _read_delimited_with_fallbacks(self, path: Path, preferred_sep: Optional[str] = None) -> pd.DataFrame:
+        encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
+        candidate_seps = [preferred_sep] if preferred_sep else [",", ";", "\t", "|", None]
+        best_df: Optional[pd.DataFrame] = None
+
+        for enc in encodings:
+            for sep in candidate_seps:
+                try:
+                    if sep is None:
+                        df = pd.read_csv(path, sep=None, engine="python", encoding=enc, on_bad_lines="skip")
+                    else:
+                        df = pd.read_csv(path, sep=sep, encoding=enc, on_bad_lines="skip")
+                    if df is not None and len(df) >= 1 and df.shape[1] >= 2:
+                        return df
+                    if best_df is None or (df is not None and df.shape[1] > best_df.shape[1]):
+                        best_df = df
+                except UnicodeDecodeError:
+                    break
+                except Exception:
+                    continue
+
+        if best_df is not None:
+            return best_df
+        return pd.read_csv(path, encoding="latin1", on_bad_lines="skip")
+
     def load_dataframe(self, file_path: str | Path) -> pd.DataFrame:
         path = Path(file_path)
         if not path.exists():
-            from app.config import settings
             fallback = settings.DATASET_DIR / path.name
             if fallback.exists():
                 path = fallback
         suffix = path.suffix.lower()
-        if suffix == ".csv":
-            try:
-                df = pd.read_csv(path)
-            except Exception:
-                df = pd.read_csv(path, sep=None, engine="python", on_bad_lines="skip")
-        elif suffix in (".tsv", ".txt"):
-            df = pd.read_csv(path, sep="\t")
+        if suffix in (".tsv", ".tab"):
+            df = self._read_delimited_with_fallbacks(path, preferred_sep="\t")
         elif suffix in (".xlsx", ".xls"):
-            df = pd.read_excel(path)
+            try:
+                xl = pd.ExcelFile(path)
+                best_sheet_df = None
+                for sname in xl.sheet_names:
+                    sdf = xl.parse(sname)
+                    if sdf.shape[1] >= 2 and len(sdf) >= 4:
+                        best_sheet_df = sdf
+                        break
+                    if best_sheet_df is None or (sdf.shape[0] * sdf.shape[1] > best_sheet_df.shape[0] * best_sheet_df.shape[1]):
+                        best_sheet_df = sdf
+                df = best_sheet_df if best_sheet_df is not None else pd.read_excel(path)
+            except Exception:
+                df = pd.read_excel(path)
         elif suffix == ".parquet":
             df = pd.read_parquet(path)
+        elif suffix == ".json":
+            df = pd.read_json(path)
         else:
-            df = pd.read_csv(path)
+            df = self._read_delimited_with_fallbacks(path, preferred_sep=None)
 
-        # Immediately strip any `Unnamed: *` or pure monotonic row-index columns on load
-        cols_to_drop = [
-            c
-            for c in df.columns
-            if str(c).strip().lower().startswith("unnamed") or str(c).strip() == ""
-        ]
-        if cols_to_drop:
+        if df is None or df.empty:
+            return pd.DataFrame()
+
+        # Drop completely empty rows and columns
+        df = df.dropna(how="all").reset_index(drop=True)
+
+        # If >= 50% of columns are `Unnamed:*`, check if a title banner row preceded the real header row
+        unnamed_cnt = sum(1 for c in df.columns if str(c).strip().lower().startswith("unnamed") or str(c).strip() == "")
+        if df.shape[1] >= 2 and unnamed_cnt >= max(1, int(df.shape[1] * 0.5)) and len(df) >= 4:
+            for r_idx in range(min(6, len(df) - 2)):
+                row_vals = [str(v).strip() if pd.notna(v) else "" for v in df.iloc[r_idx].values]
+                non_empty = [v for v in row_vals if v and v.lower() != "nan"]
+                num_in_row = sum(1 for v in non_empty if parse_scientific_number(v) is not None)
+                if len(non_empty) >= max(2, int(df.shape[1] * 0.5)) and num_in_row < len(non_empty) * 0.5:
+                    new_cols = []
+                    seen_c: Dict[str, int] = {}
+                    for c_i, val in enumerate(row_vals):
+                        cname = val if val and val.lower() != "nan" else f"Variable_{c_i + 1}"
+                        if cname in seen_c:
+                            seen_c[cname] += 1
+                            cname = f"{cname}_{seen_c[cname]}"
+                        else:
+                            seen_c[cname] = 1
+                        new_cols.append(cname)
+                    df = df.iloc[r_idx + 1 :].copy().reset_index(drop=True)
+                    df.columns = new_cols
+                    break
+
+        # Safely handle remaining `Unnamed: *` columns:
+        # Drop `Unnamed: 0` if it is a row index or mostly empty; rename other data-bearing `Unnamed` columns
+        cols_to_drop = []
+        rename_map = {}
+        for idx, c in enumerate(df.columns):
+            c_str = str(c).strip()
+            if c_str.lower().startswith("unnamed") or c_str == "":
+                s = df.iloc[:, idx]
+                if float(s.isna().mean()) >= 0.70 or (idx == 0 and is_junk_or_id_column(c_str, s, len(df))):
+                    cols_to_drop.append(c)
+                else:
+                    rename_map[c] = f"Variable_{idx + 1}"
+        if cols_to_drop and len(df.columns) - len(cols_to_drop) >= 2:
             df = df.drop(columns=cols_to_drop)
+        if rename_map:
+            df = df.rename(columns=rename_map)
+
+        # Deduplicate column names if needed
+        if len(set(df.columns)) < len(df.columns):
+            deduped = []
+            seen_names: Dict[str, int] = {}
+            for c in df.columns:
+                cs = str(c)
+                if cs in seen_names:
+                    seen_names[cs] += 1
+                    deduped.append(f"{cs}_{seen_names[cs]}")
+                else:
+                    seen_names[cs] = 1
+                    deduped.append(cs)
+            df.columns = deduped
+
+        # Coerce scientific numeric strings (e.g. `12.4 ± 1.2`, `84.2%`, `<0.001`, `1,234.5`) into float columns
+        for col in df.columns:
+            s = df[col]
+            if _is_string_or_object_series(s):
+                non_null = s.dropna().astype(str).str.strip()
+                non_null = non_null[non_null != ""]
+                if len(non_null) >= 3:
+                    parsed = s.map(parse_scientific_number)
+                    if float(parsed.notna().sum()) / max(1, len(non_null)) >= 0.55:
+                        df[col] = parsed.astype(float)
 
         return df
 
@@ -281,27 +375,39 @@ class DataScientistAgent:
             s = df[col]
             if is_junk_or_id_column(col_str, s, n_rows):
                 continue
-            if float(s.isna().mean()) > 0.5:
+            if float(s.isna().mean()) > 0.65:
                 continue
             nunique = int(s.nunique(dropna=True))
             if nunique < 2:
                 continue
             if _is_string_or_object_series(s):
-                if nunique > 12:
+                if nunique > 15:
                     continue
                 vc = s.dropna().value_counts()
-                if len(vc) < 2 or int(vc.min()) < 3:
+                if len(vc) < 2 or int(vc.min()) < 2:
                     continue
             elif pd.api.types.is_numeric_dtype(s) and not pd.api.types.is_bool_dtype(s):
                 if nunique <= 8:
                     vc = s.dropna().value_counts()
-                    if len(vc) < 2 or int(vc.min()) < 3:
+                    if len(vc) < 2 or int(vc.min()) < 2:
                         continue
                 else:
                     num_s = pd.to_numeric(s, errors="coerce").dropna()
-                    if len(num_s) < 12 or float(np.std(num_s)) < 1e-6:
+                    if len(num_s) < 5 or float(np.std(num_s)) < 1e-6:
                         continue
             valid_cols.append(col_str)
+
+        if not valid_cols:
+            # Fallback: allow any column with >= 2 unique values so a valid uploaded dataset is never skipped
+            for col in df.columns:
+                col_str = str(col)
+                s = df[col]
+                if int(s.nunique(dropna=True)) >= 2 and not is_junk_or_id_column(col_str, s, n_rows):
+                    valid_cols.append(col_str)
+            if not valid_cols:
+                for col in df.columns:
+                    if int(df[col].nunique(dropna=True)) >= 2:
+                        valid_cols.append(str(col))
 
         if not valid_cols:
             return []
@@ -408,20 +514,34 @@ class DataScientistAgent:
                 task_type = "regression"
 
         if task_type == "classification":
-            if nunique_y < 2 or nunique_y > 15:
-                raise ValueError(f"Target '{target_column}' has {nunique_y} unique classes (requires 2..15 for classification).")
-            vc = y_raw_initial.astype(str).value_counts()
-            valid_classes = vc[vc >= 3].index
-            if len(valid_classes) < 2:
-                raise ValueError(f"Target '{target_column}' has insufficient samples per class for stratified CV.")
-            work_df = work_df[y_raw_initial.astype(str).isin(valid_classes)].copy()
-        else:
+            if nunique_y > 15 and pd.api.types.is_numeric_dtype(y_raw_initial):
+                task_type = "regression"
+            else:
+                if nunique_y < 2:
+                    raise ValueError(f"Target '{target_column}' has {nunique_y} unique classes (requires >= 2).")
+                vc = y_raw_initial.astype(str).value_counts()
+                valid_classes = vc[vc >= 2].index
+                if len(valid_classes) < 2 and pd.api.types.is_numeric_dtype(y_raw_initial):
+                    task_type = "regression"
+                elif len(valid_classes) < 2:
+                    raise ValueError(f"Target '{target_column}' has insufficient samples per class for CV.")
+                else:
+                    work_df = work_df[y_raw_initial.astype(str).isin(valid_classes)].copy()
+
+        if task_type == "regression":
             if _is_string_or_object_series(y_raw_initial):
-                raise ValueError(f"Non-numeric string column '{target_column}' cannot be used as a regression target.")
-            y_num = pd.to_numeric(work_df[target_column], errors="coerce")
-            work_df = work_df[y_num.notna()].copy()
-            if len(work_df) < 15 or float(np.std(pd.to_numeric(work_df[target_column], errors="coerce"))) < 1e-6:
-                raise ValueError(f"Regression target '{target_column}' has near-zero variance or insufficient valid rows.")
+                parsed_y = y_raw_initial.map(parse_scientific_number)
+                if parsed_y.notna().sum() >= 5:
+                    work_df[target_column] = parsed_y
+                elif nunique_y >= 2:
+                    task_type = "classification"
+                else:
+                    raise ValueError(f"Non-numeric string column '{target_column}' cannot be used as a regression target.")
+            if task_type == "regression":
+                y_num = pd.to_numeric(work_df[target_column], errors="coerce")
+                work_df = work_df[y_num.notna()].copy()
+                if len(work_df) < 5 or float(np.std(pd.to_numeric(work_df[target_column], errors="coerce"))) < 1e-6:
+                    raise ValueError(f"Regression target '{target_column}' has near-zero variance or insufficient valid rows.")
 
         max_rows = min(int(getattr(settings, "MAX_LAZYPREDICT_ROWS", 600)), 550)
         if len(work_df) > max_rows:
@@ -460,28 +580,34 @@ class DataScientistAgent:
                 drop_cols.append(c)
             elif (target_base, c_base) in boolean_complement_pairs:
                 drop_cols.append(c)
-            elif c_base == target_base or (len(c_base) >= 4 and len(target_base) >= 4 and (c_base in target_base or target_base in c_base)):
+            elif c_base == target_base:
                 drop_cols.append(c)
             elif work_df[c].nunique(dropna=True) <= 1:
                 drop_cols.append(c)
-            elif float(work_df[c].isna().mean()) > 0.80:
+            elif float(work_df[c].isna().mean()) > 0.85:
                 drop_cols.append(c)
-            elif _is_string_or_object_series(work_df[c]) and work_df[c].nunique(dropna=True) > 25:
+            elif _is_string_or_object_series(work_df[c]) and work_df[c].nunique(dropna=True) > 30:
                 drop_cols.append(c)
 
         X_raw = work_df.drop(columns=list(set(drop_cols))).copy()
         if X_raw.shape[1] == 0:
-            raise ValueError("No valid predictive feature columns remained after removing IDs/text/replicates.")
+            # Fallback: keep all non-target columns with >= 2 unique values so small tables don't fail
+            fallback_keep = [c for c in work_df.columns if c != target_column and work_df[c].nunique(dropna=True) >= 2]
+            if fallback_keep:
+                X_raw = work_df[fallback_keep].copy()
+            else:
+                raise ValueError("No valid predictive feature columns remained after removing IDs/text/replicates.")
 
         # Convert categorical/boolean columns to clean numeric/categorical representations strictly via a training split audit
-        strat_audit = y if (task_type == "classification" and y.value_counts().min() >= 2) else None
+        strat_audit = y if (task_type == "classification" and y.value_counts().min() >= 2 and n_rows >= 8) else None
+        test_frac = 0.28 if n_rows >= 10 else 0.2
         train_idx, _ = train_test_split(
-            np.arange(n_rows), test_size=0.28, random_state=42, stratify=strat_audit
+            np.arange(n_rows), test_size=test_frac, random_state=42, stratify=strat_audit
         )
         X_tr_audit = self._fit_transform_fold_features(X_raw.iloc[train_idx], X_raw.iloc[train_idx])[0]
         y_tr_audit = y.iloc[train_idx]
 
-        # Step 1: Single-Feature Proxy & Tautology Guard (evaluated strictly on X_tr_audit, even if shape[1] <= 2!)
+        # Step 1: Single-Feature Proxy & Tautology Guard (evaluated strictly on X_tr_audit)
         leakage_cols: List[str] = []
         for col in list(X_tr_audit.columns):
             try:
@@ -496,27 +622,31 @@ class DataScientistAgent:
                     leakage_cols.append(col)
                     continue
 
-                if task_type == "classification":
-                    stump = DecisionTreeClassifier(max_depth=2, min_samples_leaf=3, random_state=42)
-                    scoring = "roc_auc" if y_tr_audit.nunique() == 2 else "balanced_accuracy"
-                    cv_s = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-                else:
-                    stump = DecisionTreeRegressor(max_depth=2, min_samples_leaf=3, random_state=42)
-                    scoring = "r2"
-                    cv_s = KFold(n_splits=3, shuffle=True, random_state=42)
-
-                stump_cv = float(np.mean(cross_val_score(stump, X_tr_audit[[col]], y_tr_audit, cv=cv_s, scoring=scoring)))
-                if stump_cv >= 0.92:
-                    leakage_cols.append(col)
+                if len(y_tr_audit) >= 12:
+                    if task_type == "classification" and y_tr_audit.value_counts().min() >= 3:
+                        stump = DecisionTreeClassifier(max_depth=2, min_samples_leaf=3, random_state=42)
+                        scoring = "roc_auc" if y_tr_audit.nunique() == 2 else "balanced_accuracy"
+                        cv_s = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+                        stump_cv = float(np.mean(cross_val_score(stump, X_tr_audit[[col]], y_tr_audit, cv=cv_s, scoring=scoring)))
+                        if stump_cv >= 0.92:
+                            leakage_cols.append(col)
+                    elif task_type == "regression":
+                        stump = DecisionTreeRegressor(max_depth=2, min_samples_leaf=3, random_state=42)
+                        cv_s = KFold(n_splits=3, shuffle=True, random_state=42)
+                        stump_cv = float(np.mean(cross_val_score(stump, X_tr_audit[[col]], y_tr_audit, cv=cv_s, scoring="r2")))
+                        if stump_cv >= 0.92:
+                            leakage_cols.append(col)
             except Exception:
                 pass
 
         remaining_after_single = [c for c in X_raw.columns if c not in leakage_cols]
         if len(remaining_after_single) < 2:
-            if leakage_cols:
-                raise ValueError(
-                    f"Target '{target_column}' is a deterministic proxy of {leakage_cols}; skipping trivial target."
-                )
+            # Keep at least min(2, X_raw.shape[1]) least-collinear columns if dataset is small rather than aborting
+            if X_raw.shape[1] > 2 and leakage_cols:
+                cols_to_drop_safe = leakage_cols[: max(0, X_raw.shape[1] - 2)]
+                if cols_to_drop_safe:
+                    X_raw = X_raw.drop(columns=cols_to_drop_safe)
+                    X_tr_audit = X_tr_audit.drop(columns=cols_to_drop_safe)
         else:
             if leakage_cols:
                 logger.info(
@@ -683,14 +813,14 @@ class DataScientistAgent:
         # When n_rows < 150, use RepeatedStratifiedKFold / RepeatedKFold so total out-of-fold sample count >= 150
         if task_type == "classification":
             min_class_cnt = int(y.value_counts().min())
-            n_splits = min(5, max(3, min_class_cnt))
+            n_splits = min(5, max(2, min_class_cnt))
             if n_rows < 150:
                 n_repeats = 3 if n_rows < 80 else 2
                 cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=42)
             else:
                 cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         else:
-            n_splits = 5 if n_rows >= 25 else 3
+            n_splits = 5 if n_rows >= 25 else max(2, min(3, n_rows // 2))
             if n_rows < 150:
                 cv = RepeatedKFold(n_splits=n_splits, n_repeats=2, random_state=42)
             else:

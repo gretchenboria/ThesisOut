@@ -166,13 +166,22 @@ class HarvesterAgent:
             "search": query,
             "filter": f"type:dissertation,from_publication_date:{min_year}-01-01",
             "per-page": max(25, max_results * 5),
+            "mailto": "research@thesisout.com",
         }
+        headers = {"User-Agent": "ThesisOut/1.0 (https://thesisout.com; mailto:research@thesisout.com)"}
         results: List[Dict[str, Any]] = []
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.get(url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            for item in data.get("results", []):
+        try:
+            async with httpx.AsyncClient(timeout=20.0, headers=headers) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code != 200:
+                    logger.warning("OpenAlex returned HTTP %d for query '%s'", resp.status_code, query)
+                    return []
+                data = resp.json()
+        except Exception as exc:
+            logger.warning("OpenAlex search request failed for '%s': %s", query, exc)
+            return []
+
+        for item in data.get("results", []):
                 title = item.get("title")
                 if not title:
                     continue
