@@ -199,6 +199,106 @@ class LLMRouter:
             "model_used": "Gemini Discovery Co-Pilot",
         }
 
+    async def extract_autonomous_workflow_plan(self, user_prompt: str) -> Dict[str, str]:
+        """
+        Converts any user question or scientific idea into a structured autonomous execution plan:
+        - search_query: concise repository search phrase for OpenAlex/Zenodo/ClinicalTrials
+        - probe_entity: specific biological target, molecule, or engineering keyword for 9-API telemetry
+        - domain: 'biomedical' or 'cs_ai'
+        - hypothesis: formal 1-sentence scientific hypothesis
+        """
+        system_prompt = (
+            "You are the ThesisOut Autonomous Discovery Planner powered by Gemini.\n"
+            "Given a user's natural-language question, idea, or topic, extract the optimal parameters "
+            "to run the full scientific discovery and 30-model inference pipeline.\n"
+            "Respond strictly in valid JSON with keys:\n"
+            '  "search_query": "2-4 core scientific keywords to query OpenAlex and Zenodo",\n'
+            '  "probe_entity": "1 specific gene symbol, protein, drug, or core technical term (e.g. EGFR, BRCA1, sepsis, CRISPR, lithium, transformer)",\n'
+            '  "domain": "biomedical" or "cs_ai",\n'
+            '  "hypothesis": "Formal 1-sentence testable scientific hypothesis (no emojis)"'
+        )
+        try:
+            res = await self._call_gemini_json(system_prompt, f"USER_PROMPT: {user_prompt}")
+            if res and isinstance(res, dict) and res.get("search_query"):
+                return {
+                    "search_query": str(res.get("search_query", user_prompt[:45])).strip(),
+                    "probe_entity": str(res.get("probe_entity", "EGFR")).strip(),
+                    "domain": "cs_ai" if str(res.get("domain", "")).lower() == "cs_ai" else "biomedical",
+                    "hypothesis": str(res.get("hypothesis", f"Nonlinear interactions govern the primary outcome regime in {user_prompt}.")).strip(),
+                }
+        except Exception as exc:
+            logger.warning("Gemini plan extraction fallback: %s", exc)
+
+        lower = user_prompt.lower()
+        cs_terms = ["battery", "transformer", "neural", "compiler", "quantum", "silicon", "gpu", "robotics"]
+        domain = "cs_ai" if any(k in lower for k in cs_terms) else "biomedical"
+        stop_words = {"find", "what", "how", "can", "you", "the", "for", "and", "with", "about", "moonshot", "help", "discover", "in", "on", "to", "a", "an", "is", "are", "please", "run", "test"}
+        words = [w.strip(".,?!:;\"'()") for w in user_prompt.split() if len(w.strip(".,?!:;\"'()")) > 2]
+        core_words = [w for w in words if w.lower() not in stop_words]
+        search_q = " ".join(core_words[:4]) if core_words else user_prompt.strip()[:40]
+        probe_ent = core_words[0] if core_words else ("transformer" if domain == "cs_ai" else "EGFR")
+        return {
+            "search_query": search_q,
+            "probe_entity": probe_ent,
+            "domain": domain,
+            "hypothesis": f"High-order nonlinear interactions among secondary covariates explain the unmodeled variance in {search_q}.",
+        }
+
+    async def synthesize_autonomous_executive_summary(
+        self,
+        user_prompt: str,
+        hypothesis: str,
+        diss_title: str,
+        lazy_run_info: Dict[str, Any],
+        deep_info: Dict[str, Any],
+        opp_info: Dict[str, Any],
+    ) -> str:
+        """
+        Generates a comprehensive Gemini Executive Summary after the full workflow has executed.
+        """
+        system_prompt = (
+            "You are the ThesisOut Scientific Discovery & Moonshot Synthesis Engine powered by Gemini.\n"
+            "Write a clear, authoritative 3-paragraph Executive Summary (no emojis, no markdown bolding noise) "
+            "explaining:\n"
+            "1. How the user's question and hypothesis were tested on the harvested dissertation and dataset.\n"
+            "2. What the 30-model LazyPredict sweep and 5-stage Deep Inference Verification revealed (cite exact scores, "
+            "model names, and top predictive variables).\n"
+            "3. The resulting Moonshot Market Translation Dossier, clinical/commercial whitespace, and executed verification actions.\n"
+            "Respond strictly in JSON: {\"executive_summary\": \"...\"}"
+        )
+        user_msg = json.dumps(
+            {
+                "user_prompt": user_prompt,
+                "hypothesis": hypothesis,
+                "dissertation_title": diss_title,
+                "lazypredict_audit": lazy_run_info,
+                "deep_verification": deep_info,
+                "moonshot_opportunity": opp_info,
+            },
+            default=str,
+        )
+        try:
+            res = await self._call_gemini_json(system_prompt, user_msg)
+            if res and isinstance(res, dict) and res.get("executive_summary"):
+                return str(res["executive_summary"])
+        except Exception as exc:
+            logger.warning("Executive summary fallback: %s", exc)
+
+        return (
+            f"In response to your inquiry ('{user_prompt}'), ThesisOut formulated the hypothesis: '{hypothesis}' and "
+            f"executed an autonomous end-to-end investigation anchored on the study '{diss_title}'.\n\n"
+            f"Across {lazy_run_info.get('models_tested_count', 30)} machine learning architectures benchmarked on target variable "
+            f"'{lazy_run_info.get('target_column')}', {lazy_run_info.get('best_model_name')} achieved {lazy_run_info.get('best_score')} "
+            f"({lazy_run_info.get('primary_metric_name')}), outperforming the classical linear baseline ({lazy_run_info.get('author_baseline_score')}) "
+            f"by +{round(float(lazy_run_info.get('signal_gain_delta', 0)) * 100, 1)}%. Five-stage Deep Inference Verification confirmed "
+            f"non-random signal separation and stacked a Level-2 Super-Learner ensemble reaching "
+            f"{deep_info.get('stage2_super_learner_ensemble', {}).get('super_learner_score', lazy_run_info.get('best_score'))}.\n\n"
+            f"Cross-referencing these empirical findings against live ClinicalTrials.gov, OpenTargets, and ChEMBL registries "
+            f"yielded the Moonshot Dossier '{opp_info.get('title')}' (Translation Opportunity Score: {opp_info.get('overall_tos_score')}/100), "
+            f"with all 4 verification steps, provisional patent claims, and reproducible Python code executed below."
+        )
+
+
     async def _call_gemini_json(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},

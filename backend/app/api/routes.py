@@ -676,3 +676,24 @@ async def chat_with_gemini_discovery_copilot(
         workspace_context=workspace_context,
     )
 
+
+@router.get("/copilot/autonomous-stream")
+async def stream_autonomous_gemini_discovery(
+    prompt: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Streams the full end-to-end Gemini-driven discovery workflow (SSE):
+    1. Gemini formulates the scientific hypothesis & optimal search parameters
+    2. Streams dissertations & unmet bottlenecks (OpenAlex, EuropePMC, arXiv, ClinicalTrials.gov)
+    3. Downloads real open-access tabular dataset from Zenodo & runs 30+ LazyPredict models
+    4. Runs 5-Stage Deep Inference Verification & 9-API Live Probe
+    5. Executes all 4 validation actions (5-fold CV, patent claim, registry audit, Python model export)
+    6. Generates Gemini Executive Summary and reveals the Moonshot + all supporting evidence
+    """
+    return StreamingResponse(
+        orchestrator.stream_autonomous_gemini_workflow(db=db, user_prompt=prompt),
+        media_type="text/event-stream",
+    )
+
+

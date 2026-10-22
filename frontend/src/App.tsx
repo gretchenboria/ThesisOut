@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Compass,
   Download,
   ExternalLink,
   FileText,
@@ -15,7 +13,6 @@ import {
   RefreshCw,
   Search,
   Send,
-  ShieldCheck,
   Upload,
 } from 'lucide-react';
 
@@ -222,13 +219,11 @@ export function App() {
   const [step1Mode, setStep1Mode] = useState<'copilot' | 'upload' | 'saved'>('copilot');
 
   const [showAllModels, setShowAllModels] = useState<boolean>(false);
-  const [showDeepCheck, setShowDeepCheck] = useState<boolean>(false);
-  const [showMoreDataTools, setShowMoreDataTools] = useState<boolean>(false);
-  const [showAllMoonshots, setShowAllMoonshots] = useState<boolean>(false);
+  const [showDeepCheck, setShowDeepCheck] = useState<boolean>(true);
 
   const [dissertations, setDissertations] = useState<Dissertation[]>([]);
   const [opportunities, setOpportunities] = useState<MarketOpportunity[]>([]);
-  const [problems, setProblems] = useState<IndustryProblem[]>([]);
+  const [, setProblems] = useState<IndustryProblem[]>([]);
   const [selectedDissId, setSelectedDissId] = useState<number | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -238,28 +233,23 @@ export function App() {
   const [stepActionResults, setStepActionResults] = useState<Record<string, any>>({});
   const [executingStepKey, setExecutingStepKey] = useState<string | null>(null);
 
-  const [customTargetCol, setCustomTargetCol] = useState<string>('');
-  const [runningCustomTarget, setRunningCustomTarget] = useState<boolean>(false);
+  // Autonomous Gemini Executive Summary & Hypothesis
+  const [executiveSummary, setExecutiveSummary] = useState<string>('');
+  const [activeHypothesis, setActiveHypothesis] = useState<string>('');
+
+  const [, setRunningCustomTarget] = useState<boolean>(false);
 
   const [zenodoInput, setZenodoInput] = useState<string>('');
   const [attachingData, setAttachingData] = useState<boolean>(false);
 
-  const [harvestQuery, setHarvestQuery] = useState<string>('');
   const [harvesting, setHarvesting] = useState<boolean>(false);
   const [streamEvents, setStreamEvents] = useState<string[]>([]);
   const [probeData, setProbeData] = useState<any>(null);
-  const [probing, setProbing] = useState<boolean>(false);
+  const [, setProbing] = useState<boolean>(false);
 
   const [chatInput, setChatInput] = useState<string>('');
   const [chatLoading, setChatLoading] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([
-    {
-      role: 'assistant',
-      content:
-        'Describe the phenomenon, biological mechanism, dataset anomaly, or engineering bottleneck you want to investigate. I will help formulate the hypothesis, identify what empirical signals to look for, and stream live dissertations, datasets, and 30-model audits based on our dialogue.',
-      model_used: 'Gemini Discovery Co-Pilot',
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<CopilotMessage[]>([]);
 
   const [uploadTitle, setUploadTitle] = useState<string>('');
   const [uploadUni, setUploadUni] = useState<string>('');
@@ -310,7 +300,7 @@ export function App() {
     if (firstRun) {
       setSelectedRunId(firstRun.id);
     }
-    setCurrentStep(2);
+    setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -353,7 +343,6 @@ export function App() {
         const newRun: LazyPredictRun = await res.json();
         await fetchAllData();
         setSelectedRunId(newRun.id);
-        setShowMoreDataTools(false);
         setCurrentStep(2);
       }
     } catch (err) {
@@ -410,16 +399,22 @@ export function App() {
     }
   };
 
-  const executeLiveStreamHarvest = (queryStr: string, explicitDomain?: string) => {
-    const cleanQ = queryStr.trim();
-    if (!cleanQ) return;
-    const domain = explicitDomain || inferDomainFromText(cleanQ);
-    setHarvestQuery(cleanQ);
+  /**
+   * Autonomous End-to-End Gemini Workflow:
+   * Ask Gemini -> Formulates hypothesis -> Streams dissertations & datasets -> Runs 30+ LazyPredict models ->
+   * Escalates to 5-Stage Deep Inference -> Probes 9 live APIs -> Executes all 4 actions -> Reveals Moonshot & Supporting Evidence!
+   */
+  const handleRunAutonomousGeminiWorkflow = (promptOverride?: string) => {
+    const promptText = (promptOverride ?? chatInput).trim();
+    if (!promptText || harvesting) return;
+
+    if (!promptOverride) setChatInput('');
     setHarvesting(true);
     setErrorMsg(null);
-    setStreamEvents([`Connecting to live OpenAlex, ClinicalTrials.gov, and Zenodo streams for "${cleanQ}"...`]);
+    setStreamEvents([`Submitting inquiry to Gemini Autonomous Discovery Engine: "${promptText}"...`]);
+    setChatMessages((prev) => [...prev, { role: 'user', content: promptText }]);
 
-    const url = `/api/harvest/stream?query=${encodeURIComponent(cleanQ)}&domain=${encodeURIComponent(domain)}&min_year=2018&max_results=3`;
+    const url = `/api/copilot/autonomous-stream?prompt=${encodeURIComponent(promptText)}`;
     const evtSource = new EventSource(url);
 
     evtSource.onmessage = async (event) => {
@@ -428,18 +423,51 @@ export function App() {
         if (data.message) {
           setStreamEvents((prev) => [...prev, data.message]);
         }
+        if (data.step === 'gemini_plan_ready' && data.payload?.plan?.hypothesis) {
+          setActiveHypothesis(data.payload.plan.hypothesis);
+        }
         if (data.step === 'complete') {
           evtSource.close();
           await fetchAllData();
           setHarvesting(false);
-          const createdIds: number[] = data.payload?.dissertation_ids || [];
-          if (createdIds.length > 0) {
-            setSelectedDissId(createdIds[0]);
-            setCurrentStep(2);
+
+          const payload = data.payload || {};
+          if (payload.selected_dissertation_id) {
+            setSelectedDissId(payload.selected_dissertation_id);
           }
+          if (payload.selected_lazy_run_id) {
+            setSelectedRunId(payload.selected_lazy_run_id);
+            if (payload.deep_inference) {
+              setEscalationCache((prev) => ({
+                ...prev,
+                [payload.selected_lazy_run_id]: payload.deep_inference,
+              }));
+            }
+          }
+          if (payload.probe_data) {
+            setProbeData(payload.probe_data);
+          }
+          if (payload.executed_steps) {
+            setStepActionResults((prev) => ({ ...prev, ...payload.executed_steps }));
+          }
+          if (payload.executive_summary) {
+            setExecutiveSummary(payload.executive_summary);
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: payload.executive_summary,
+                hypothesis_formulation: payload.plan?.hypothesis,
+                model_used: 'Gemini Autonomous Discovery Engine',
+              },
+            ]);
+          }
+          // Automatically reveal the Moonshot + Supporting Evidence view (Stage 03)
+          setCurrentStep(3);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (err) {
-        console.error('Stream parse error:', err);
+        console.error('Autonomous stream parse error:', err);
       }
     };
 
@@ -450,12 +478,10 @@ export function App() {
     };
   };
 
-  const handleLiveHarvest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    executeLiveStreamHarvest(harvestQuery);
-  };
-
-  const handleSendCopilotMessage = async (customPrompt?: string) => {
+  /**
+   * Conversational Follow-up Chat with Gemini on already-loaded data
+   */
+  const handleFollowUpChat = async (customPrompt?: string) => {
     const text = (customPrompt ?? chatInput).trim();
     if (!text || chatLoading) return;
 
@@ -500,16 +526,15 @@ export function App() {
 
   const handleCopilotActionClick = (action: CopilotAction) => {
     if (action.action_type === 'harvest_stream') {
-      executeLiveStreamHarvest(action.query_or_column, action.domain);
+      handleRunAutonomousGeminiWorkflow(action.query_or_column);
     } else if (action.action_type === 'probe_apis') {
       handleRunLiveProbe(action.query_or_column);
     } else if (action.action_type === 'run_lazypredict_column') {
       handleRunCustomTargetColumn(action.query_or_column);
     } else if (action.action_type === 'run_deep_verification' && activeRun) {
-      setCurrentStep(2);
       handleEscalateDeepInference(activeRun.id);
     } else if (action.action_type === 'follow_up_prompt') {
-      handleSendCopilotMessage(action.query_or_column);
+      handleFollowUpChat(action.query_or_column);
     }
   };
 
@@ -522,11 +547,14 @@ export function App() {
     setSelectedRunId(null);
     setStreamEvents([]);
     setProbeData(null);
+    setExecutiveSummary('');
+    setActiveHypothesis('');
+    setChatMessages([]);
     setCurrentStep(1);
   };
 
   const handleRunLiveProbe = async (q: string) => {
-    const targetQ = q.trim() || harvestQuery.trim() || selectedDiss?.title?.split(' ')[0] || 'EGFR';
+    const targetQ = q.trim() || selectedDiss?.title?.split(' ')[0] || 'EGFR';
     setProbing(true);
     try {
       const res = await fetch(`/api/integrations/probe?query=${encodeURIComponent(targetQ)}`);
@@ -653,7 +681,7 @@ export function App() {
           <circle cx="1020" cy="440" r="11" stroke="#4F46E5" strokeOpacity="0.2" strokeWidth="1" />
           <circle cx="430" cy="360" r="3.5" fill="#E11D48" fillOpacity="0.3" />
 
-          {/* Floating Magnifying Glass Assembly 1 (Upper Right Trajectory Intersection) */}
+          {/* Floating Magnifying Glass Assembly 1 */}
           <g className="floating-magnifying-lens-1">
             <circle cx="1080" cy="250" r="120" fill="url(#lensGlow)" />
             <circle
@@ -673,7 +701,6 @@ export function App() {
               strokeWidth="1"
               strokeDasharray="6 6"
             />
-            {/* Optical Lens Glint Arc */}
             <path
               d="M 1035 215 A 56 56 0 0 1 1105 198"
               stroke="#2563EB"
@@ -681,7 +708,6 @@ export function App() {
               strokeWidth="2.5"
               strokeLinecap="round"
             />
-            {/* Magnifying Glass Handle */}
             <line
               x1="1134"
               y1="304"
@@ -694,7 +720,7 @@ export function App() {
             />
           </g>
 
-          {/* Floating Magnifying Glass Assembly 2 (Lower Left Trajectory Sweep) */}
+          {/* Floating Magnifying Glass Assembly 2 */}
           <g className="floating-magnifying-lens-2">
             <circle cx="290" cy="540" r="105" fill="url(#lensGlow)" />
             <circle
@@ -738,7 +764,7 @@ export function App() {
       {/* Top Sapphire-Indigo-Crimson Accent Line */}
       <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 relative z-20" />
 
-      {/* Sleek Glass Header */}
+      {/* Sleek Glass Header with ThesisOut in Sentence/CamelCase */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -747,15 +773,15 @@ export function App() {
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="font-extrabold text-lg tracking-tight text-slate-900">
-                  ThesisOut
+                <span className="font-extrabold text-xl tracking-tight text-slate-900">
+                  Thesis<span className="text-blue-600">Out</span>
                 </span>
                 <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  Scientific Trajectory Engine
+                  Taking Thesis Discoveries Out Into the World
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Conversational Gemini reasoning paired with 30-model empirical screening and 9 live scientific APIs
+                Ask Gemini any research question — it autonomously streams theses & datasets, tests 30+ models, and reveals moonshots
               </p>
             </div>
           </div>
@@ -771,7 +797,7 @@ export function App() {
             )}
             <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold flex items-center gap-1.5">
               <Search className="w-3.5 h-3.5 text-indigo-600" />
-              Gemini Live API Active
+              Gemini Autonomous Engine
             </span>
           </div>
         </div>
@@ -789,21 +815,15 @@ export function App() {
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 1
-                    ? 'bg-white/20 text-white'
-                    : 'bg-blue-50 text-blue-700'
+                  currentStep === 1 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 01
               </div>
               <div>
-                <div className="text-xs font-bold">Gemini Discovery Dialogue</div>
-                <div
-                  className={`text-[11px] ${
-                    currentStep === 1 ? 'text-blue-100' : 'text-slate-500'
-                  }`}
-                >
-                  Formulate hypotheses & stream data
+                <div className="text-xs font-bold">Ask Gemini (Full Run)</div>
+                <div className={`text-[11px] ${currentStep === 1 ? 'text-blue-100' : 'text-slate-500'}`}>
+                  Describe what to investigate & launch
                 </div>
               </div>
             </button>
@@ -818,21 +838,15 @@ export function App() {
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 2
-                    ? 'bg-white/20 text-white'
-                    : 'bg-blue-50 text-blue-700'
+                  currentStep === 2 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 02
               </div>
               <div>
-                <div className="text-xs font-bold">30-Model Signal Audit</div>
-                <div
-                  className={`text-[11px] ${
-                    currentStep === 2 ? 'text-blue-100' : 'text-slate-500'
-                  }`}
-                >
-                  Inspect empirical patterns & steer inference
+                <div className="text-xs font-bold">30-Model & 5-Stage Evidence</div>
+                <div className={`text-[11px] ${currentStep === 2 ? 'text-blue-100' : 'text-slate-500'}`}>
+                  Inspect leaderboard, CIs & deep verification
                 </div>
               </div>
             </button>
@@ -847,21 +861,15 @@ export function App() {
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentStep === 3
-                    ? 'bg-white/20 text-white'
-                    : 'bg-blue-50 text-blue-700'
+                  currentStep === 3 ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
                 }`}
               >
                 03
               </div>
               <div>
-                <div className="text-xs font-bold">Actionable Dossier</div>
-                <div
-                  className={`text-[11px] ${
-                    currentStep === 3 ? 'text-blue-100' : 'text-slate-500'
-                  }`}
-                >
-                  Execute verification steps & export code
+                <div className="text-xs font-bold">Moonshot & Supporting Dossier</div>
+                <div className={`text-[11px] ${currentStep === 3 ? 'text-blue-100' : 'text-slate-500'}`}>
+                  Executive summary, actions & full evidence
                 </div>
               </div>
             </button>
@@ -935,20 +943,20 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STAGE 01: CONVERSATIONAL GEMINI DISCOVERY & EVIDENCE ACQUISITION */}
+        {/* STAGE 01: ASK GEMINI TO RUN THE ENTIRE END-TO-END DISCOVERY WORKFLOW */}
         {/* ===================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-6">
             <div className="text-center max-w-2xl mx-auto">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold mb-2">
                 <Search className="w-3.5 h-3.5" />
-                Stage 01 • Hypothesis & Evidence Formulation
+                ThesisOut • Autonomous Scientific Discovery
               </span>
               <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Collaborate with Gemini to Guide Discovery & Downstream Inference
+                Tell Gemini What You Want to Discover
               </h1>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Discuss what you believe is happening in a biological or engineering system. Gemini helps structure the hypothesis, recommends what empirical evidence to stream, and configures downstream 30-model inference.
+                Ask any scientific question or describe a mechanism, disease, or engineering challenge. Gemini will autonomously formulate the hypothesis, stream dissertations and open datasets, run 30+ models and 5-stage deep verification, execute validation steps, and reveal the moonshot with all supporting evidence.
               </p>
             </div>
 
@@ -964,7 +972,7 @@ export function App() {
                   }`}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  Gemini Discovery Co-Pilot & Live Stream
+                  Ask Gemini (Autonomous Full Workflow)
                 </button>
                 <button
                   onClick={() => setStep1Mode('upload')}
@@ -993,238 +1001,71 @@ export function App() {
               </div>
             </div>
 
-            {/* MODE A: Conversational Gemini Discovery Co-Pilot + Open-Ended Live Stream */}
+            {/* MODE A: Single Unified Gemini Command & Conversation Box */}
             {step1Mode === 'copilot' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left 7 Columns: Conversational Gemini Co-Pilot */}
-                <div className="lg:col-span-7 glass-panel rounded-3xl p-6 flex flex-col justify-between space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 mb-4">
-                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                        <MessageSquare className="w-4 h-4 text-blue-600" />
-                        Gemini Scientific Discovery & Inference Co-Pilot
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-semibold">
-                        Context-Aware
-                      </span>
-                    </div>
-
-                    {/* Chat Transcript */}
-                    <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-                      {chatMessages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-4 rounded-2xl text-xs space-y-3 ${
-                            msg.role === 'user'
-                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-8 shadow-sm'
-                              : 'glass-subpanel text-slate-800 mr-4'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider opacity-75">
-                            <span>{msg.role === 'user' ? 'Investigator' : msg.model_used || 'Gemini Co-Pilot'}</span>
-                          </div>
-
-                          <div className="leading-relaxed whitespace-pre-line">{msg.content}</div>
-
-                          {msg.hypothesis_formulation && (
-                            <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3 text-slate-800">
-                              <div className="font-bold uppercase tracking-wider text-[10px] text-blue-700">
-                                Formulated Hypothesis
-                              </div>
-                              <div className="mt-0.5 font-medium">{msg.hypothesis_formulation}</div>
-                            </div>
-                          )}
-
-                          {msg.downstream_inference_plan && msg.downstream_inference_plan.length > 0 && (
-                            <div className="bg-white/90 border border-slate-200 rounded-xl p-3 text-slate-800 space-y-1">
-                              <div className="font-bold uppercase tracking-wider text-[10px] text-indigo-700">
-                                Downstream Inference Strategy
-                              </div>
-                              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600">
-                                {msg.downstream_inference_plan.map((step, sIdx) => (
-                                  <li key={sIdx}>{step}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {msg.suggested_actions && msg.suggested_actions.length > 0 && (
-                            <div className="pt-1 space-y-1.5">
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-700">
-                                Recommended Actions (Click to Execute):
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {msg.suggested_actions.map((act, aIdx) => (
-                                  <button
-                                    key={aIdx}
-                                    type="button"
-                                    onClick={() => handleCopilotActionClick(act)}
-                                    disabled={harvesting || probing || runningCustomTarget}
-                                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white font-semibold text-[11px] flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                                  >
-                                    <Play className="w-3 h-3" />
-                                    {act.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      {chatLoading && (
-                        <div className="p-4 rounded-2xl glass-subpanel text-xs flex items-center gap-2 text-slate-600">
-                          <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                          Gemini is analyzing your hypothesis and workspace state...
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Chat Input Box */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendCopilotMessage();
-                    }}
-                    className="pt-3 border-t border-slate-200/80 flex gap-2"
-                  >
+              <div className="glass-panel rounded-3xl p-8 max-w-3xl mx-auto space-y-6">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRunAutonomousGeminiWorkflow();
+                  }}
+                  className="space-y-4"
+                >
+                  <label className="block text-sm font-bold text-slate-900">
+                    What scientific question, biological mechanism, or technological bottleneck should Gemini investigate?
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <input
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Ask Gemini about a hypothesis, mechanism, or which variables to test next..."
-                      className="flex-1 bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
+                      placeholder="Describe your idea or question in plain English..."
+                      className="flex-1 bg-white border border-slate-300 focus:border-blue-600 rounded-2xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none shadow-2xs"
                     />
                     <button
                       type="submit"
-                      disabled={chatLoading || !chatInput.trim()}
-                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                      disabled={harvesting || !chatInput.trim()}
+                      className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition cursor-pointer shrink-0"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      Send
+                      {harvesting ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Running Full Discovery Workflow...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Ask Gemini & Run Full Discovery
+                        </>
+                      )}
                     </button>
-                  </form>
-                </div>
-
-                {/* Right 5 Columns: Direct Live Repository Stream & 9-API Telemetry */}
-                <div className="lg:col-span-5 glass-panel rounded-3xl p-6 flex flex-col justify-between space-y-5">
-                  <div className="space-y-4">
-                    <div className="border-b border-slate-200/80 pb-3">
-                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                        <Search className="w-4 h-4 text-blue-600" />
-                        Direct Multi-Repository Stream
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                        Or enter any free-form scientific query directly. Domain classification, dataset matching (OpenAlex + Zenodo), and 30-model LazyPredict screening run automatically without rigid presets.
-                      </p>
-                    </div>
-
-                    <form onSubmit={handleLiveHarvest} className="space-y-3 text-xs">
-                      <div>
-                        <label className="block font-semibold text-slate-700 mb-1.5">
-                          Free-Form Scientific Query
-                        </label>
-                        <input
-                          type="text"
-                          value={harvestQuery}
-                          onChange={(e) => setHarvestQuery(e.target.value)}
-                          placeholder="Enter any mechanism, target, disease, or system..."
-                          className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2.5 pt-1">
-                        <button
-                          type="submit"
-                          disabled={harvesting || !harvestQuery.trim()}
-                          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20 transition cursor-pointer"
-                        >
-                          {harvesting ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              Streaming Live Repositories...
-                            </>
-                          ) : (
-                            <>
-                              <Search className="w-4 h-4" />
-                              Stream Theses & Auto-Audit Datasets
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRunLiveProbe(harvestQuery)}
-                          disabled={probing || !harvestQuery.trim()}
-                          className="w-full py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 text-indigo-700 border border-indigo-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          {probing ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Search className="w-4 h-4" />
-                          )}
-                          Probe 9 Live Science APIs for Query
-                        </button>
-                      </div>
-                    </form>
-
-                    {/* Live SSE Stream Progress Log */}
-                    {streamEvents.length > 0 && (
-                      <div className="glass-subpanel rounded-2xl p-3.5 space-y-1.5 text-[11px] font-mono">
-                        <div className="font-bold text-blue-700 uppercase tracking-wider text-[10px]">
-                          Live Multi-Repository Stream Telemetry
-                        </div>
-                        {streamEvents.map((msg, i) => (
-                          <div key={i} className="flex items-start gap-2 text-slate-700">
-                            <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
-                            <span>{msg}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Live Multi-Database Integration Telemetry Drawer */}
-                    {probeData && (
-                      <div className="glass-subpanel rounded-2xl p-3.5 space-y-2.5 text-[11px]">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900">
-                            9-API Telemetry: "{probeData.query}"
-                          </span>
-                          <button
-                            onClick={() => setProbeData(null)}
-                            className="text-blue-600 font-semibold underline cursor-pointer"
-                          >
-                            Close
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
-                            <div className="font-bold text-blue-700">OpenTargets GraphQL v4</div>
-                            <div className="text-slate-700">
-                              Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} • Known Drugs:{' '}
-                              {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
-                            </div>
-                          </div>
-                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
-                            <div className="font-bold text-indigo-700">ChEMBL EBI REST API</div>
-                            <div className="text-slate-700">
-                              Targets: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Max Phase:{' '}
-                              {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
-                            </div>
-                          </div>
-                          <div className="bg-white border border-slate-200 rounded-xl p-2.5">
-                            <div className="font-bold text-rose-700">ClinicalTrials.gov v2 & openFDA</div>
-                            <div className="text-slate-700">
-                              Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} • FAERS Reports:{' '}
-                              {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </form>
+
+                {/* Live Autonomous Telemetry Log */}
+                {streamEvents.length > 0 && (
+                  <div className="glass-subpanel rounded-2xl p-5 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-blue-700 uppercase tracking-wider text-[11px]">
+                        Autonomous Gemini Workflow Execution Log
+                      </span>
+                      {harvesting && (
+                        <span className="text-[11px] text-indigo-600 font-semibold flex items-center gap-1.5">
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Executing Pipeline...
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 font-mono text-[11px]">
+                      {streamEvents.map((msg, i) => (
+                        <div key={i} className="flex items-start gap-2.5 text-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1.5" />
+                          <span>{msg}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1236,7 +1077,7 @@ export function App() {
                   Submit Dissertation PDF or Tabular Dataset
                 </div>
                 <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                  Upload a local CSV, TSV, Excel, or Parquet dataset along with an optional dissertation PDF. The engine will execute 30+ LazyPredict models and advance to Stage 02.
+                  Upload a local CSV, TSV, Excel, or Parquet dataset along with an optional dissertation PDF. ThesisOut will execute 30+ LazyPredict models and synthesize the moonshot dossier.
                 </p>
 
                 <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs">
@@ -1318,7 +1159,7 @@ export function App() {
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        Ingest Evidence & Proceed to Stage 02
+                        Ingest Evidence & Reveal Moonshot
                       </>
                     )}
                   </button>
@@ -1357,7 +1198,7 @@ export function App() {
                           <span className="text-slate-400">Click to attach dataset</span>
                         )}
                         <span className="font-semibold text-blue-600 flex items-center gap-1">
-                          Open Audit <ArrowRight className="w-3.5 h-3.5" />
+                          Open Dossier <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>
                     </div>
@@ -1369,18 +1210,16 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STAGE 02: 30-MODEL SIGNAL AUDIT */}
+        {/* STAGE 02: 30-MODEL & 5-STAGE EMPIRICAL EVIDENCE */}
         {/* ===================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-6">
             {!selectedDiss ? (
               <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
                 <BookOpen className="w-10 h-10 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900">
-                  No Active Study Selected
-                </h3>
+                <h3 className="text-lg font-bold text-slate-900">No Active Study Selected</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Return to Stage 01 to converse with Gemini or stream a live dissertation dataset.
+                  Return to Stage 01 and ask Gemini a question to run the discovery pipeline.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
@@ -1437,7 +1276,6 @@ export function App() {
               </div>
             ) : (
               <>
-                {/* Signal Takeaway Banner */}
                 <div className="glass-panel rounded-3xl p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-2">
@@ -1480,16 +1318,13 @@ export function App() {
                       }}
                       className="px-5 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs flex items-center gap-2 shrink-0 shadow-sm shadow-blue-500/20 transition cursor-pointer"
                     >
-                      Proceed to Actionable Dossier <ArrowRight className="w-4 h-4" />
+                      View Moonshot & Full Dossier <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Target Switcher Pills */}
                   {activeDataset && activeDataset.lazy_runs.length > 1 && (
                     <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-semibold text-slate-600">
-                        Audited Columns:
-                      </span>
+                      <span className="font-semibold text-slate-600">Audited Columns:</span>
                       {activeDataset.lazy_runs.map((run) => (
                         <button
                           key={run.id}
@@ -1507,66 +1342,7 @@ export function App() {
                   )}
                 </div>
 
-                {/* Inline Gemini Downstream Inference Co-Pilot inside Stage 02 */}
-                <div className="glass-panel rounded-3xl p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                      <MessageSquare className="w-4 h-4 text-blue-600" />
-                      Ask Gemini Co-Pilot About This 30-Model Audit & Downstream Inference
-                    </div>
-                    <span className="text-[11px] font-medium text-slate-500">
-                      Connected to {activeDataset?.name} & leaderboard
-                    </span>
-                  </div>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendCopilotMessage();
-                    }}
-                    className="flex gap-2"
-                  >
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder={`Ask why ${activeRun.best_model_name} won, which confounder to ablate, or which column in ${activeDataset?.name} to test next...`}
-                      className="flex-1 bg-white border border-slate-300 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={chatLoading || !chatInput.trim()}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {chatLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                      Ask Gemini
-                    </button>
-                  </form>
-                  {chatMessages.length > 1 && (
-                    <div className="glass-subpanel rounded-2xl p-4 text-xs space-y-2">
-                      <div className="font-bold text-blue-700">
-                        {chatMessages[chatMessages.length - 1].model_used || 'Gemini Co-Pilot'}:
-                      </div>
-                      <p className="text-slate-700 whitespace-pre-line leading-relaxed">
-                        {chatMessages[chatMessages.length - 1].content}
-                      </p>
-                      {chatMessages[chatMessages.length - 1].suggested_actions && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {chatMessages[chatMessages.length - 1].suggested_actions?.map((act, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleCopilotActionClick(act)}
-                              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-                            >
-                              <Play className="w-3 h-3" /> {act.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* 3 Evidence Cards (Sapphire, Indigo, Crimson-Rose — Zero Yellow/Green) */}
+                {/* 3 Evidence Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
                     <div>
@@ -1634,205 +1410,53 @@ export function App() {
                   </div>
                 </div>
 
-                {/* PROGRESSIVE DISCLOSURE DRAWERS */}
-                <div className="space-y-3 pt-2">
-                  {/* Drawer 1: 5-Stage Deep Verification */}
-                  <div className="glass-panel rounded-3xl overflow-hidden">
-                    <button
-                      onClick={() => handleEscalateDeepInference(activeRun.id)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
-                          <ShieldCheck className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-slate-900">
-                            Verify Discovery (5-Stage Deep Verification Audit)
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            Executes 5-fold cross-validation, target-permutation null testing, Super-Learner stacking, and regime threshold extraction
-                          </div>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold shrink-0">
-                        {escalatingRunId === activeRun.id
-                          ? 'Auditing...'
-                          : escalationCache[activeRun.id]
-                          ? 'Verified'
-                          : 'Run Audit'}
-                      </span>
-                    </button>
-
-                    {showDeepCheck && escalationCache[activeRun.id] && (
-                      <div className="px-6 pb-6 pt-3 border-t border-slate-200/80 bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        {(() => {
-                          const esc = escalationCache[activeRun.id];
-                          return (
-                            <>
-                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                                <div className="font-bold text-blue-700 mb-1">
-                                  01. Permutation & Leakage Audit
-                                </div>
-                                <p className="text-slate-600 leading-relaxed">
-                                  {esc.stage1_leakage_and_permutation_audit.audit_interpretation}
-                                </p>
-                              </div>
-
-                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                                <div className="font-bold text-indigo-700 mb-1">
-                                  02. Super-Learner Stacking Score: {esc.stage2_super_learner_ensemble.super_learner_score}
-                                </div>
-                                <p className="text-slate-600 leading-relaxed">
-                                  Stacking LightGBM, XGBoost, ExtraTrees, and Random Forest achieved{' '}
-                                  <strong>{esc.stage2_super_learner_ensemble.super_learner_score}</strong>.{' '}
-                                  {esc.stage4_conformal_uncertainty.ood_note}
-                                </p>
-                              </div>
-
-                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                                <div className="font-bold text-violet-700 mb-1">
-                                  03. Mechanistic Regime Thresholds
-                                </div>
-                                <p className="text-slate-600 leading-relaxed">
-                                  {esc.stage3_mechanistic_regime_discovery.synergy_conclusion}
-                                </p>
-                              </div>
-
-                              <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                                <div className="font-bold text-rose-700 mb-1">
-                                  04. Counterfactual Parameter Shifts
-                                </div>
-                                <ul className="space-y-1 text-slate-600 mt-1">
-                                  {esc.stage5_counterfactual_intervention.prescribed_parameter_shifts.map((s, idx) => (
-                                    <li key={idx}>• {s.intervention_action}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
+                {/* Full Leaderboard Drawer */}
+                <div className="glass-panel rounded-3xl overflow-hidden">
+                  <button
+                    onClick={() => setShowAllModels(!showAllModels)}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
+                  >
+                    <div className="text-sm font-bold text-slate-900">
+                      Inspect Full {activeRun.leaderboard.length}-Model Leaderboard & 95% Confidence Intervals
+                    </div>
+                    {showAllModels ? (
+                      <ChevronUp className="w-5 h-5 text-slate-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-500" />
                     )}
-                  </div>
+                  </button>
 
-                  {/* Drawer 2: Full 30-Model Leaderboard */}
-                  <div className="glass-panel rounded-3xl overflow-hidden">
-                    <button
-                      onClick={() => setShowAllModels(!showAllModels)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
-                    >
-                      <div className="text-sm font-bold text-slate-900">
-                        Inspect Full {activeRun.leaderboard.length}-Model Leaderboard & Confidence Intervals
-                      </div>
-                      {showAllModels ? (
-                        <ChevronUp className="w-5 h-5 text-slate-500" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-500" />
-                      )}
-                    </button>
-
-                    {showAllModels && (
-                      <div className="px-6 pb-6 pt-2 border-t border-slate-200/80 overflow-x-auto max-h-80">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-slate-600 font-semibold">
-                              <th className="py-2 px-3">Rank</th>
-                              {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
-                                <th key={col} className="py-2 px-3">
-                                  {col}
-                                </th>
+                  {showAllModels && (
+                    <div className="px-6 pb-6 pt-2 border-t border-slate-200/80 overflow-x-auto max-h-80">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 text-slate-600 font-semibold">
+                            <th className="py-2 px-3">Rank</th>
+                            {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
+                              <th key={col} className="py-2 px-3">
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono">
+                          {activeRun.leaderboard.map((row, idx) => (
+                            <tr
+                              key={idx}
+                              className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
+                            >
+                              <td className="py-2 px-3">#{idx + 1}</td>
+                              {Object.entries(row).map(([k, val]) => (
+                                <td key={k} className="py-2 px-3">
+                                  {val === null ? '-' : String(val)}
+                                </td>
                               ))}
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 font-mono">
-                            {activeRun.leaderboard.map((row, idx) => (
-                              <tr
-                                key={idx}
-                                className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
-                              >
-                                <td className="py-2 px-3">#{idx + 1}</td>
-                                {Object.entries(row).map(([k, val]) => (
-                                  <td key={k} className="py-2 px-3">
-                                    {val === null ? '-' : String(val)}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Drawer 3: Audit Another Column */}
-                  {activeDataset && (
-                    <div className="glass-panel rounded-3xl overflow-hidden">
-                      <button
-                        onClick={() => setShowMoreDataTools(!showMoreDataTools)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
-                      >
-                        <div className="text-sm font-bold text-slate-900">
-                          Audit Another Target Variable in This Dataset
-                        </div>
-                        {showMoreDataTools ? (
-                          <ChevronUp className="w-5 h-5 text-slate-500" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-slate-500" />
-                        )}
-                      </button>
-
-                      {showMoreDataTools && (
-                        <div className="px-6 pb-6 pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-3 text-xs">
-                          <select
-                            value={customTargetCol}
-                            onChange={(e) => setCustomTargetCol(e.target.value)}
-                            className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-900"
-                          >
-                            <option value="">Select column from {activeDataset.name}...</option>
-                            {activeDataset.column_metadata
-                              .filter((c) => c.role !== 'identifier')
-                              .map((c) => (
-                                <option key={c.name} value={c.name}>
-                                  {c.name} ({c.dtype})
-                                </option>
-                              ))}
-                          </select>
-                          <button
-                            onClick={() => handleRunCustomTargetColumn(customTargetCol)}
-                            disabled={!customTargetCol || runningCustomTarget}
-                            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 disabled:opacity-40 text-white font-semibold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            {runningCustomTarget ? (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Play className="w-4 h-4" />
-                            )}
-                            Run 30-Model Audit
-                          </button>
-                        </div>
-                      )}
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
-                </div>
-
-                {/* Bottom Step Navigation */}
-                <div className="flex items-center justify-between pt-4">
-                  <button
-                    onClick={() => setCurrentStep(1)}
-                    className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Stage 01
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCurrentStep(3);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blue-500/20 cursor-pointer"
-                  >
-                    Continue to Stage 03: Actionable Dossier <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
               </>
             )}
@@ -1840,37 +1464,55 @@ export function App() {
         )}
 
         {/* ===================================================================== */}
-        {/* STAGE 03: ACTIONABLE DOSSIER & MARKET TRANSLATION */}
+        {/* STAGE 03: UNIFIED MOONSHOT REVEAL + GEMINI SUMMARY + ALL SUPPORTING EVIDENCE */}
         {/* ===================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-6">
-            <div className="text-center max-w-xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold mb-2">
-                <Compass className="w-3.5 h-3.5" />
-                Stage 03 • Commercial & Clinical Translation
-              </span>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Translation Dossiers & Executable Roadmap
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Every discovered empirical signal is cross-examined against live clinical trials, bioactivity registries, and high-urgency industry bottlenecks.
-              </p>
-            </div>
+            {/* 1. Gemini Executive Summary & Formulated Hypothesis Banner */}
+            {(executiveSummary || activeHypothesis) && (
+              <div className="glass-panel rounded-3xl p-6 border-blue-300/90 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                    <MessageSquare className="w-4 h-4 text-blue-600" />
+                    Gemini Executive Discovery Summary & Moonshot Synthesis
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+                    Full Workflow Executed Automatically
+                  </span>
+                </div>
 
+                {activeHypothesis && (
+                  <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3.5 text-xs">
+                    <div className="font-bold uppercase tracking-wider text-[10px] text-indigo-700">
+                      Formulated Scientific Hypothesis
+                    </div>
+                    <div className="font-semibold text-slate-900 mt-0.5">{activeHypothesis}</div>
+                  </div>
+                )}
+
+                {executiveSummary && (
+                  <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                    {executiveSummary}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 2. Revealed Moonshot Dossier & Pre-Executed Actions */}
             {activeOpportunities.length === 0 ? (
               <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto">
                 <Search className="w-10 h-10 text-blue-600 mx-auto mb-3" />
                 <h3 className="text-base font-bold text-slate-900">
-                  No Translation Dossiers Generated Yet
+                  No Moonshot Dossiers Generated Yet
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 mb-5">
-                  Audit a dataset in Stage 02 first to synthesize market translation dossiers.
+                  Go to Stage 01 and ask Gemini a research question—it will run the entire workflow and reveal the moonshot here automatically.
                 </p>
                 <button
                   onClick={() => setCurrentStep(1)}
                   className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold cursor-pointer"
                 >
-                  Return to Stage 01
+                  Ask Gemini in Stage 01
                 </button>
               </div>
             ) : (
@@ -1878,28 +1520,28 @@ export function App() {
                 {activeOpportunities.map((opp) => (
                   <div key={opp.id} className="glass-panel rounded-3xl p-6 space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-                        Translation Opportunity Score: {opp.overall_tos_score} / 100
+                      <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs">
+                        Moonshot Translation Score: {opp.overall_tos_score} / 100
                       </span>
                       <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200">
                         {opp.opportunity_type}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-900 leading-snug">{opp.title}</h3>
+                    <h3 className="text-xl font-extrabold text-slate-900 leading-snug">{opp.title}</h3>
 
                     {/* 3 Case Notes */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                       <div className="glass-subpanel rounded-2xl p-4">
                         <div className="font-bold text-blue-700 mb-1.5">
-                          01. Empirical Evidence Uncovered
+                          01. Empirical Signal Uncovered
                         </div>
                         <p className="text-slate-700 leading-relaxed">{opp.untranslated_finding_summary}</p>
                       </div>
 
                       <div className="glass-subpanel rounded-2xl p-4">
                         <div className="font-bold text-indigo-700 mb-1.5">
-                          02. Academic Bottleneck Diagnosis
+                          02. Why It Remained Untranslated
                         </div>
                         <p className="text-slate-700 leading-relaxed">{opp.valley_of_death_diagnosis}</p>
                       </div>
@@ -1917,11 +1559,11 @@ export function App() {
                       </div>
                     </div>
 
-                    {/* Proposed Solution & Interactive 4-Step Action Plan */}
+                    {/* Proposed Solution & 4 Executed Action Steps */}
                     <div className="glass-subpanel rounded-2xl p-5 text-xs space-y-4">
                       <div>
                         <div className="font-bold text-indigo-700 uppercase tracking-wider text-[11px] mb-1">
-                          Recommended Translation Strategy & Executable Verification Steps
+                          Revealed Moonshot Solution & Executed Actions
                         </div>
                         <p className="text-slate-900 font-semibold text-sm">
                           {opp.proposed_product_or_therapeutic}
@@ -1963,12 +1605,11 @@ export function App() {
                                 ) : (
                                   <>
                                     <Play className="w-3 h-3" />
-                                    {buttonLabels[i] || `Execute Step ${i + 1}`}
+                                    {stepRes ? `Re-Run Step ${i + 1}` : buttonLabels[i] || `Execute Step ${i + 1}`}
                                   </>
                                 )}
                               </button>
 
-                              {/* Live Action Result Box */}
                               {stepRes && (
                                 <div className="mt-1 pt-3 border-t border-slate-200 space-y-2 text-[11px]">
                                   <div className="font-bold text-blue-700">{stepRes.action_title}</div>
@@ -2040,58 +1681,221 @@ export function App() {
               </div>
             )}
 
-            {/* Collapsible Moonshot Problem Bank Drawer */}
-            <div className="glass-panel rounded-3xl overflow-hidden">
-              <button
-                onClick={() => setShowAllMoonshots(!showAllMoonshots)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition cursor-pointer"
-              >
-                <div>
-                  <div className="text-sm font-bold text-slate-900">
-                    Inspect All {problems.length} Live Unmet Industry & Clinical Bottlenecks
+            {/* 3. Supporting Empirical Evidence Section (30-Model Audit + 5-Stage Deep Verification + 9-API Telemetry) */}
+            {activeRun && (
+              <div className="glass-panel rounded-3xl p-6 space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                  <div>
+                    <div className="text-sm font-extrabold text-slate-900">
+                      Supporting Empirical Evidence & Statistical Verification
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      Backed by {activeRun.models_tested_count} benchmarked models on{' '}
+                      <code>{activeRun.target_column}</code>{' '}
+                      {activeDataset ? `(${activeDataset.name}, ${activeDataset.row_count} rows)` : ''}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    Streamed from terminated ClinicalTrials.gov records and high-urgency engineering challenges
+                  <button
+                    onClick={() => setShowAllModels(!showAllModels)}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold cursor-pointer"
+                  >
+                    {showAllModels ? 'Hide Full 30-Model Table' : 'Show Full 30-Model Leaderboard'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="glass-subpanel rounded-2xl p-4">
+                    <div className="text-slate-500 font-semibold">Classical Baseline</div>
+                    <div className="text-2xl font-extrabold text-slate-900 mt-1">
+                      {activeRun.author_baseline_score}
+                    </div>
+                    <div className="text-slate-500 mt-0.5">{activeRun.primary_metric_name}</div>
+                  </div>
+
+                  <div className="glass-subpanel rounded-2xl p-4 border-blue-300">
+                    <div className="text-blue-700 font-bold">
+                      Winning Model ({activeRun.best_model_name})
+                    </div>
+                    <div className="text-2xl font-extrabold text-blue-700 mt-1">
+                      {activeRun.best_score}{' '}
+                      <span className="text-xs font-bold text-indigo-600">
+                        (+{(activeRun.signal_gain_delta * 100).toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="text-slate-500 mt-0.5">
+                      Top Clues: {activeRun.top_features.slice(0, 3).map((f) => f.feature).join(', ')}
+                    </div>
+                  </div>
+
+                  <div className="glass-subpanel rounded-2xl p-4">
+                    <div className="text-indigo-700 font-bold">5-Stage Deep Verification</div>
+                    {escalationCache[activeRun.id] ? (
+                      <>
+                        <div className="text-2xl font-extrabold text-indigo-700 mt-1">
+                          {escalationCache[activeRun.id].stage2_super_learner_ensemble.super_learner_score}
+                        </div>
+                        <div className="text-slate-500 mt-0.5">
+                          Super-Learner Stacking • Permutation Verified
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleEscalateDeepInference(activeRun.id)}
+                        className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold cursor-pointer"
+                      >
+                        {escalatingRunId === activeRun.id ? 'Verifying...' : 'Run 5-Stage Verification'}
+                      </button>
+                    )}
                   </div>
                 </div>
-                {showAllMoonshots ? (
-                  <ChevronUp className="w-5 h-5 text-slate-500" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-500" />
-                )}
-              </button>
 
-              {showAllMoonshots && (
-                <div className="p-6 border-t border-slate-200/80 bg-slate-50/40 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  {problems.map((prob) => (
-                    <div key={prob.id} className="bg-white border border-slate-200 rounded-2xl p-4">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
-                          {prob.code} • ${prob.tam_billions_usd}B Scale
-                        </span>
-                        <span className="text-slate-500 font-medium">{prob.sponsor_or_source}</span>
+                {showDeepCheck && escalationCache[activeRun.id] && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-3.5">
+                      <div className="font-bold text-blue-700 mb-1">Permutation & Leakage Audit</div>
+                      <p className="text-slate-600">
+                        {escalationCache[activeRun.id].stage1_leakage_and_permutation_audit.audit_interpretation}
+                      </p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-3.5">
+                      <div className="font-bold text-indigo-700 mb-1">Mechanistic Regime Thresholds</div>
+                      <p className="text-slate-600">
+                        {escalationCache[activeRun.id].stage3_mechanistic_regime_discovery.synergy_conclusion}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {showAllModels && (
+                  <div className="overflow-x-auto max-h-72 border-t border-slate-200 pt-3">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-600 font-semibold">
+                          <th className="py-2 px-3">Rank</th>
+                          {Object.keys(activeRun.leaderboard[0] || {}).map((col) => (
+                            <th key={col} className="py-2 px-3">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono">
+                        {activeRun.leaderboard.map((row, idx) => (
+                          <tr
+                            key={idx}
+                            className={idx === 0 ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'}
+                          >
+                            <td className="py-2 px-3">#{idx + 1}</td>
+                            {Object.entries(row).map(([k, val]) => (
+                              <td key={k} className="py-2 px-3">
+                                {val === null ? '-' : String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. Supporting 9-API Live Scientific Telemetry */}
+            {probeData && (
+              <div className="glass-panel rounded-3xl p-6 space-y-3 text-xs">
+                <div className="font-extrabold text-slate-900 text-sm">
+                  Supporting 9-Database Live Scientific Telemetry ("{probeData.query}")
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="glass-subpanel rounded-2xl p-3.5">
+                    <div className="font-bold text-blue-700">OpenTargets GraphQL v4</div>
+                    <div className="text-slate-700 mt-1">
+                      Target: {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.symbol || 'Queried'} • Known Drugs:{' '}
+                      {probeData.live_integrations?.opentargets_graphql_v4?.target_profile?.unique_known_drugs ?? 0}
+                    </div>
+                  </div>
+                  <div className="glass-subpanel rounded-2xl p-3.5">
+                    <div className="font-bold text-indigo-700">ChEMBL EBI REST API</div>
+                    <div className="text-slate-700 mt-1">
+                      Targets Found: {probeData.live_integrations?.chembl_ebi_rest?.targets_found?.length || 0} • Max Clinical Phase:{' '}
+                      {probeData.live_integrations?.chembl_ebi_rest?.max_clinical_phase_observed ?? 0}
+                    </div>
+                  </div>
+                  <div className="glass-subpanel rounded-2xl p-3.5">
+                    <div className="font-bold text-rose-700">ClinicalTrials.gov v2 & openFDA</div>
+                    <div className="text-slate-700 mt-1">
+                      Trials: {probeData.live_integrations?.clinicaltrials_gov_v2?.total_trials ?? 0} • FAERS Reports:{' '}
+                      {probeData.live_integrations?.openfda_faers?.total_adverse_event_reports ?? 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. Follow-Up Conversation with Gemini */}
+            <div className="glass-panel rounded-3xl p-6 space-y-4">
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                Continue Conversing with Gemini or Launch a New Investigation
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask a follow-up question about this moonshot, or enter a new topic to run..."
+                  className="flex-1 bg-white border border-slate-300 focus:border-blue-600 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleFollowUpChat()}
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs cursor-pointer"
+                >
+                  {chatLoading ? 'Thinking...' : 'Ask Follow-Up on This Study'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRunAutonomousGeminiWorkflow()}
+                  disabled={harvesting || !chatInput.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-xs cursor-pointer"
+                >
+                  Run Full Workflow on New Topic
+                </button>
+              </div>
+
+              {chatMessages.length > 0 && (
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pt-2">
+                  {chatMessages.slice(-4).map((m, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3.5 rounded-2xl text-xs ${
+                        m.role === 'user'
+                          ? 'bg-blue-600 text-white ml-12'
+                          : 'glass-subpanel text-slate-800 mr-6'
+                      }`}
+                    >
+                      <div className="font-bold text-[10px] uppercase opacity-75 mb-1">
+                        {m.role === 'user' ? 'You' : m.model_used || 'Gemini'}
                       </div>
-                      <div className="font-bold text-slate-900 text-sm">{prob.title}</div>
-                      <p className="text-slate-600 mt-1.5 leading-relaxed">{prob.description}</p>
+                      <div className="whitespace-pre-line leading-relaxed">{m.content}</div>
+                      {m.suggested_actions && m.suggested_actions.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {m.suggested_actions.map((act, i) => (
+                            <button
+                              key={i}
+                              onClick={() => handleCopilotActionClick(act)}
+                              className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-semibold cursor-pointer"
+                            >
+                              {act.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" /> Return to Stage 02
-              </button>
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
-              >
-                Investigate Another Dissertation (Stage 01)
-              </button>
             </div>
           </div>
         )}
