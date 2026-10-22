@@ -1071,25 +1071,25 @@ export function App() {
 
                   <div className="pop-subcard rounded-xl p-4 space-y-2">
                     <div className="text-[11px] font-extrabold text-[#4A2E40] uppercase">
-                      Production Data Guarantee
+                      Methodology &amp; Statistical Protocol
                     </div>
                     <div className="text-sm font-extrabold text-slate-900">
-                      Zero Synthetic Data • 100% Out-of-Fold Validation
+                      Nested Cross-Validation &amp; Conformal Calibration
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
-                      Every dissertation record is retrieved from OpenAlex, EuropePMC, or arXiv with full repository provenance. Every dataset is a real open-access file from Zenodo or direct researcher upload. Imputation and scaling are fit strictly inside cross-validation folds to prevent data leakage.
+                      Dissertations are indexed from OpenAlex, EuropePMC, and arXiv alongside empirical tabular datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad. Imputation, categorical encoding, and scaling are fit strictly inside cross-validation folds to preserve out-of-fold integrity.
                     </div>
                   </div>
 
                   <div className="pop-subcard rounded-xl p-4 space-y-2">
                     <div className="text-[11px] font-extrabold text-[#7A1C24] uppercase">
-                      Persistent Curation &amp; Agent Governance
+                      Translational Dossiers &amp; Reproducibility
                     </div>
                     <div className="text-sm font-extrabold text-slate-900">
-                      Star &amp; Ribbon Memory + 6 Policy-Governed Agents
+                      Multi-Registry Evidence &amp; Standalone Code
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
-                      Investigators can favorite (Star) or bookmark (Ribbon) discoveries and attach persistent research notes stored in SQLite. Six specialized agents registered via agent-cli enforce strict safety and biostatistical policies at every stage.
+                      Each empirical signal is cross-referenced against ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to quantify clinical and patent whitespace. Researchers can maintain due-diligence shortlists with persistent notes and export standalone Python pipelines.
                     </div>
                   </div>
                 </div>
@@ -1099,13 +1099,13 @@ export function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
                   <div className="pop-subcard rounded-xl p-4 space-y-2">
                     <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[10px] font-bold">
-                      STAGE 01 • HARVESTER &amp; PDF PARSER
+                      STAGE 01 • 3-STAGE DATASET FINDER
                     </span>
                     <div className="text-sm font-extrabold text-slate-900">
-                      Live Repository &amp; File Ingestion
+                      ORCID Graph, Full-Text &amp; 4-Repo Harvester
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
-                      Queries OpenAlex, EuropePMC, and arXiv for doctoral theses and downloads linked CSV/TSV datasets from Zenodo REST API, or extracts tables from uploaded PDFs via pdfplumber.
+                      Scrapes full-text Data Availability sections from EuropePMC/OA PDFs, matches author ORCIDs &amp; lab graphs (±2 yrs) across OpenAlex, DataCite &amp; Crossref, and resolves tabular files from Zenodo, Figshare, Harvard Dataverse, and Dryad.
                     </div>
                   </div>
 
@@ -1114,7 +1114,7 @@ export function App() {
                       STAGE 02 • ML RIGOR SCIENTIST
                     </span>
                     <div className="text-sm font-extrabold text-slate-900">
-                      30-Model Leak-Free Out-of-Fold Sweep
+                      30-Model Out-of-Fold Benchmark
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
                       Strips identifiers and target proxies, fits preprocessing strictly inside each fold, evaluates 30 classifiers/regressors, and computes 95% confidence intervals and feature importances.
@@ -1178,15 +1178,15 @@ export function App() {
                       </div>
                       <div className="flex flex-wrap gap-1.5 font-mono text-[11px] font-bold">
                         {[
-                          'OpenAlex API',
+                          'OpenAlex + ORCID Graph',
+                          'DataCite + Crossref',
                           'Zenodo REST API',
-                          'EuropePMC',
-                          'arXiv API',
+                          'Figshare API v2',
+                          'Harvard Dataverse API',
+                          'Dryad API v2',
+                          'EuropePMC FullTextXML',
                           'ClinicalTrials.gov v2',
-                          'OpenTargets GraphQL',
-                          'ChEMBL REST',
-                          'openFDA FAERS',
-                          'HuggingFace Hub',
+                          'OpenTargets + ChEMBL + openFDA',
                         ].map((item) => (
                           <span key={item} className="px-2.5 py-1 rounded-lg bg-[#F7ECED] text-[#4D1016] border border-[#DEC0C3]">
                             {item}
@@ -1224,10 +1224,10 @@ export function App() {
                           'FastAPI + Pydantic',
                           'Scikit-Learn',
                           'Pandas / NumPy / SciPy',
+                          'Statsmodels',
                           'pdfplumber + pypdf',
                           'React 19 + Vite',
                           'Tailwind CSS',
-                          'agent-cli (AGY)',
                         ].map((item) => (
                           <span key={item} className="px-2.5 py-1 rounded-lg bg-[#EFEAE1] text-[#1E140F] border border-[#D6C7B8]">
                             {item}
@@ -1420,7 +1420,7 @@ export function App() {
                     AGENT REGISTRY ({registeredAgents.length} ACTIVE)
                   </span>
                   <span className="text-xs font-mono font-bold text-slate-600">
-                    Registered via agent-cli &amp; agy • Declarative Safety &amp; Statistical Policies
+                    Multi-Agent Pipeline • Statistical &amp; Execution Policies
                   </span>
                 </div>
               </div>

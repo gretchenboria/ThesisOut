@@ -245,3 +245,52 @@ def test_production_pipeline_persistent_memory_and_agents():
         # 10. Clean up test uploaded item from saved memory
         r_del_saved = client.delete(f"/api/saved/{saved_item['id']}", headers=AUTH_HEADERS)
         assert r_del_saved.status_code == 200
+
+
+def test_three_stage_dataset_finder(tmp_path):
+    """
+    Verifies the 3-stage Dataset Finder:
+    1. Full-Text Data Availability & Supplementary Material Section Scraping (JATS XML + back-matter DOIs).
+    2. Author ORCID & Lab Graph Metadata Extraction (OpenAlex + DataCite + Crossref ±2 years).
+    3. Multi-Repository Tabular Harvesters (Zenodo, Figshare, Harvard Dataverse, Dryad).
+    """
+    import asyncio
+    from app.agents.harvester_agent import harvester_agent
+    from app.agents.pdf_extractor import pdf_extractor_agent
+
+    async def _run():
+        sample_jats_xml = """
+        <article>
+          <body><p>Main dissertation results section.</p></body>
+          <back>
+            <sec sec-type="data-availability">
+              <title>Data and Code Availability</title>
+              <p>Datasets are deposited at Zenodo (10.5281/zenodo.3875504), Figshare (10.6084/m9.figshare.34714530),
+              Harvard Dataverse (10.7910/DVN/9FMMJI), and Dryad (10.5061/dryad.98765).</p>
+            </sec>
+          </back>
+        </article>
+        """
+        da_res = pdf_extractor_agent.extract_data_availability_section(sample_jats_xml)
+        sources = {lk["source_type"] for lk in da_res["links"]}
+        assert {"zenodo", "figshare", "dataverse", "dryad"}.issubset(sources)
+        assert all(lk["section"] == "data_availability" for lk in da_res["links"])
+
+        oa_diss = await harvester_agent.search_openalex_dissertations("machine learning biomarker", max_results=2)
+        assert len(oa_diss) >= 1
+        assert "author_orcids" in oa_diss[0]
+        assert "author_openalex_ids" in oa_diss[0]
+        assert "institution_ids" in oa_diss[0]
+
+        fig_files = await harvester_agent.fetch_figshare_datasets("biomarker", tmp_path, max_files=1)
+        assert len(fig_files) == 1
+        assert fig_files[0]["source_type"] == "figshare"
+        assert Path(fig_files[0]["file_path"]).exists()
+
+        dv_files = await harvester_agent.fetch_harvard_dataverse_datasets("biomarker", tmp_path, max_files=1)
+        assert len(dv_files) == 1
+        assert dv_files[0]["source_type"] == "dataverse"
+        assert Path(dv_files[0]["file_path"]).exists()
+
+    asyncio.run(_run())
+

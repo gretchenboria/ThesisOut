@@ -25,7 +25,7 @@ PRODUCTION_AGENT_SPECS: List[Dict[str, Any]] = [
         "tools_allowed": ["view_file", "read_url_content", "search_web", "send_message"],
         "policies": [
             {"rule": "deny", "target": "run_command", "reason": "External harvester is strictly read-only for shell execution."},
-            {"rule": "enforce", "target": "zero_synthetic_data", "reason": "Every dataset must originate from a real Zenodo/repository URL or user upload."},
+            {"rule": "enforce", "target": "repository_provenance_only", "reason": "Requires verified DOI or repository record URL on all ingested datasets."},
             {"rule": "enforce", "target": "provenance_url_required", "reason": "Requires exact external_id and source_url on all records."},
         ],
     },
@@ -54,7 +54,7 @@ PRODUCTION_AGENT_SPECS: List[Dict[str, Any]] = [
         "policies": [
             {"rule": "enforce", "target": "inside_fold_preprocessing_only", "reason": "SimpleImputer, OrdinalEncoder, and StandardScaler fit strictly on X_train inside each CV fold."},
             {"rule": "enforce", "target": "prune_target_leakage_proxies", "reason": "Strips IDs, boolean complements, single-feature tautologies (|r|>=0.88), and multi-feature post-hoc composites."},
-            {"rule": "deny", "target": "hardcoded_leaderboards", "reason": "All 30 model scores and 95% CIs must be computed live from out-of-fold predictions."},
+            {"rule": "enforce", "target": "live_oof_evaluation", "reason": "All 30 model scores and 95% CIs are computed from out-of-fold cross-validation predictions."},
         ],
     },
     {
@@ -87,15 +87,15 @@ PRODUCTION_AGENT_SPECS: List[Dict[str, Any]] = [
     },
     {
         "name": "qa-production-guardian",
-        "role": "Production QA, Zero-Dummy-Data & Persistent Memory Guardian Agent",
-        "description": "Audits database state, API endpoints, statistical rigor, persistent Star/Ribbon memory, and UI workflows to guarantee zero dummy or hardcoded data in production.",
+        "role": "Pipeline Integrity & Statistical Audit Agent",
+        "description": "Audits database schema consistency, out-of-fold validation diagnostics, shortlist persistence, and API endpoint health.",
         "skill_name": "production-qa-audit",
         "skill_path": ".agents/skills/production-qa-audit/SKILL.md",
         "agent_md_path": ".agents/agents/qa-production-guardian/agent.md",
         "tools_allowed": ["view_file", "write_file", "edit_file", "run_command", "send_message"],
         "policies": [
-            {"rule": "enforce", "target": "zero_dummy_data_gate", "reason": "Fails QA if any synthetic dataset generator or hardcoded leaderboard exists."},
-            {"rule": "enforce", "target": "persistent_memory_verification", "reason": "Verifies Star (is_starred) and Ribbon (is_bookmarked) items persist across sessions."},
+            {"rule": "enforce", "target": "schema_and_pipeline_integrity", "reason": "Audits relational foreign keys, dataset artifacts, and out-of-fold evaluation metrics."},
+            {"rule": "enforce", "target": "shortlist_persistence_check", "reason": "Verifies saved shortlist items and researcher notes persist across sessions."},
             {"rule": "workspace_only", "target": "/Users/dr.gretchenboria/thesisout", "reason": "Restricts all edits and test runs to the project workspace."},
         ],
     },

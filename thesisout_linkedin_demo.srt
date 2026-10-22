@@ -1,35 +1,39 @@
 1
-00:00:00,000 --> 00:00:09,916
-Welcome to ThesisOut at thesisout.com. Enter your access code and click Unlock to open the scientific discovery workspace.
+00:00:00,000 --> 00:00:03,856
+Enter your access code to unlock ThesisOut.
 
 2
-00:00:10,066 --> 00:00:22,622
-Search across doctoral dissertations and open research datasets by topic, institution, or scientific domain, or launch a live repository sweep in one click.
+00:00:04,006 --> 00:00:21,266
+Search doctoral dissertations by topic or university. ThesisOut scrapes full-text Data Availability sections, matches author ORCID lab graphs, and resolves datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad.
 
 3
-00:00:22,772 --> 00:00:40,944
+00:00:21,416 --> 00:00:39,588
 To audit your own research, upload a dissertation PDF or raw CSV dataset and click Audit File. ThesisOut extracts the underlying data, benchmarks thirty machine learning models, and highlights the winning model and primary driver at the top.
 
 4
-00:00:41,094 --> 00:00:54,586
+00:00:39,738 --> 00:00:53,230
 Each discovery card pairs the source academic study and its overlooked empirical variable with a commercial product concept, model performance gain, and Translation Opportunity Score.
 
 5
-00:00:54,736 --> 00:01:04,964
+00:00:53,380 --> 00:01:03,608
 Save promising findings to your shortlist and attach due-diligence notes so your team can track priority licensing and validation targets.
 
 6
-00:01:05,114 --> 00:01:21,198
+00:01:03,758 --> 00:01:19,842
 Selecting any card opens the Opportunity Dossier. Four summary blocks present the overlooked empirical clue, the classical baseline blindspot, live clinical and patent whitespace, and addressable market scale.
 
 7
-00:01:21,348 --> 00:01:35,584
+00:01:19,992 --> 00:01:34,228
 Directly inside the dossier, generate a provisional patent claim grounded in the discovered regime thresholds, run live regulatory checks, and download the standalone Python model and report.
 
 8
-00:01:35,734 --> 00:01:48,626
+00:01:34,378 --> 00:01:47,270
 The Empirical Leaderboard compares all thirty cross-validated models against the author's original baseline, reporting out-of-fold accuracy and ninety-five percent confidence intervals.
 
 9
-00:01:48,776 --> 00:02:05,604
-Finally, inspect the exact variables driving the prediction alongside five-stage statistical verification, confirming zero target-permutation leakage and ninety percent conformal coverage. Explore live at thesisout.com.
+00:01:47,420 --> 00:02:03,768
+Finally, inspect the exact variables driving the prediction alongside five-stage statistical verification, reporting target-permutation p-values, Super-Learner ensemble accuracy, and ninety percent split-conformal coverage.
+
+10
+00:02:03,918 --> 00:02:17,184
+Turn overlooked doctoral research and open scientific datasets into verified commercial breakthroughs. Explore the live platform today at thesisout.com.

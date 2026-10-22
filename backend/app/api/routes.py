@@ -300,23 +300,21 @@ async def upload_dissertation_and_dataset(
 
     db.refresh(diss)
     if not diss.datasets:
-        # 3. Check if PDF contains Zenodo DOI/record links or query live Zenodo REST API for open-access CSV
+        # 3. Resolve dataset via Full-Text Data Availability DOIs, Author ORCID/Lab Graph, and Multi-Repository Harvesters (Zenodo, Figshare, Dataverse, Dryad)
         record_agent_invocation(db, "harvester-agent")
-        zenodo_files = []
-        for link in diss.data_availability_links or []:
-            if link.get("source_type") == "zenodo":
-                zenodo_files = await harvester_agent.fetch_zenodo_record_by_id(
-                    link.get("url") or link.get("identifier", ""),
-                    settings.DATASET_DIR,
-                )
-                if zenodo_files:
-                    break
-        if not zenodo_files:
-            zenodo_files = await harvester_agent.fetch_real_zenodo_datasets(
-                query=final_title,
-                target_dir=settings.DATASET_DIR,
-                max_files=1,
-            )
+        zenodo_files = await harvester_agent.resolve_multi_repository_datasets(
+            query=final_title,
+            target_dir=settings.DATASET_DIR,
+            dissertation_meta={
+                "title": final_title,
+                "authors": final_authors,
+                "university": final_university,
+                "publication_year": final_year,
+                "abstract": abstract,
+            },
+            extracted_links=diss.data_availability_links or [],
+            max_files=1,
+        )
         if not zenodo_files:
             # Use verified real Zenodo dataset on disk if live search returned 0 matching records
             real_disk_csvs = sorted(settings.DATASET_DIR.glob("zenodo_*.csv"))

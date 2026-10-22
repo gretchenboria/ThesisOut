@@ -19,13 +19,22 @@ logger = logging.getLogger(__name__)
 
 REPO_PATTERNS = [
     ("zenodo", re.compile(r"(?:https?://(?:www\.)?zenodo\.org/records?/\d+|10\.5281/zenodo\.\d+)", re.I)),
-    ("figshare", re.compile(r"(?:https?://[^\s\)\"']*figshare\.com/[^\s\)\"']+|10\.6084/m9\.figshare\.\d+)", re.I)),
-    ("dryad", re.compile(r"(?:https?://datadryad\.org/[^\s\)\"']+|10\.5061/dryad\.[^\s\)\"']+)", re.I)),
-    ("osf", re.compile(r"https?://osf\.io/[a-z0-9]{5,}", re.I)),
+    ("figshare", re.compile(r"(?:https?://[^\s\)\"'<>]*figshare\.com/[^\s\)\"'<>]+|10\.6084/m9\.figshare\.\d+)", re.I)),
+    ("dataverse", re.compile(r"(?:https?://dataverse\.harvard\.edu/[^\s\)\"'<>]+|10\.7910/DVN/[A-Za-z0-9]+)", re.I)),
+    ("dryad", re.compile(r"(?:https?://datadryad\.org/[^\s\)\"'<>]+|10\.5061/dryad\.[A-Za-z0-9_.-]+)", re.I)),
+    ("osf", re.compile(r"(?:https?://osf\.io/[a-z0-9]{5,}|10\.17605/OSF\.IO/[A-Za-z0-9]+)", re.I)),
+    ("mendeley", re.compile(r"10\.17632/[A-Za-z0-9_.-]+", re.I)),
     ("github", re.compile(r"https?://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", re.I)),
     ("huggingface", re.compile(r"https?://huggingface\.co/datasets/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", re.I)),
     ("ncbi_geo", re.compile(r"\bGSE\d{4,8}\b")),
 ]
+
+DATA_AVAILABILITY_HEADING_RE = re.compile(
+    r"(?:data\s+and\s+code\s+availability|code\s+and\s+data\s+availability|data\s+availability(?:\s+statement)?|"
+    r"data\s+accessibility|resource\s+availability|availability\s+of\s+data(?:\s+and\s+materials)?|"
+    r"supplementary\s+materials?|supplementary\s+data|open\s+data|data\s+archiving)",
+    re.I,
+)
 
 NUMERIC_TOKEN_RE = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$")
 
@@ -34,9 +43,18 @@ class PDFExtractorAgent:
     def extract_text_and_metadata(self, pdf_path: str | Path) -> Dict[str, Any]:
         path = Path(pdf_path)
         reader = PdfReader(str(path))
+        total_pages = len(reader.pages)
         full_text_chunks: List[str] = []
-        max_pages = min(len(reader.pages), 60)
-        for i in range(max_pages):
+
+        # Read front/core chapters AND the back-matter pages (where Data Availability & Supplementary Material live)
+        if total_pages <= 65:
+            page_indices = list(range(total_pages))
+        else:
+            front_indices = list(range(40))
+            back_indices = list(range(max(40, total_pages - 25), total_pages))
+            page_indices = front_indices + back_indices
+
+        for i in page_indices:
             try:
                 page_txt = reader.pages[i].extract_text() or ""
                 full_text_chunks.append(page_txt)
@@ -45,14 +63,16 @@ class PDFExtractorAgent:
 
         full_text = "\n".join(full_text_chunks)
         first_page_text = full_text_chunks[0] if full_text_chunks else ""
-        links = self.extract_repository_links(full_text)
+        da_info = self.extract_data_availability_section(full_text)
+        links = da_info["links"]
         claims = self.extract_key_claims(full_text)
         stat_method = self.detect_author_statistical_method(full_text)
         parsed_meta = self.extract_bibliographic_metadata(first_page_text, path.stem)
 
         return {
-            "page_count": len(reader.pages),
+            "page_count": total_pages,
             "text_preview": full_text[:4000],
+            "data_availability_statement": da_info["statement"],
             "data_availability_links": links,
             "extracted_claims": claims,
             "author_statistical_method": stat_method,
@@ -102,22 +122,96 @@ class PDFExtractorAgent:
             "parsed_year": pub_year,
         }
 
-    def extract_repository_links(self, text: str) -> List[Dict[str, str]]:
+    def extract_repository_links(self, text: str, section_label: str = "full_text") -> List[Dict[str, str]]:
         found: List[Dict[str, str]] = []
         seen = set()
         for source_type, pattern in REPO_PATTERNS:
             for match in pattern.findall(text):
-                cleaned = match.rstrip(".,;)")
+                cleaned = match.rstrip(".,;)>]\"'")
                 if cleaned not in seen:
                     seen.add(cleaned)
                     url = cleaned
                     if source_type == "zenodo" and cleaned.lower().startswith("10.5281/zenodo."):
                         rec_id = cleaned.split(".")[-1]
                         url = f"https://zenodo.org/records/{rec_id}"
+                    elif source_type == "figshare" and cleaned.lower().startswith("10.6084/m9.figshare."):
+                        art_id = cleaned.split(".")[-1]
+                        url = f"https://figshare.com/articles/dataset/{art_id}"
+                    elif source_type == "dataverse" and cleaned.upper().startswith("10.7910/DVN/"):
+                        url = f"https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:{cleaned}"
+                    elif source_type == "dryad" and cleaned.lower().startswith("10.5061/dryad."):
+                        url = f"https://datadryad.org/stash/dataset/doi:{cleaned}"
                     elif source_type == "ncbi_geo" and cleaned.startswith("GSE"):
                         url = f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={cleaned}"
-                    found.append({"source_type": source_type, "identifier": cleaned, "url": url})
+                    found.append(
+                        {
+                            "source_type": source_type,
+                            "identifier": cleaned,
+                            "url": url,
+                            "section": section_label,
+                        }
+                    )
         return found
+
+    def extract_data_availability_section(self, full_text_or_xml: str) -> Dict[str, Any]:
+        """
+        Specifically parses the 'Data Availability', 'Code and Data Availability', or
+        'Supplementary Material' section (including JATS XML <sec sec-type="data-availability"> tags
+        and thesis back-matter sections) where dataset DOIs live.
+        """
+        if not full_text_or_xml:
+            return {"statement": "", "links": []}
+
+        priority_snippets: List[str] = []
+
+        # 1. Check JATS XML data-availability or supplementary-material tags if XML
+        xml_blocks = re.findall(
+            r"<(?:sec|notes|supplementary-material)[^>]*(?:data-availability|supplementary|availability|data)[^>]*>(.*?)</(?:sec|notes|supplementary-material)>",
+            full_text_or_xml,
+            flags=re.I | re.S,
+        )
+        for blk in xml_blocks:
+            clean_blk = re.sub(r"<[^>]+>", " ", blk)
+            clean_blk = " ".join(clean_blk.split())
+            if clean_blk:
+                priority_snippets.append(clean_blk[:2500])
+
+        # 2. Check heading matches in plain text / PDF text
+        for m in DATA_AVAILABILITY_HEADING_RE.finditer(full_text_or_xml):
+            start_idx = max(0, m.start() - 40)
+            end_idx = min(len(full_text_or_xml), m.end() + 2200)
+            snippet = " ".join(full_text_or_xml[start_idx:end_idx].split())
+            if snippet:
+                priority_snippets.append(snippet)
+
+        # 3. Also scan the final 25% of the document (back-matter / appendices)
+        tail_start = int(len(full_text_or_xml) * 0.75)
+        tail_text = full_text_or_xml[tail_start:]
+
+        da_links: List[Dict[str, str]] = []
+        seen_ids = set()
+
+        for snip in priority_snippets:
+            for lk in self.extract_repository_links(snip, section_label="data_availability"):
+                if lk["identifier"] not in seen_ids:
+                    seen_ids.add(lk["identifier"])
+                    da_links.append(lk)
+
+        for lk in self.extract_repository_links(tail_text, section_label="back_matter"):
+            if lk["identifier"] not in seen_ids:
+                seen_ids.add(lk["identifier"])
+                da_links.append(lk)
+
+        for lk in self.extract_repository_links(full_text_or_xml, section_label="full_text"):
+            if lk["identifier"] not in seen_ids:
+                seen_ids.add(lk["identifier"])
+                da_links.append(lk)
+
+        statement = priority_snippets[0][:600] if priority_snippets else ""
+        return {
+            "statement": statement,
+            "links": da_links,
+        }
 
     def extract_key_claims(self, text: str) -> List[str]:
         sentences = re.split(r"(?<=[.!?])\s+", text)

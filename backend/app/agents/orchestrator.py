@@ -228,7 +228,8 @@ class PipelineOrchestrator:
             if existing:
                 diss = existing
             else:
-                links = pdf_extractor_agent.extract_repository_links(item.get("abstract") or "")
+                da_scraped = await harvester_agent.scrape_fulltext_data_availability_links(item)
+                links = da_scraped.get("links") or pdf_extractor_agent.extract_repository_links(item.get("abstract") or "")
                 claims = pdf_extractor_agent.extract_key_claims(item.get("abstract") or "")
                 stat_method = pdf_extractor_agent.detect_author_statistical_method(item.get("abstract") or "")
                 diss = Dissertation(
@@ -245,10 +246,14 @@ class PipelineOrchestrator:
                     scientific_rigor_score=item["scientific_rigor_score"],
                     citation_velocity=item["citation_velocity"],
                     abstract=item["abstract"],
-                    author_Statistical_method=stat_method,
+                    author_statistical_method=stat_method,
                     extracted_claims=claims,
                     data_availability_links=links,
-                    key_entities={"targets": [w for w in query.split() if len(w) > 3][:3]},
+                    key_entities={
+                        "targets": [w for w in query.split() if len(w) > 3][:3],
+                        "author_orcids": item.get("author_orcids") or [],
+                        "data_availability_statement": da_scraped.get("statement") or "",
+                    },
                     status="ingested",
                 )
                 db.add(diss)
@@ -257,16 +262,21 @@ class PipelineOrchestrator:
             created_dissertations.append(diss)
             created_ids.append(diss.id)
 
-        yield sse("zenodo", f"Resolving open-access tabular dataset for '{query}'...")
+        yield sse(
+            "zenodo",
+            f"Resolving datasets via Full-Text Data Availability, Author ORCID Graph (±2 yrs), and Zenodo/Figshare/Dataverse/Dryad for '{query}'...",
+        )
         real_zenodo_files = []
         try:
             real_zenodo_files = await asyncio.wait_for(
-                harvester_agent.fetch_real_zenodo_datasets(
+                harvester_agent.resolve_multi_repository_datasets(
                     query=query,
                     target_dir=settings.DATASET_DIR,
+                    dissertation_meta=harvested_items[0] if harvested_items else None,
+                    extracted_links=created_dissertations[0].data_availability_links if created_dissertations else None,
                     max_files=1,
                 ),
-                timeout=6.0,
+                timeout=14.0,
             )
         except Exception:
             real_zenodo_files = []
