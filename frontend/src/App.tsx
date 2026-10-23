@@ -863,7 +863,7 @@ export function App() {
       {/* 3D PEBBLED MAHOGANY LEATHER TOP BAR WITH GLOBAL NAVIGATION & DOCS     */}
       {/* ===================================================================== */}
       <header className="sticky top-0 z-30 leather-bar text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-14 py-1.5 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleResetToGlobalView}
@@ -872,12 +872,17 @@ export function App() {
           >
             <div className="w-9 h-9 rounded-xl leather-badge flex items-center justify-center font-extrabold text-base tracking-tighter">
               <span>
-                T<span className="text-blue-400">O</span>
+                T<span className="text-[#D8B99C]">O</span>
               </span>
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-white group-hover:text-[#E6D2BE] transition">
-              Thesis<span className="text-[#D8B99C]">Out</span>
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg font-extrabold tracking-tight leading-none text-white group-hover:text-[#E6D2BE] transition">
+                Thesis<span className="text-[#D8B99C]">Out</span>
+              </span>
+              <span className="text-[10px] font-mono font-bold text-[#E6D2BE]/90 tracking-tight mt-0.5">
+                Turning Doctoral Data into Verified Commercial Breakthroughs
+              </span>
+            </div>
           </button>
 
           {isUnlocked && (
@@ -961,55 +966,105 @@ export function App() {
       </header>
 
       {/* ===================================================================== */}
-      {/* ACCESS CODE GATE & BOT SHIELD ("thesisout!")                          */}
+      {/* ACCESS CODE GATE & LANDING OVERVIEW ("thesisout!")                    */}
       {/* ===================================================================== */}
       {!isUnlocked ? (
-        <main className="relative z-10 max-w-sm mx-auto px-4 pt-24 pb-12">
-          <form
-            onSubmit={handleUnlockSubmit}
-            className="pop-card rounded-3xl p-6 space-y-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl leather-badge flex items-center justify-center font-extrabold text-lg">
-                <Lock className="w-4 h-4 text-[#D8B99C]" />
+        <main className="relative z-10 max-w-3xl mx-auto px-4 pt-12 pb-12 space-y-5">
+          <section className="pop-card rounded-3xl p-6 sm:p-7 space-y-5">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#E5DEC9] pb-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-2.5 py-0.5 rounded-lg leather-badge text-[11px] font-extrabold font-mono">
+                    7-AGENT SCIENTIFIC DISCOVERY ENGINE
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-[#EDF0F2] border border-[#B8C6D1] text-[#2B4257] text-[11px] font-mono font-extrabold">
+                    Gemini 4 Argon / 3.8 + 30 ML Models
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Surface Overlooked Signals in Global Doctoral Research
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed max-w-2xl">
+                  Thousands of PhD dissertations publish rich experimental datasets analyzed only with basic linear models. ThesisOut harvests open-access doctoral datasets, extracts hypotheses and complex tables with <span className="font-bold text-slate-900">Gemini 4 Argon &amp; 3.8</span>, benchmarks <span className="font-bold text-slate-900">30 cross-validated ML models</span> with <span className="font-bold text-slate-900">5-stage conformal proof</span>, and audits clinical and patent whitespace across <span className="font-bold text-slate-900">9 live scientific registries</span>.
+                </p>
               </div>
-              <h1 className="text-base font-extrabold text-slate-900">
-                Access Code
-              </h1>
             </div>
 
-            <input
-              type="text"
-              name="website_url"
-              tabIndex={-1}
-              autoComplete="off"
-              value={botHoneypot}
-              onChange={(e) => setBotHoneypot(e.target.value)}
-              className="hidden"
-              aria-hidden="true"
-            />
-
-            <div className="space-y-1.5">
-              <input
-                type="password"
-                value={gateInput}
-                onChange={(e) => setGateInput(e.target.value)}
-                placeholder="Access code"
-                autoFocus
-                className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border-2 border-slate-900 text-sm font-bold text-slate-900 focus:outline-none focus:bg-white"
-              />
-              {gateError && (
-                <div className="text-xs font-bold text-[#7A1C24]">{gateError}</div>
-              )}
+            {/* 7-Stage Pipeline Overview Strip on Landing Gate */}
+            <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 pt-1">
+              {[
+                { num: '01', label: 'Harvest', sub: 'Theses & DOIs' },
+                { num: '02', label: 'Extract', sub: 'Gemini 4 Argon' },
+                { num: '03', label: 'Cleanse', sub: 'Prune Leakage' },
+                { num: '04', label: 'Benchmark', sub: '30 ML Models' },
+                { num: '05', label: 'Verify', sub: 'Conformal CI' },
+                { num: '06', label: 'Translate', sub: '9 Live APIs' },
+                { num: '07', label: 'Export', sub: 'Dossier & .py' },
+              ].map((st, idx) => (
+                <div
+                  key={st.num}
+                  className="rounded-xl bg-[#FAF8F5] border border-[#D6C7B8] p-2.5 flex flex-col items-center text-center"
+                >
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center font-mono text-[11px] font-extrabold text-white ${
+                      idx === activePipelineStep ? 'bg-[#7A1C24] scale-110' : 'bg-[#2B4257]'
+                    } transition-all duration-300`}
+                  >
+                    {st.num}
+                  </div>
+                  <div className="mt-1 text-xs font-extrabold text-slate-900">{st.label}</div>
+                  <div className="text-[10px] font-mono font-bold text-slate-500">{st.sub}</div>
+                </div>
+              ))}
             </div>
 
-            <button
-              type="submit"
-              className="pop-btn w-full py-2.5 rounded-2xl bg-[#2B4257] hover:bg-[#1F3142] text-white font-extrabold text-sm cursor-pointer"
+            <form
+              onSubmit={handleUnlockSubmit}
+              className="pop-subcard rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
             >
-              Unlock
-            </button>
-          </form>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="w-9 h-9 rounded-xl leather-badge flex items-center justify-center font-extrabold">
+                  <Lock className="w-4 h-4 text-[#D8B99C]" />
+                </div>
+                <div>
+                  <div className="text-xs font-extrabold text-slate-900">Workspace Access</div>
+                  <div className="text-[11px] font-mono font-bold text-slate-500">Enter access code to unlock</div>
+                </div>
+              </div>
+
+              <input
+                type="text"
+                name="website_url"
+                tabIndex={-1}
+                autoComplete="off"
+                value={botHoneypot}
+                onChange={(e) => setBotHoneypot(e.target.value)}
+                className="hidden"
+                aria-hidden="true"
+              />
+
+              <div className="flex-1">
+                <input
+                  type="password"
+                  value={gateInput}
+                  onChange={(e) => setGateInput(e.target.value)}
+                  placeholder="Enter access code"
+                  autoFocus
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border-2 border-slate-900 text-sm font-bold text-slate-900 focus:outline-none"
+                />
+                {gateError && (
+                  <div className="text-xs font-bold text-[#7A1C24] mt-1">{gateError}</div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="pop-btn px-6 py-2.5 rounded-xl bg-[#2B4257] hover:bg-[#1F3142] text-white font-extrabold text-sm cursor-pointer shrink-0"
+              >
+                Unlock Workspace
+              </button>
+            </form>
+          </section>
         </main>
       ) : (
         <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-5 space-y-5">
@@ -1801,30 +1856,78 @@ export function App() {
                 <section className="pop-card rounded-2xl px-4 py-3.5 transition-all duration-300">
                   {(() => {
                     const pipelineStages = [
-                      { num: '01', label: 'Harvest', sub: 'Theses & DOIs', accent: '#2B4257' },
-                      { num: '02', label: 'Extract', sub: 'Gemini 4 Argon', accent: '#8C3819' },
-                      { num: '03', label: 'Cleanse', sub: 'Prune Leakage', accent: '#7A1C24' },
-                      { num: '04', label: 'Benchmark', sub: '30 ML Models', accent: '#2B4257' },
-                      { num: '05', label: 'Verify', sub: 'Conformal CI', accent: '#4A2E40' },
-                      { num: '06', label: 'Translate', sub: '9 Live APIs', accent: '#7A1C24' },
-                      { num: '07', label: 'Export', sub: 'Dossier & .py', accent: '#58270E' },
+                      {
+                        num: '01',
+                        label: 'Harvest',
+                        sub: 'Theses & DOIs',
+                        accent: '#2B4257',
+                        desc: 'Resolves dissertations and raw tabular datasets across OpenAlex, ORCID lab graphs, Zenodo, Figshare, Dataverse, and Dryad.',
+                      },
+                      {
+                        num: '02',
+                        label: 'Extract',
+                        sub: 'Gemini 4 Argon',
+                        accent: '#8C3819',
+                        desc: 'Uses Gemini 4 Argon & 3.8 alongside pdfplumber to extract author hypotheses, baseline statistics, DOIs, and empirical matrices.',
+                      },
+                      {
+                        num: '03',
+                        label: 'Cleanse',
+                        sub: 'Prune Leakage',
+                        accent: '#7A1C24',
+                        desc: 'Coerces scientific strings (±SD, %, CI brackets) to float64 and strips ID columns and target-leakage proxies.',
+                      },
+                      {
+                        num: '04',
+                        label: 'Benchmark',
+                        sub: '30 ML Models',
+                        accent: '#2B4257',
+                        desc: 'Evaluates 30 supervised models with leak-free inside-fold preprocessing and 95% out-of-fold confidence intervals.',
+                      },
+                      {
+                        num: '05',
+                        label: 'Verify',
+                        sub: 'Conformal CI',
+                        accent: '#4A2E40',
+                        desc: 'Executes 5-fold target-permutation null tests, Super-Learner stacking, and 90% split-conformal calibration.',
+                      },
+                      {
+                        num: '06',
+                        label: 'Translate',
+                        sub: '9 Live APIs',
+                        accent: '#7A1C24',
+                        desc: 'Audits clinical and patent whitespace across ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to score commercial potential.',
+                      },
+                      {
+                        num: '07',
+                        label: 'Export',
+                        sub: 'Dossier & .py',
+                        accent: '#58270E',
+                        desc: 'Generates provisional patent claims, a complete Translational Opportunity Dossier (.md), and a standalone Python model (.py).',
+                      },
                     ];
+                    const activeStage = pipelineStages[activePipelineStep] || pipelineStages[0];
                     return (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2.5 py-0.5 rounded-lg leather-badge text-[11px] font-extrabold">
-                            HOW IT WORKS
-                          </span>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-lg leather-badge text-[11px] font-extrabold">
+                              WHAT THESISOUT IS &amp; HOW IT WORKS
+                            </span>
+                            <span className="text-xs font-bold text-slate-700">
+                              Autonomous 7-agent platform that re-analyzes doctoral datasets across 30 ML models &amp; 9 live registries to uncover commercial breakthroughs.
+                            </span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setShowHowItWorksHero(false)}
-                            className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[11px] font-extrabold text-slate-700 flex items-center gap-1 cursor-pointer"
+                            className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[11px] font-extrabold text-slate-700 flex items-center gap-1 cursor-pointer shrink-0"
                           >
                             Hide <ChevronUp className="w-3 h-3" />
                           </button>
                         </div>
 
-                        {/* Animated Connected Stepper Nodes (Minimal Text, Visual Pulse & Conduit) */}
+                        {/* Animated Connected Stepper Nodes */}
                         <div className="relative pt-1 pb-1">
                           {/* Connecting Track Line */}
                           <div className="hidden sm:block absolute top-6 left-8 right-8 h-1 bg-[#EFEAE1] rounded-full overflow-hidden">
@@ -1881,6 +1984,21 @@ export function App() {
                               );
                             })}
                           </div>
+                        </div>
+
+                        {/* Concise 1-Line Active Stage Callout */}
+                        <div className="rounded-xl bg-[#FAF8F5] border border-[#D6C7B8] px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-[#7A1C24] text-white font-mono text-[10px] font-extrabold">
+                              STAGE {activeStage.num} • {activeStage.label.toUpperCase()}
+                            </span>
+                            <span className="text-slate-800 font-semibold">
+                              {activeStage.desc}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-slate-500">
+                            Auto-collapses when a Dossier opens
+                          </span>
                         </div>
                       </div>
                     );
