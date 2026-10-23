@@ -210,6 +210,26 @@ class DataScientistAgent:
             return best_df
         return pd.read_csv(path, encoding="latin1", on_bad_lines="skip")
 
+    def _read_excel_with_fallbacks(self, path: Path) -> pd.DataFrame:
+        try:
+            xl = pd.ExcelFile(path)
+            best_sheet_df = None
+            for sname in xl.sheet_names:
+                sdf = xl.parse(sname)
+                if sdf.shape[1] >= 2 and len(sdf) >= 4:
+                    best_sheet_df = sdf
+                    break
+                if best_sheet_df is None or (sdf.shape[0] * sdf.shape[1] > best_sheet_df.shape[0] * best_sheet_df.shape[1]):
+                    best_sheet_df = sdf
+            if best_sheet_df is not None:
+                return best_sheet_df
+        except Exception:
+            pass
+        try:
+            return pd.read_excel(path)
+        except Exception:
+            return self._read_delimited_with_fallbacks(path, preferred_sep=None)
+
     def load_dataframe(self, file_path: str | Path) -> pd.DataFrame:
         path = Path(file_path)
         if not path.exists():
@@ -217,24 +237,19 @@ class DataScientistAgent:
             if fallback.exists():
                 path = fallback
         suffix = path.suffix.lower()
-        if suffix in (".tsv", ".tab"):
-            df = self._read_delimited_with_fallbacks(path, preferred_sep="\t")
-        elif suffix in (".xlsx", ".xls"):
-            try:
-                xl = pd.ExcelFile(path)
-                best_sheet_df = None
-                for sname in xl.sheet_names:
-                    sdf = xl.parse(sname)
-                    if sdf.shape[1] >= 2 and len(sdf) >= 4:
-                        best_sheet_df = sdf
-                        break
-                    if best_sheet_df is None or (sdf.shape[0] * sdf.shape[1] > best_sheet_df.shape[0] * best_sheet_df.shape[1]):
-                        best_sheet_df = sdf
-                df = best_sheet_df if best_sheet_df is not None else pd.read_excel(path)
-            except Exception:
-                df = pd.read_excel(path)
-        elif suffix == ".parquet":
+        magic = b""
+        try:
+            with open(path, "rb") as fh:
+                magic = fh.read(8)
+        except Exception:
+            pass
+
+        if magic[:4] == b"PK\x03\x04" or magic[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" or suffix in (".xlsx", ".xls"):
+            df = self._read_excel_with_fallbacks(path)
+        elif magic[:4] == b"PAR1" or suffix == ".parquet":
             df = pd.read_parquet(path)
+        elif suffix in (".tsv", ".tab"):
+            df = self._read_delimited_with_fallbacks(path, preferred_sep="\t")
         elif suffix == ".json":
             df = pd.read_json(path)
         else:

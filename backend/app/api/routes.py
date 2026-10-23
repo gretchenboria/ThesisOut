@@ -287,16 +287,21 @@ async def upload_dissertation_and_dataset(
         ds_dest = settings.DATASET_DIR / f"{slug}_{ds_filename}"
         ds_dest.parent.mkdir(parents=True, exist_ok=True)
         ds_dest.write_bytes(ds_bytes)
-        await orchestrator.process_dataset_with_lazypredict_and_translation(
-            db=db,
-            dissertation=diss,
-            dataset_path=ds_dest,
-            dataset_name=ds_filename,
-            source_type="upload",
-            author_primary_target=author_primary_target,
-            author_baseline_score=author_baseline_score,
-            max_secondary_targets=0,
-        )
+        try:
+            await orchestrator.process_dataset_with_lazypredict_and_translation(
+                db=db,
+                dissertation=diss,
+                dataset_path=ds_dest,
+                dataset_name=ds_filename,
+                source_type="upload",
+                author_primary_target=author_primary_target,
+                author_baseline_score=author_baseline_score,
+                max_secondary_targets=0,
+            )
+        except Exception as exc:
+            db.delete(diss)
+            db.commit()
+            raise HTTPException(status_code=400, detail=f"Failed to parse or benchmark '{ds_filename}': {exc}")
         db.refresh(diss)
         if not diss.datasets or not diss.datasets[0].lazy_runs:
             db.delete(diss)

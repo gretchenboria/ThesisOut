@@ -599,17 +599,16 @@ export function App() {
     URL.revokeObjectURL(url);
   };
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadPdf && !uploadCsv) return;
+  const executeFileUpload = async (pdfToSend: File | null, csvToSend: File | null) => {
+    if (!pdfToSend && !csvToSend) return;
     setUploading(true);
     setErrorMsg(null);
     setActiveNav('discoveries');
     setDomainFilter('all');
     try {
       const fd = new FormData();
-      if (uploadPdf) fd.append('pdf_file', uploadPdf);
-      if (uploadCsv) fd.append('dataset_file', uploadCsv);
+      if (pdfToSend) fd.append('pdf_file', pdfToSend);
+      if (csvToSend) fd.append('dataset_file', csvToSend);
 
       const res = await fetch('/api/dissertations/upload', {
         method: 'POST',
@@ -644,6 +643,11 @@ export function App() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeFileUpload(uploadPdf, uploadCsv);
   };
 
   // Dynamic domain counts from live indexed dissertations
@@ -1511,12 +1515,19 @@ export function App() {
                     e.preventDefault();
                     e.stopPropagation();
                     const files = Array.from(e.dataTransfer.files || []);
+                    let nextPdf = uploadPdf;
+                    let nextCsv = uploadCsv;
                     for (const f of files) {
                       if (f.name.toLowerCase().endsWith('.pdf')) {
+                        nextPdf = f;
                         setUploadPdf(f);
                       } else {
+                        nextCsv = f;
                         setUploadCsv(f);
                       }
+                    }
+                    if (nextPdf || nextCsv) {
+                      void executeFileUpload(nextPdf, nextCsv);
                     }
                   }}
                   className="pop-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs"
@@ -1525,26 +1536,35 @@ export function App() {
                     <label className="px-3.5 py-2 rounded-xl bg-[#EDF0F2] border-2 border-slate-900 font-bold cursor-pointer hover:bg-slate-200 transition-colors">
                       <Upload className="w-3.5 h-3.5 inline mr-1.5 text-[#2B4257]" />
                       <FileText className="w-3.5 h-3.5 inline mr-1.5 text-[#7A1C24]" />
-                      {uploadCsv && uploadPdf
-                        ? `${uploadPdf.name} + ${uploadCsv.name}`
-                        : uploadCsv
-                          ? uploadCsv.name
-                          : uploadPdf
-                            ? uploadPdf.name
-                            : 'Select or Drop CSV, TSV, Excel, or Thesis PDF'}
+                      {uploading
+                        ? `Auditing ${(uploadCsv?.name || uploadPdf?.name || 'File')} across 30 Models...`
+                        : uploadCsv && uploadPdf
+                          ? `${uploadPdf.name} + ${uploadCsv.name}`
+                          : uploadCsv
+                            ? uploadCsv.name
+                            : uploadPdf
+                              ? uploadPdf.name
+                              : 'Select or Drop CSV, TSV, Excel, or Thesis PDF'}
                       <input
                         type="file"
                         multiple
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
+                          let nextPdf = uploadPdf;
+                          let nextCsv = uploadCsv;
                           for (const f of files) {
                             if (f.name.toLowerCase().endsWith('.pdf')) {
+                              nextPdf = f;
                               setUploadPdf(f);
                             } else {
+                              nextCsv = f;
                               setUploadCsv(f);
                             }
                           }
                           e.currentTarget.value = '';
+                          if (nextPdf || nextCsv) {
+                            void executeFileUpload(nextPdf, nextCsv);
+                          }
                         }}
                         className="sr-only"
                       />
