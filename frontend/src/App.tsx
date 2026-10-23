@@ -1796,188 +1796,90 @@ export function App() {
                 </section>
               )}
 
-              {/* ANIMATED HOW IT WORKS PIPELINE (COLLAPSES AUTOMATICALLY WHEN DOSSIER OPENS) */}
+              {/* ULTRA-CLEAN ANIMATED HOW IT WORKS VISUAL (ZERO PARAGRAPHS • COLLAPSES WHEN DOSSIER OPENS) */}
               {showHowItWorksHero && !selectedDiss ? (
-                <section className="pop-card rounded-2xl p-4 sm:p-5 space-y-4 transition-all duration-300">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="px-3 py-1 rounded-xl leather-badge text-xs font-extrabold">
-                        HOW THESISOUT WORKS
-                      </span>
-                      <span className="text-xs font-extrabold text-slate-800">
-                        7-Agent Autonomous Discovery &amp; Commercial Translation Pipeline
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="hidden sm:inline text-[11px] font-mono font-bold text-[#2B4257]">
-                        Select any discovery card below to open its Dossier &amp; auto-collapse this guide
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowHowItWorksHero(false)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[11px] font-extrabold text-slate-700 flex items-center gap-1 cursor-pointer"
-                      >
-                        Collapse <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Animated 7-Agent Visual Flow */}
+                <section className="pop-card rounded-2xl px-4 py-3.5 transition-all duration-300">
                   {(() => {
                     const pipelineStages = [
-                      {
-                        num: '01',
-                        agent: 'harvester-agent',
-                        title: 'Harvest Theses & Datasets',
-                        detail: 'OpenAlex, ORCID Lab Graph (±2 yrs), Zenodo, Figshare, Dataverse & Dryad',
-                        accent: '#2B4257',
-                        tint: '#EDF0F2',
-                      },
-                      {
-                        num: '02',
-                        agent: 'pdf-extractor-agent',
-                        title: 'Extract Tables & Claims',
-                        detail: 'Scrapes Data Availability DOIs, baseline p-values & multi-page PDF matrices',
-                        accent: '#8C3819',
-                        tint: '#EFEAE1',
-                      },
-                      {
-                        num: '03',
-                        agent: 'data-cleansing-agent',
-                        title: 'Cleanse & Prune Leakage',
-                        detail: 'Coerces ±SD / % / CI strings into floats & strips IDs and target proxies',
-                        accent: '#7A1C24',
-                        tint: '#F7ECED',
-                      },
-                      {
-                        num: '04',
-                        agent: 'ml-rigor-scientist',
-                        title: '30-Model OOF Benchmark',
-                        detail: 'Fits imputation & scaling strictly inside 5 CV folds across 30 ML architectures',
-                        accent: '#2B4257',
-                        tint: '#EDF0F2',
-                      },
-                      {
-                        num: '05',
-                        agent: 'deep-inference-auditor',
-                        title: '5-Stage Conformal Proof',
-                        detail: 'Target permutation null test, Super-Learner stacking & 90% conformal CI',
-                        accent: '#4A2E40',
-                        tint: '#F3EDF1',
-                      },
-                      {
-                        num: '06',
-                        agent: 'translation-whitespace-agent',
-                        title: '9-API Venture Synthesis',
-                        detail: 'Audits ClinicalTrials.gov, OpenTargets, ChEMBL & openFDA via Gemini 4 Argon',
-                        accent: '#7A1C24',
-                        tint: '#F7ECED',
-                      },
-                      {
-                        num: '07',
-                        agent: 'qa-production-guardian',
-                        title: 'Export Dossier & Code',
-                        detail: 'Generates provisional patent claims, Markdown dossiers & standalone .py models',
-                        accent: '#58270E',
-                        tint: '#EFEAE1',
-                      },
+                      { num: '01', label: 'Harvest', sub: 'Theses & DOIs', accent: '#2B4257' },
+                      { num: '02', label: 'Extract', sub: 'PDF Tables', accent: '#8C3819' },
+                      { num: '03', label: 'Cleanse', sub: 'Prune Leakage', accent: '#7A1C24' },
+                      { num: '04', label: 'Benchmark', sub: '30 ML Models', accent: '#2B4257' },
+                      { num: '05', label: 'Verify', sub: 'Conformal CI', accent: '#4A2E40' },
+                      { num: '06', label: 'Translate', sub: '9 Live APIs', accent: '#7A1C24' },
+                      { num: '07', label: 'Export', sub: 'Dossier & .py', accent: '#58270E' },
                     ];
-                    const activeStage = pipelineStages[activePipelineStep] || pipelineStages[0];
-
                     return (
                       <div className="space-y-3">
-                        {/* Animated Progress Conduit Bar */}
-                        <div className="relative h-2.5 w-full rounded-full bg-[#EFEAE1] border border-[#D6C7B8] overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500 ease-out"
-                            style={{
-                              width: `${((activePipelineStep + 1) / pipelineStages.length) * 100}%`,
-                              backgroundColor: activeStage.accent,
-                            }}
-                          />
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg leather-badge text-[11px] font-extrabold">
+                            HOW IT WORKS
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowHowItWorksHero(false)}
+                            className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[11px] font-extrabold text-slate-700 flex items-center gap-1 cursor-pointer"
+                          >
+                            Hide <ChevronUp className="w-3 h-3" />
+                          </button>
                         </div>
 
-                        {/* 7 Interactive Animated Stage Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
-                          {pipelineStages.map((st, idx) => {
-                            const isCurrent = idx === activePipelineStep;
-                            const isCompleted = idx < activePipelineStep;
-                            return (
-                              <div
-                                key={st.num}
-                                onClick={() => setActivePipelineStep(idx)}
-                                className={`rounded-xl p-2.5 border-2 transition-all duration-300 cursor-pointer flex flex-col justify-between gap-1.5 ${
-                                  isCurrent
-                                    ? 'scale-[1.02] shadow-[3px_3px_0px_#331507]'
-                                    : 'opacity-90 hover:opacity-100'
-                                }`}
-                                style={{
-                                  backgroundColor: isCurrent || isCompleted ? st.tint : '#FAF8F5',
-                                  borderColor: isCurrent ? st.accent : isCompleted ? '#2B1406' : '#D6C7B8',
-                                }}
-                              >
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span
-                                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-extrabold text-white"
-                                      style={{ backgroundColor: st.accent }}
-                                    >
-                                      {st.num}
-                                    </span>
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase ${
-                                        isCurrent
-                                          ? 'bg-[#7A1C24] text-white animate-pulse'
-                                          : isCompleted
-                                            ? 'bg-[#2B4257] text-white'
-                                            : 'bg-slate-200 text-slate-600'
-                                      }`}
-                                    >
-                                      {isCurrent ? 'ACTIVE' : isCompleted ? 'DONE' : 'NEXT'}
-                                    </span>
+                        {/* Animated Connected Stepper Nodes (Minimal Text, Visual Pulse & Conduit) */}
+                        <div className="relative pt-1 pb-1">
+                          {/* Connecting Track Line */}
+                          <div className="hidden sm:block absolute top-6 left-8 right-8 h-1 bg-[#EFEAE1] rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-500 ease-out rounded-full"
+                              style={{
+                                width: `${(activePipelineStep / (pipelineStages.length - 1)) * 100}%`,
+                                backgroundColor: '#2B4257',
+                              }}
+                            />
+                          </div>
+
+                          <div className="relative z-10 grid grid-cols-2 sm:grid-cols-7 gap-2">
+                            {pipelineStages.map((st, idx) => {
+                              const isCurrent = idx === activePipelineStep;
+                              const isCompleted = idx < activePipelineStep;
+                              return (
+                                <button
+                                  key={st.num}
+                                  type="button"
+                                  onClick={() => setActivePipelineStep(idx)}
+                                  className="flex flex-col items-center text-center group cursor-pointer"
+                                >
+                                  <div
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-mono text-xs font-extrabold border-2 transition-all duration-300 ${
+                                      isCurrent
+                                        ? 'scale-110 text-white shadow-[0_0_0_4px_rgba(122,28,36,0.18)]'
+                                        : isCompleted
+                                          ? 'text-white'
+                                          : 'bg-[#FAF8F5] text-slate-600 border-[#D6C7B8]'
+                                    }`}
+                                    style={{
+                                      backgroundColor: isCurrent
+                                        ? '#7A1C24'
+                                        : isCompleted
+                                          ? st.accent
+                                          : '#FAF8F5',
+                                      borderColor: isCurrent || isCompleted ? '#1E140F' : '#D6C7B8',
+                                    }}
+                                  >
+                                    {st.num}
                                   </div>
                                   <div
-                                    className="text-[10px] font-mono font-extrabold truncate"
-                                    style={{ color: st.accent }}
+                                    className={`mt-1.5 text-xs font-extrabold transition-colors ${
+                                      isCurrent ? 'text-[#7A1C24]' : 'text-slate-900'
+                                    }`}
                                   >
-                                    {st.agent}
+                                    {st.label}
                                   </div>
-                                  <div className="text-xs font-extrabold text-slate-900 leading-tight">
-                                    {st.title}
+                                  <div className="text-[10px] font-mono font-bold text-slate-500">
+                                    {st.sub}
                                   </div>
-                                </div>
-                                <div className="text-[10px] text-slate-700 font-medium leading-snug pt-1 border-t border-slate-200/80">
-                                  {st.detail}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Live Telemetry Handoff Strip */}
-                        <div className="rounded-xl bg-[#1E140F] text-[#FAF8F5] px-3.5 py-2.5 border-2 border-[#58270E] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="px-2 py-0.5 rounded bg-[#7A1C24] text-white font-extrabold text-[10px] shrink-0">
-                              STAGE {activeStage.num} LIVE
-                            </span>
-                            <span className="text-[#D8B99C] font-extrabold shrink-0">
-                              {activeStage.agent}
-                            </span>
-                            <span className="text-slate-400">→</span>
-                            <span className="truncate text-[#FAF8F5] font-sans font-bold text-xs">
-                              {activeStage.title}: {activeStage.detail}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {dissertations.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectDissertation(dissertations[0], true)}
-                                className="px-2.5 py-1 rounded-lg bg-[#2B4257] hover:bg-[#36536D] text-white font-sans font-extrabold text-[11px] cursor-pointer"
-                              >
-                                Inspect Top Discovery Dossier ↓
-                              </button>
-                            )}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
@@ -1985,39 +1887,29 @@ export function App() {
                   })()}
                 </section>
               ) : (
-                <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#FAF8F5] border-2 border-[#D6C7B8] text-xs">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-[#58270E] text-white font-mono text-[10px] font-extrabold">
-                      7-AGENT PIPELINE
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      How It Works animation collapsed to keep focus on your active Dossier.
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {selectedDiss && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDissId(null);
-                          setShowHowItWorksHero(true);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-[11px] cursor-pointer"
-                      >
-                        Close Dossier
-                      </button>
-                    )}
+                <div className="flex items-center justify-end gap-2">
+                  {selectedDiss && (
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedDissId(null);
                         setShowHowItWorksHero(true);
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-[#EDF0F2] hover:bg-[#E2E8EC] border border-[#B8C6D1] text-[#2B4257] font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-[11px] cursor-pointer"
                     >
-                      Show How It Works <ChevronDown className="w-3.5 h-3.5" />
+                      Close Dossier
                     </button>
-                  </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDissId(null);
+                      setShowHowItWorksHero(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#EFEAE1] border border-[#D6C7B8] text-[#2B4257] font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    How It Works <ChevronDown className="w-3 h-3" />
+                  </button>
                 </div>
               )}
 
