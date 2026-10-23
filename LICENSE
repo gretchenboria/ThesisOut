@@ -1,21 +1,48 @@
-ThesisOut Open-Source Non-Commercial License (with Commercial Licensing Option)
+ThesisOut Dual License: Open-Source Non-Commercial & Commercial Enterprise License
 Copyright (c) 2026 Dr. Gretchen Boria. All rights reserved.
 
-1. Grant of Open-Source Non-Commercial License
-Permission is hereby granted, free of charge, to any person or academic institution obtaining a copy of this software, source code, agent specifications, documentation, and associated files (the "Software"), to use, read, copy, modify, fork, and distribute the Software solely for non-commercial purposes, including academic research, scientific benchmarking, classroom instruction, and personal evaluation, subject to the following conditions:
+================================================================================
+PART I: FREE ACADEMIC & NON-COMMERCIAL RESEARCH LICENSE
+================================================================================
 
-a) Attribution: The above copyright notice, this license notice, and attribution to Dr. Gretchen Boria must be included in all copies, forks, or substantial portions of the Software.
-b) Non-Commercial Restriction: You may not use the Software, or any derivative works thereof, for commercial purposes. Prohibited commercial uses include, without limitation:
-   - Selling, licensing, leasing, or charging fees for access to the Software or any hosted service built upon the Software.
-   - Using the Software within a for-profit enterprise, venture capital fund, biotechnology company, pharmaceutical company, or commercial consulting practice to evaluate proprietary pipelines, commercialize assets, or generate commercial intelligence.
-   - Bundling or redistributing the Software as part of a commercial product or paid platform.
+1. Grant of Non-Commercial License
+Permission is hereby granted, free of charge ($0), to any individual researcher, student, faculty member, accredited university, non-profit research institute, or government scientific laboratory obtaining a copy of this software, source code, 7-agent specifications, skills, documentation, and associated files (the "Software"), to use, read, copy, modify, fork, and distribute the Software solely for non-commercial academic, educational, and scientific research purposes, subject to the following conditions:
 
-2. Commercial Licensing Inquiries
-If you or your organization wish to use, deploy, integrate, or commercialize ThesisOut or its multi-agent verification pipeline for commercial or enterprise purposes, you must obtain a separate commercial license from the author.
-To request a commercial license, please contact:
+a) Attribution: The above copyright notice, this license notice, and clear citation/attribution to Dr. Gretchen Boria ("ThesisOut: Autonomous 7-Agent Scientific Discovery & Translational Whitespace Platform, https://thesisout.com") must be included in all copies, forks, academic publications, or substantial portions of the Software.
+
+b) Non-Commercial Restriction: You may NOT use the Software, or any derivative works thereof, for commercial or for-profit purposes without purchasing a Commercial License under Part II. Prohibited commercial uses without a paid license include, without limitation:
+   - Using the Software within a for-profit corporation, venture capital fund, biotechnology company, pharmaceutical company, IP law firm, or commercial consulting practice to evaluate proprietary pipelines, perform commercial due diligence, scout licensing targets, or generate commercial intelligence.
+   - Selling, licensing, leasing, or charging fees for access to the Software or any hosted/SaaS service built upon the Software.
+   - Bundling or redistributing the Software as part of a proprietary product or commercial platform.
+
+================================================================================
+PART II: COMMERCIAL LICENSING TIERS & PRICING SCHEDULE
+================================================================================
+
+Organizations and for-profit entities wishing to use, deploy, integrate, or commercialize ThesisOut or its 7-agent verification pipeline (`harvester-agent`, `pdf-extractor-agent`, `data-cleansing-agent`, `ml-rigor-scientist`, `deep-inference-auditor`, `translation-whitespace-agent`, `qa-production-guardian`) may purchase a Commercial License under the following standard pricing schedule:
+
+1. Tier 0 — Academic, Non-Profit & University Tech-Transfer Evaluation
+   - Price: FREE ($0 / year)
+   - Scope: Unlimited use for academic research, doctoral dissertation benchmarking, classroom instruction, and non-profit scientific research with attribution.
+
+2. Tier 1 — Seed Startups, Boutique IP Funds & Independent Consultants (<= 10 employees)
+   - Price: $4,800 USD / year (or $450 USD / month, up to 3 seats)
+   - Scope: Internal commercial use for scouting academic assets, auditing uploaded datasets/PDFs across the 30-model + 5-stage conformal pipeline, and generating provisional patent claims and venture dossiers.
+
+3. Tier 2 — Venture Capital, Biotech/MedTech R&D & Corporate BD Teams
+   - Price: $18,000 USD / year (up to 15 seats; single VPC / Cloud Run deployment)
+   - Scope: Full commercial deployment within a venture fund, mid-market biotech/pharma R&D group, or corporate business development team, including custom dataset/PDF ingestion, 9-API clinical/patent whitespace auditing, and priority updates.
+
+4. Tier 3 — Enterprise Pharma, Global R&D & OEM / White-Label Source License
+   - Price: $48,000 USD / year (Unlimited seats, multi-region VPC deployment) or $125,000 USD one-time perpetual buyout
+   - Scope: Worldwide enterprise-wide commercial license, full source-code modification rights without attribution requirements, custom internal registry connectors, and OEM/embedded integration rights.
+
+To purchase a Commercial License or request an invoice/procurement agreement, contact:
 Dr. Gretchen Boria
 GitHub: https://github.com/gretchenboria
 Website: https://thesisout.com
 
-3. Disclaimer of Warranty
+================================================================================
+PART III: DISCLAIMER OF WARRANTY
+================================================================================
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

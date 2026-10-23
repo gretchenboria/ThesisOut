@@ -1063,40 +1063,114 @@ export function App() {
               </div>
 
               {docsSection === 'about' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="pop-subcard rounded-xl p-4 space-y-2">
-                    <div className="text-[11px] font-extrabold text-[#2B4257] uppercase">
-                      Mission &amp; Scope
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="pop-subcard rounded-xl p-4 space-y-2">
+                      <div className="text-[11px] font-extrabold text-[#2B4257] uppercase">
+                        Mission &amp; Scope
+                      </div>
+                      <div className="text-sm font-extrabold text-slate-900">
+                        Empirical Discovery Across Global Doctoral Research
+                      </div>
+                      <div className="text-slate-700 leading-relaxed font-medium">
+                        Doctoral dissertations frequently publish rich experimental and clinical datasets analyzed only with classical linear or univariate models. ThesisOut harvests live dissertations and open-access datasets, re-analyzes every tabular variable across 30 machine learning architectures, and surfaces non-linear interactions with high commercial and clinical value.
+                      </div>
                     </div>
-                    <div className="text-sm font-extrabold text-slate-900">
-                      Empirical Discovery Across Global Doctoral Research
+
+                    <div className="pop-subcard rounded-xl p-4 space-y-2">
+                      <div className="text-[11px] font-extrabold text-[#4A2E40] uppercase">
+                        Methodology &amp; Statistical Protocol
+                      </div>
+                      <div className="text-sm font-extrabold text-slate-900">
+                        Nested Cross-Validation &amp; Conformal Calibration
+                      </div>
+                      <div className="text-slate-700 leading-relaxed font-medium">
+                        Dissertations are indexed from OpenAlex, EuropePMC, and arXiv alongside empirical tabular datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad. Imputation, categorical encoding, and scaling are fit strictly inside cross-validation folds to preserve out-of-fold integrity.
+                      </div>
                     </div>
-                    <div className="text-slate-700 leading-relaxed font-medium">
-                      Doctoral dissertations frequently publish rich experimental and clinical datasets analyzed only with classical linear or univariate models. ThesisOut harvests live dissertations and open-access datasets, re-analyzes every tabular variable across 30 machine learning architectures, and surfaces non-linear interactions with high commercial and clinical value.
+
+                    <div className="pop-subcard rounded-xl p-4 space-y-2">
+                      <div className="text-[11px] font-extrabold text-[#7A1C24] uppercase">
+                        Translational Dossiers &amp; Reproducibility
+                      </div>
+                      <div className="text-sm font-extrabold text-slate-900">
+                        Multi-Registry Evidence &amp; Standalone Code
+                      </div>
+                      <div className="text-slate-700 leading-relaxed font-medium">
+                        Each empirical signal is cross-referenced against ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to quantify clinical and patent whitespace. Researchers can maintain due-diligence shortlists with persistent notes and export standalone Python pipelines.
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pop-subcard rounded-xl p-4 space-y-2">
-                    <div className="text-[11px] font-extrabold text-[#4A2E40] uppercase">
-                      Methodology &amp; Statistical Protocol
+                  {/* Dual License & Commercial Pricing Table */}
+                  <div className="pop-subcard rounded-xl p-4 space-y-3 border-l-4 border-l-[#7A1C24]">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <div className="text-[11px] font-mono font-extrabold text-[#7A1C24] uppercase">
+                          DUAL LICENSE &amp; COMMERCIAL PRICING SCHEDULE
+                        </div>
+                        <div className="text-sm font-extrabold text-slate-900">
+                          Free for Non-Commercial Academic Research • Commercial Licenses Available
+                        </div>
+                      </div>
+                      <a
+                        href="https://github.com/gretchenboria/ThesisOut/blob/main/LICENSE"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-[#2B4257] text-white font-extrabold text-xs inline-flex items-center gap-1"
+                      >
+                        View Public GitHub LICENSE <ExternalLink className="w-3 h-3" />
+                      </a>
                     </div>
-                    <div className="text-sm font-extrabold text-slate-900">
-                      Nested Cross-Validation &amp; Conformal Calibration
-                    </div>
-                    <div className="text-slate-700 leading-relaxed font-medium">
-                      Dissertations are indexed from OpenAlex, EuropePMC, and arXiv alongside empirical tabular datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad. Imputation, categorical encoding, and scaling are fit strictly inside cross-validation folds to preserve out-of-fold integrity.
-                    </div>
-                  </div>
 
-                  <div className="pop-subcard rounded-xl p-4 space-y-2">
-                    <div className="text-[11px] font-extrabold text-[#7A1C24] uppercase">
-                      Translational Dossiers &amp; Reproducibility
-                    </div>
-                    <div className="text-sm font-extrabold text-slate-900">
-                      Multi-Registry Evidence &amp; Standalone Code
-                    </div>
-                    <div className="text-slate-700 leading-relaxed font-medium">
-                      Each empirical signal is cross-referenced against ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to quantify clinical and patent whitespace. Researchers can maintain due-diligence shortlists with persistent notes and export standalone Python pipelines.
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="rounded-xl bg-[#EDF0F2] border border-[#B8C6D1] p-3 space-y-1">
+                        <div className="text-[10px] font-mono font-extrabold text-[#2B4257] uppercase">
+                          TIER 0 • ACADEMIC &amp; NON-PROFIT
+                        </div>
+                        <div className="text-base font-extrabold font-mono text-slate-900">
+                          FREE ($0 / yr)
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">
+                          Accredited universities, PhD students, faculty &amp; non-profit labs for non-commercial research with attribution.
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl bg-white border border-[#D6C7B8] p-3 space-y-1">
+                        <div className="text-[10px] font-mono font-extrabold text-[#8C3819] uppercase">
+                          TIER 1 • STARTUP &amp; BOUTIQUE SCOUT
+                        </div>
+                        <div className="text-base font-extrabold font-mono text-slate-900">
+                          $4,800 / yr <span className="text-[11px] text-slate-500">($450/mo)</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">
+                          Seed startups (≤10 staff), boutique IP funds &amp; independent consultants (up to 3 seats • 1 VPC instance).
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F3EDF1] border border-[#D6C5D0] p-3 space-y-1">
+                        <div className="text-[10px] font-mono font-extrabold text-[#4A2E40] uppercase">
+                          TIER 2 • VENTURE &amp; BIOTECH R&amp;D
+                        </div>
+                        <div className="text-base font-extrabold font-mono text-slate-900">
+                          $18,000 / yr <span className="text-[11px] text-slate-500">($1,750/mo)</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">
+                          VC funds, mid-market biotech/medtech R&amp;D &amp; corporate BD teams (up to 15 seats • private VPC + 9-API audit).
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F7ECED] border border-[#DEC0C3] p-3 space-y-1">
+                        <div className="text-[10px] font-mono font-extrabold text-[#7A1C24] uppercase">
+                          TIER 3 • ENTERPRISE PHARMA &amp; OEM
+                        </div>
+                        <div className="text-base font-extrabold font-mono text-slate-900">
+                          $48,000 / yr <span className="text-[11px] text-[#7A1C24]">($125k Buyout)</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">
+                          Global pharma/enterprise R&amp;D, unlimited seats, multi-region VPC deployment &amp; white-label OEM source rights.
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
