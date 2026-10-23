@@ -2,11 +2,11 @@ ThesisOut Dual License: Open-Source Non-Commercial & Commercial Enterprise Licen
 Copyright (c) 2026 Dr. Gretchen Boria. All rights reserved.
 
 ================================================================================
-PART I: FREE ACADEMIC & NON-COMMERCIAL RESEARCH LICENSE
+PART I: FREE PERSONAL, ACADEMIC & NON-COMMERCIAL RESEARCH LICENSE
 ================================================================================
 
 1. Grant of Non-Commercial License
-Permission is hereby granted, free of charge ($0), to any individual researcher, student, faculty member, accredited university, non-profit research institute, or government scientific laboratory obtaining a copy of this software, source code, 7-agent specifications, skills, documentation, and associated files (the "Software"), to use, read, copy, modify, fork, and distribute the Software solely for non-commercial academic, educational, and scientific research purposes, subject to the following conditions:
+Permission is hereby granted, free of charge ($0), to any individual for personal use, independent researcher, student, faculty member, accredited university, non-profit research institute, or government scientific laboratory obtaining a copy of this software, source code, 7-agent specifications, skills, documentation, and associated files (the "Software"), to use, read, copy, modify, fork, and distribute the Software solely for personal, non-commercial academic, educational, and scientific research purposes, subject to the following conditions:
 
 a) Attribution: The above copyright notice, this license notice, and clear citation/attribution to Dr. Gretchen Boria ("ThesisOut: Autonomous 7-Agent Scientific Discovery & Translational Whitespace Platform, https://thesisout.com") must be included in all copies, forks, academic publications, or substantial portions of the Software.
 
@@ -21,9 +21,9 @@ PART II: COMMERCIAL LICENSING TIERS & PRICING SCHEDULE
 
 Organizations and for-profit entities wishing to use, deploy, integrate, or commercialize ThesisOut or its 7-agent verification pipeline (`harvester-agent`, `pdf-extractor-agent`, `data-cleansing-agent`, `ml-rigor-scientist`, `deep-inference-auditor`, `translation-whitespace-agent`, `qa-production-guardian`) may purchase a Commercial License under the following standard pricing schedule:
 
-1. Tier 0 — Academic, Non-Profit & University Tech-Transfer Evaluation
+1. Tier 0 — Personal, Academic, Non-Profit & University Tech-Transfer Evaluation
    - Price: FREE ($0 / year)
-   - Scope: Unlimited use for academic research, doctoral dissertation benchmarking, classroom instruction, and non-profit scientific research with attribution.
+   - Scope: Unlimited use for personal projects, academic research, doctoral dissertation benchmarking, classroom instruction, and non-profit scientific research with attribution.
 
 2. Tier 1 — Seed Startups, Boutique IP Funds & Independent Consultants (<= 10 employees)
    - Price: $4,800 USD / year (or $450 USD / month, up to 3 seats)

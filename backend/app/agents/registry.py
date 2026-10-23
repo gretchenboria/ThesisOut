@@ -31,8 +31,8 @@ PRODUCTION_AGENT_SPECS: List[Dict[str, Any]] = [
     },
     {
         "name": "pdf-extractor-agent",
-        "role": "PDF Bibliographic, Claim, DOI & Tabular Extraction Agent",
-        "description": "Parses uploaded dissertation PDFs using pypdf and pdfplumber (grid and text-alignment strategies) to extract metadata, statistical baselines, DOIs, and quantitative tables.",
+        "role": "Gemini 4 Argon / 3.8 Deep PDF Claim, Hypothesis & Matrix Extraction Agent",
+        "description": "Powered by Gemini 4 Argon (with Gemini 3.8 Flash fallback) alongside pypdf/pdfplumber to extract bibliographic metadata, author hypotheses, baseline statistical methods/scores, DOIs, and complex/borderless empirical data matrices from scientific PDFs.",
         "skill_name": "pdf-table-extractor",
         "skill_path": ".agents/skills/pdf-table-extractor/SKILL.md",
         "agent_md_path": ".agents/agents/pdf-extractor-agent/agent.md",

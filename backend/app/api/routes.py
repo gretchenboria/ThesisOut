@@ -235,6 +235,7 @@ async def upload_dissertation_and_dataset(
                 ds_bytes = raw_b
                 ds_filename = fname
 
+    gemini_extracted_tables: List[Dict[str, Any]] = []
     if pdf_bytes and pdf_filename:
         pdf_dest = settings.PDF_DIR / f"{slug}_{pdf_filename}"
         pdf_dest.parent.mkdir(parents=True, exist_ok=True)
@@ -242,6 +243,30 @@ async def upload_dissertation_and_dataset(
         pdf_saved_path = str(pdf_dest)
         try:
             extracted_meta = pdf_extractor_agent.extract_text_and_metadata(pdf_dest)
+            gemini_intel = await pdf_extractor_agent.extract_gemini_pdf_intelligence_and_tables(pdf_dest, slug)
+            g_meta = gemini_intel.get("gemini_meta") or {}
+            gemini_extracted_tables = gemini_intel.get("gemini_tables") or []
+            if g_meta.get("parsed_title") and len(str(g_meta["parsed_title"])) >= 8:
+                extracted_meta["parsed_title"] = g_meta["parsed_title"]
+            if g_meta.get("parsed_authors"):
+                extracted_meta["parsed_authors"] = g_meta["parsed_authors"]
+            if g_meta.get("parsed_university"):
+                extracted_meta["parsed_university"] = g_meta["parsed_university"]
+            if g_meta.get("parsed_year"):
+                extracted_meta["parsed_year"] = int(g_meta["parsed_year"])
+            if g_meta.get("author_statistical_method"):
+                extracted_meta["author_statistical_method"] = g_meta["author_statistical_method"]
+            if g_meta.get("extracted_claims") and isinstance(g_meta["extracted_claims"], list):
+                extracted_meta["extracted_claims"] = g_meta["extracted_claims"]
+            if g_meta.get("author_primary_target") and not author_primary_target:
+                author_primary_target = str(g_meta["author_primary_target"])
+            if g_meta.get("author_baseline_score") and not author_baseline_score:
+                try:
+                    bs_val = float(g_meta["author_baseline_score"])
+                    if 0.05 <= bs_val <= 0.99:
+                        author_baseline_score = bs_val
+                except Exception:
+                    pass
             if not abstract:
                 abstract = extracted_meta.get("text_preview", "")[:1500]
         except Exception as exc:
@@ -315,12 +340,13 @@ async def upload_dissertation_and_dataset(
     # 2. If a PDF was uploaded without a dataset (or to extract embedded PDF tables), parse tables from the PDF
     db.refresh(diss)
     if not diss.datasets and pdf_saved_path:
-        pdf_tables = pdf_extractor_agent.extract_tables_from_pdf(
+        deterministic_tables = pdf_extractor_agent.extract_tables_from_pdf(
             pdf_saved_path,
             slug,
             fallback_text=abstract,
             fallback_title=final_title,
         )
+        pdf_tables = gemini_extracted_tables + deterministic_tables
         for tbl in pdf_tables:
             record_agent_invocation(db, "ml-rigor-scientist")
             record_agent_invocation(db, "translation-whitespace-agent")

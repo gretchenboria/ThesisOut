@@ -1,139 +1,143 @@
 1
-00:00:00,000 --> 00:00:03,886
-Enter your access code to unlock ThesisOut.
+00:00:00,000 --> 00:00:04,846
+Welcome to ThesisOut. Enter your workspace access code to begin.
 
 2
-00:00:04,006 --> 00:00:08,045
-Search doctoral dissertations by topic or university.
+00:00:04,966 --> 00:00:09,815
+On the landing workspace, a visual seven-stage stepper illustrates
 
 3
-00:00:08,045 --> 00:00:12,237
-ThesisOut scrapes full-text Data Availability sections,
+00:00:09,815 --> 00:00:12,974
+how ThesisOut works from harvest to export.
 
 4
-00:00:12,237 --> 00:00:17,344
-matches author ORCID lab graphs, and resolves datasets from Zenodo,
+00:00:12,974 --> 00:00:17,676
+Search any scientific topic or university to resolve open-access
 
 5
-00:00:17,344 --> 00:00:21,296
-Figshare, Harvard Dataverse, and Dryad.
+00:00:17,676 --> 00:00:20,835
+datasets across OpenAlex, ORCID lab graphs,
 
 6
-00:00:21,416 --> 00:00:26,047
-To audit your own research, upload a dissertation PDF or raw CSV
+00:00:20,835 --> 00:00:24,680
+Zenodo, Figshare, Dataverse, and Dryad.
 
 7
-00:00:26,047 --> 00:00:31,040
-dataset and click Audit File. ThesisOut extracts the underlying data,
+00:00:24,800 --> 00:00:29,964
+To evaluate your own research, upload a dissertation PDF or tabular
 
 8
-00:00:31,040 --> 00:00:34,079
-benchmarks thirty machine learning models,
+00:00:29,964 --> 00:00:35,206
+dataset and select Audit File. Gemini 4 Argon and Gemini 3.8 extract
 
 9
-00:00:34,079 --> 00:00:39,618
-and highlights the winning model and primary driver at the top.
+00:00:35,206 --> 00:00:39,368
+the author's hypotheses, baseline statistical methods,
 
 10
-00:00:39,738 --> 00:00:44,789
-Under the hood, seven specialized autonomous agents orchestrate the
+00:00:39,368 --> 00:00:44,202
+and empirical matrices for automated benchmarking.
 
 11
-00:00:44,789 --> 00:00:48,031
-audit in sequence: harvesting repositories,
+00:00:44,322 --> 00:00:48,249
+Seven autonomous agents coordinate the scientific workflow:
 
 12
-00:00:48,031 --> 00:00:52,630
-extracting PDF tables, cleansing schemas and pruning leakage,
+00:00:48,249 --> 00:00:52,708
+harvesting repositories, running Gemini 4 Argon deep extraction for
 
 13
-00:00:52,630 --> 00:00:55,872
-benchmarking thirty cross-validated models,
+00:00:52,708 --> 00:00:57,101
+claims and matrices, cleansing schemas and pruning target leakage,
 
 14
-00:00:55,872 --> 00:01:02,884
-running conformal verification, and synthesizing clinical and patent whitespace.
+00:00:57,101 --> 00:00:59,963
+benchmarking thirty cross-validated models,
 
 15
-00:01:03,004 --> 00:01:07,854
-Each discovery card pairs the source academic study and its overlooked
+00:00:59,963 --> 00:01:06,268
+verifying conformal intervals, and auditing nine clinical and patent registries.
 
 16
-00:01:07,854 --> 00:01:11,527
-empirical variable with a commercial product concept,
+00:01:06,388 --> 00:01:11,097
+Each discovery card connects the academic study and its primary empirical
 
 17
-00:01:11,527 --> 00:01:16,526
-model performance gain, and Translation Opportunity Score.
+00:01:11,097 --> 00:01:14,129
+driver to a synthesized commercial application,
 
 18
-00:01:16,646 --> 00:01:21,116
-Save promising findings to your shortlist and attach due-diligence
+00:01:14,129 --> 00:01:19,238
+out-of-fold performance gain, and Translation Opportunity Score.
 
 19
-00:01:21,116 --> 00:01:26,904
-notes so your team can track priority licensing and validation targets.
+00:01:19,358 --> 00:01:23,479
+Bookmark high-priority findings to your persistent shortlist and
 
 20
-00:01:27,024 --> 00:01:30,624
-Selecting any card opens the Opportunity Dossier.
+00:01:23,479 --> 00:01:29,160
+record technical due-diligence notes for your research or licensing team.
 
 21
-00:01:30,624 --> 00:01:34,885
-Four summary blocks present the overlooked empirical clue,
+00:01:29,280 --> 00:01:33,960
+Opening a discovery launches the Opportunity Dossier and automatically
 
 22
-00:01:34,885 --> 00:01:40,027
-the classical baseline blindspot, live clinical and patent whitespace,
+00:01:33,960 --> 00:01:38,440
+collapses the landing stepper. Four structured panels summarize the
 
 23
-00:01:40,027 --> 00:01:43,138
-and addressable market scale.
+00:01:38,440 --> 00:01:42,986
+primary predictive variable, the baseline methodological limitation,
 
 24
-00:01:43,258 --> 00:01:47,757
-Directly inside the dossier, generate a provisional patent claim
+00:01:42,986 --> 00:01:47,242
+live registry whitespace, and dataset provenance.
 
 25
-00:01:47,757 --> 00:01:50,920
-grounded in the discovered regime thresholds,
+00:01:47,362 --> 00:01:51,852
+From the dossier, draft a provisional patent claim anchored in the
 
 26
-00:01:50,920 --> 00:01:57,524
-run live regulatory checks, and download the standalone Python model and report.
+00:01:51,852 --> 00:01:56,070
+learned decision thresholds, inspect live regulatory evidence,
 
 27
-00:01:57,644 --> 00:02:02,081
-The Empirical Leaderboard compares all thirty cross-validated models
+00:01:56,070 --> 00:02:01,268
+or export the standalone Python pipeline and markdown dossier.
 
 28
-00:02:02,081 --> 00:02:06,649
-against the author's original baseline, reporting out-of-fold accuracy
+00:02:01,388 --> 00:02:05,810
+The Empirical Leaderboard benchmarks thirty supervised algorithms
 
 29
-00:02:06,649 --> 00:02:10,566
-and ninety-five percent confidence intervals.
+00:02:05,810 --> 00:02:10,300
+against the author's original baseline using leak-free inside-fold
 
 30
-00:02:10,686 --> 00:02:15,515
-Finally, inspect the exact variables driving the prediction alongside
+00:02:10,300 --> 00:02:16,110
+preprocessing and ninety-five percent out-of-fold confidence intervals.
 
 31
-00:02:15,515 --> 00:02:20,065
-five-stage statistical verification, reporting target-permutation
+00:02:16,230 --> 00:02:20,711
+To ensure biostatistical rigor, five-stage verification evaluates
 
 32
-00:02:20,065 --> 00:02:23,004
-p-values, Super-Learner ensemble accuracy,
+00:02:20,711 --> 00:02:25,054
+target-permutation null tests, Super-Learner ensemble stacking,
 
 33
-00:02:23,004 --> 00:02:27,064
-and ninety percent split-conformal coverage.
+00:02:25,054 --> 00:02:30,928
+surrogate regime rules, and ninety percent split-conformal calibration.
 
 34
-00:02:27,184 --> 00:02:32,227
-Turn overlooked doctoral research and open scientific datasets into
+00:02:31,048 --> 00:02:35,873
+ThesisOut is completely free for personal and academic research,
 
 35
-00:02:32,227 --> 00:02:40,480
-verified commercial breakthroughs. Explore the live platform today at thesisout.com.
+00:02:35,873 --> 00:02:40,849
+with commercial licensing available for R and D teams! Explore the
+
+36
+00:02:40,849 --> 00:02:45,368
+live platform today at thesisout.com.

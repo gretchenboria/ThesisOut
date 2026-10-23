@@ -1110,7 +1110,7 @@ export function App() {
                           DUAL LICENSE &amp; COMMERCIAL PRICING SCHEDULE
                         </div>
                         <div className="text-sm font-extrabold text-slate-900">
-                          Free for Non-Commercial Academic Research • Commercial Licenses Available
+                          Free for Personal &amp; Academic Research • Commercial Licenses Available
                         </div>
                       </div>
                       <a
@@ -1126,13 +1126,13 @@ export function App() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <div className="rounded-xl bg-[#EDF0F2] border border-[#B8C6D1] p-3 space-y-1">
                         <div className="text-[10px] font-mono font-extrabold text-[#2B4257] uppercase">
-                          TIER 0 • ACADEMIC &amp; NON-PROFIT
+                          TIER 0 • PERSONAL &amp; ACADEMIC
                         </div>
                         <div className="text-base font-extrabold font-mono text-slate-900">
                           FREE ($0 / yr)
                         </div>
                         <div className="text-[11px] text-slate-700 font-medium">
-                          Accredited universities, PhD students, faculty &amp; non-profit labs for non-commercial research with attribution.
+                          Personal use, PhD students, faculty, universities &amp; non-profit labs for non-commercial research with attribution.
                         </div>
                       </div>
 
@@ -1802,7 +1802,7 @@ export function App() {
                   {(() => {
                     const pipelineStages = [
                       { num: '01', label: 'Harvest', sub: 'Theses & DOIs', accent: '#2B4257' },
-                      { num: '02', label: 'Extract', sub: 'PDF Tables', accent: '#8C3819' },
+                      { num: '02', label: 'Extract', sub: 'Gemini 4 Argon', accent: '#8C3819' },
                       { num: '03', label: 'Cleanse', sub: 'Prune Leakage', accent: '#7A1C24' },
                       { num: '04', label: 'Benchmark', sub: '30 ML Models', accent: '#2B4257' },
                       { num: '05', label: 'Verify', sub: 'Conformal CI', accent: '#4A2E40' },

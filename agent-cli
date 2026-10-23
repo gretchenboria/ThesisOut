@@ -118,7 +118,7 @@ def cmd_verify_policies() -> int:
                 print(f"  [FAIL] {f}")
             return 1
 
-        print("ALL AGENT REGISTRY & ZERO-DUMMY-DATA POLICIES VERIFIED (6/6 AGENTS PASS)")
+        print(f"ALL AGENT REGISTRY & ZERO-DUMMY-DATA POLICIES VERIFIED ({len(agents)}/{len(agents)} AGENTS PASS)")
         return 0
     finally:
         db.close()

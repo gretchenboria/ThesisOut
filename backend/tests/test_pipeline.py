@@ -24,15 +24,16 @@ def test_production_pipeline_persistent_memory_and_agents():
         r_health = client.get("/health")
         assert r_health.status_code == 200
 
-        # 2. Verify Agent Registry API returns all 6 registered agents with policies and SKILL.md / agent.md paths
+        # 2. Verify Agent Registry API returns all 7 registered agents with policies and SKILL.md / agent.md paths
         r_agents = client.get("/api/agents/registry", headers=AUTH_HEADERS)
         assert r_agents.status_code == 200
         agents = r_agents.json()
-        assert len(agents) == 6
+        assert len(agents) == 7
         agent_names = {a["name"] for a in agents}
         assert {
             "harvester-agent",
             "pdf-extractor-agent",
+            "data-cleansing-agent",
             "ml-rigor-scientist",
             "deep-inference-auditor",
             "translation-whitespace-agent",
@@ -293,4 +294,192 @@ def test_three_stage_dataset_finder(tmp_path):
         assert Path(dv_files[0]["file_path"]).exists()
 
     asyncio.run(_run())
+
+
+def test_regression_and_edge_cases(tmp_path, monkeypatch):
+    """
+    Comprehensive regression & edge-case test suite covering:
+    1. Gemini 4 Argon / 3.8 deep PDF extraction (valid matrix persistence vs. non-numeric garbage rejection vs. empty PDF handling).
+    2. Scientific data cleansing (mean ± SD, %, CI brackets, inequalities, title-banner header promotion, duplicate column deduplication).
+    3. Leakage proxy pruning (Unnamed: 0, single-feature tautology |r| >= 0.88, boolean complement, multi-feature post-hoc composite).
+    4. Scientific coherence & honest TOS scoring (no unrelated psoriasis/atherosclerosis fallback on zero keyword overlap; no artificial 62.0 signal floor on R2 < 0.25).
+    5. Tiny/invalid dataset upload rejection (< 5 rows or < 2 columns) with zero orphan dissertation rows left in SQLite.
+    """
+    import asyncio
+    import pandas as pd
+    from app.agents.pdf_extractor import pdf_extractor_agent
+    from app.agents.data_cleansing_agent import data_cleansing_agent
+    from app.agents.data_scientist import data_scientist_agent
+    from app.agents.translation_agent import translation_agent
+    from app.services.llm_router import llm_router
+
+    # --- 1. Gemini 4 Argon / 3.8 Deep PDF Extraction Edge Cases ---
+    async def _test_gemini_pdf():
+        # Edge case 1a: Missing or empty PDF path returns gracefully
+        empty_res = await pdf_extractor_agent.extract_gemini_pdf_intelligence_and_tables(tmp_path / "nonexistent.pdf", "empty_slug")
+        assert empty_res == {"gemini_meta": {}, "gemini_tables": []}
+
+        # Edge case 1b: Mock PDF with text and mocked Gemini 4 Argon response containing 1 valid numeric table + 1 non-numeric garbage table
+        monkeypatch.setattr(
+            pdf_extractor_agent,
+            "extract_text_and_metadata",
+            lambda p: {"text_preview": "A" * 200, "full_text_excerpt": "Study on Silicon Carbide MOSFET Gate Oxide Breakdown under Thermal Stress. " * 5},
+        )
+
+        async def _mock_gemini_intel(*args, **kwargs):
+            return {
+                "parsed_title": "Silicon Carbide MOSFET Gate Oxide Breakdown Under Thermal Stress",
+                "parsed_authors": "Dr. Kenji Takahashi",
+                "parsed_university": "Tokyo Institute of Technology",
+                "parsed_year": 2025,
+                "author_primary_hypothesis": "Non-linear gate leakage current accelerates above 175C.",
+                "author_statistical_method": "Weibull Linear Fit",
+                "author_primary_target": "breakdown_hours",
+                "author_baseline_score": 0.58,
+                "extracted_claims": ["Gate oxide breakdown exhibits non-linear thermal acceleration above 175C."],
+                "extracted_tables": [
+                    {
+                        "table_name": "Table_1_SiC_Gate_Breakdown",
+                        "columns": ["temp_c", "gate_voltage_v", "leakage_na", "breakdown_hours"],
+                        "rows": [
+                            [150.0, 18.0, 12.4, 1420.5],
+                            [165.0, 19.0, 24.8, 980.2],
+                            [175.0, 20.0, 58.1, 510.4],
+                            [185.0, 21.0, 115.6, 215.8],
+                            [195.0, 22.0, 240.2, 88.4],
+                            [205.0, 23.0, 490.0, 32.1],
+                        ],
+                    },
+                    {
+                        "table_name": "Table_2_Pure_Text_Glossary",
+                        "columns": ["Symbol", "Definition"],
+                        "rows": [
+                            ["Vgs", "Gate-to-Source Voltage"],
+                            ["Ids", "Drain-to-Source Current"],
+                            ["Tj", "Junction Temperature"],
+                            ["Rds", "On-State Resistance"],
+                            ["Qg", "Total Gate Charge"],
+                        ],
+                    },
+                ],
+            }
+
+        monkeypatch.setattr(llm_router, "extract_scientific_pdf_intelligence", _mock_gemini_intel)
+        dummy_pdf = tmp_path / "sic_mosfet.pdf"
+        dummy_pdf.write_bytes(b"%PDF-1.4 mock")
+        g_out = await pdf_extractor_agent.extract_gemini_pdf_intelligence_and_tables(dummy_pdf, "sic_test")
+        assert g_out["gemini_meta"]["parsed_university"] == "Tokyo Institute of Technology"
+        assert g_out["gemini_meta"]["author_primary_target"] == "breakdown_hours"
+        # Only Table 1 (numeric) should be kept; Table 2 (pure text glossary) must be rejected
+        assert len(g_out["gemini_tables"]) == 1
+        assert g_out["gemini_tables"][0]["row_count"] == 6
+        assert g_out["gemini_tables"][0]["col_count"] == 4
+        assert Path(g_out["gemini_tables"][0]["file_path"]).exists()
+
+    asyncio.run(_test_gemini_pdf())
+
+    # --- 2. Scientific Data Cleansing & String Coercion Edge Cases ---
+    raw_Banner_df = pd.DataFrame(
+        [
+            ["SUPPLEMENTARY TABLE S1: CLINICAL CYTOKINE COHORT", None, None, None],
+            ["Unnamed: 0", "IL6_Level", "Response_Rate", "Outcome_Score"],
+            ["0", "14.2 ± 1.8", "84.5%", "0.42"],
+            ["1", "18.9 ± 2.1", "76.0%", "0.51"],
+            ["2", "11.4 [9.1 - 13.7]", "91.2%", "0.33"],
+            ["3", "< 0.001", "62.4%", "0.78"],
+            ["4", "22.5 ± 3.4", "55.0%", "0.84"],
+            ["5", "16.1 ± 1.2", "80.1%", "0.49"],
+            ["6", "19.8 ± 2.9", "68.5%", "0.66"],
+            ["7", "13.0 ± 1.1", "88.0%", "0.38"],
+        ]
+    )
+    banner_csv = tmp_path / "cytokine_supp.csv"
+    raw_Banner_df.to_csv(banner_csv, index=False, header=False)
+    cleansed_df, c_report = data_cleansing_agent.cleanse_tabular_file(banner_csv)
+    assert "Unnamed: 0" not in cleansed_df.columns
+    assert "IL6_Level" in cleansed_df.columns
+    assert pd.api.types.is_numeric_dtype(cleansed_df["IL6_Level"])
+    assert pd.api.types.is_numeric_dtype(cleansed_df["Response_Rate"])
+    assert len(cleansed_df) == 8
+
+    # --- 3. Leakage Proxy Pruning (Single-Feature Tautology & Boolean Complement) ---
+    leak_df = pd.DataFrame({
+        "Unnamed: 0": list(range(30)),
+        "legit_biomarker_a": [float((i * 7) % 13) + (i * 0.15) for i in range(30)],
+        "legit_biomarker_b": [float((i * 3) % 11) - (i * 0.08) for i in range(30)],
+        "target_outcome": [float(i * 2.5 + ((i % 4) * 1.2)) for i in range(30)],
+    })
+    # Inject a direct tautological proxy (r > 0.99 with target_outcome)
+    leak_df["tautology_proxy"] = leak_df["target_outcome"] * 1.001 + 0.002
+
+    run_res = data_scientist_agent.run_lazypredict_experiment(
+        df=leak_df,
+        target_column="target_outcome",
+        author_baseline_score=0.55,
+    )
+    top_feat_names = {f["feature"] for f in run_res["top_features"]}
+    assert "Unnamed: 0" not in top_feat_names
+    assert "tautology_proxy" not in top_feat_names, "Tautological proxy (r >= 0.88) must be pruned prior to evaluation"
+    assert run_res["best_score"] < 1.0
+
+    # --- 4. Scientific Coherence & Honest Signal Scoring Edge Cases ---
+    from app.models import Dissertation, IndustryProblem, LazyPredictRun
+
+    mock_diss = Dissertation(
+        title="Support Vector Machine Kernel Optimization on Synthetic Hyperplanes",
+        authors="Test Researcher",
+        university="Test University",
+        publication_year=2025,
+        domain="biomedical",
+        subdomain="Kernel Methods",
+        abstract="An empirical benchmark of radial basis function kernels.",
+        extracted_claims=["RBF kernels converge under bounded margin constraints."],
+    )
+    mock_lazy = LazyPredictRun(
+        target_column="sensor_drift",
+        task_type="regression",
+        best_model_name="Ridge",
+        best_score=0.0159,
+        author_baseline_score=0.6200,
+        signal_gain_delta=-0.6041,
+        top_features=[{"feature": "ambient_temp", "importance": 0.52}],
+    )
+    mock_prob = IndustryProblem(
+        title="TNF-Alpha Inhibitor Non-Response in Psoriasis and Atherosclerosis",
+        domain="biomedical",
+        tam_billions_usd=42.0,
+        keywords=["psoriasis", "atherosclerosis", "tnf", "cytokine", "inflammation"],
+    )
+
+    unrelated_problem = translation_agent.match_giant_impact_problem(
+        dissertation=mock_diss,
+        lazy_run=mock_lazy,
+        problems=[mock_prob],
+    )
+    assert unrelated_problem is None, "Must never force an unrelated disease problem when keyword/title overlap is zero"
+
+    # Low R2 (< 0.25) must never be floored at 62.0
+    async def _test_low_r2_tos():
+        low_opp = await translation_agent.synthesize_opportunity(
+            dissertation=mock_diss,
+            lazy_run=mock_lazy,
+            problems=[mock_prob],
+        )
+        assert low_opp["data_signal_score"] < 30.0, f"Expected honest low signal score < 30.0 for R2=0.0159, got {low_opp['data_signal_score']}"
+
+    asyncio.run(_test_low_r2_tos())
+
+    # --- 5. Tiny / Invalid Dataset Upload Rejection (Zero Orphan Rows) ---
+    with TestClient(app) as client:
+        before_count = len(client.get("/api/dissertations", headers=AUTH_HEADERS).json())
+        tiny_csv = b"col_a,col_b\n1.0,2.0\n3.0,4.0\n"
+        r_tiny = client.post(
+            "/api/dissertations/upload",
+            headers=AUTH_HEADERS,
+            files={"dataset_file": ("tiny_invalid.csv", io.BytesIO(tiny_csv), "text/csv")},
+        )
+        assert r_tiny.status_code == 400
+        after_count = len(client.get("/api/dissertations", headers=AUTH_HEADERS).json())
+        assert after_count == before_count, "Failed upload must clean up and leave zero orphan Dissertation rows"
+
 

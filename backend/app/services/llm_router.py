@@ -28,13 +28,23 @@ class LLMRouter:
         self.gcp_location = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
 
         # Gemini 4 Argon Rate, Concurrency, Daily Budget & Cache Guardrails
-        self._semaphore = asyncio.Semaphore(settings.GEMINI_ARGON_MAX_CONCURRENT)
+        self._loop_semaphores: Dict[int, asyncio.Semaphore] = {}
         self._recent_timestamps: deque[float] = deque()
         self._budget_date: date = date.today()
         self._daily_calls_used: int = 0
         self._cache_hits: int = 0
         self._response_cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self._max_cache_size: int = 256
+        self._cached_gcp_token: Optional[str] = None
+        self._cached_gcp_token_ts: float = 0.0
+
+    def _get_semaphore(self) -> asyncio.Semaphore:
+        loop_id = id(asyncio.get_running_loop())
+        sem = self._loop_semaphores.get(loop_id)
+        if sem is None:
+            sem = asyncio.Semaphore(settings.GEMINI_ARGON_MAX_CONCURRENT)
+            self._loop_semaphores[loop_id] = sem
+        return sem
 
     def _check_and_consume_argon_budget(self) -> bool:
         """
@@ -100,15 +110,22 @@ class LLMRouter:
         )
 
     async def _get_gcp_access_token(self) -> Optional[str]:
-        """Fetches OAuth2 access token from Cloud Run metadata server or local gcloud ADC."""
+        """Fetches OAuth2 access token from Cloud Run metadata server or local gcloud ADC (cached for 10 min)."""
+        now = time.monotonic()
+        if self._cached_gcp_token is not None and (now - self._cached_gcp_token_ts) < 600.0:
+            return self._cached_gcp_token or None
+
         try:
-            async with httpx.AsyncClient(timeout=2.5) as client:
+            async with httpx.AsyncClient(timeout=1.5) as client:
                 resp = await client.get(
                     "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
                     headers={"Metadata-Flavor": "Google"},
                 )
                 if resp.status_code == 200:
-                    return resp.json().get("access_token")
+                    tok = resp.json().get("access_token") or ""
+                    self._cached_gcp_token = tok
+                    self._cached_gcp_token_ts = now
+                    return tok or None
         except Exception:
             pass
 
@@ -116,13 +133,16 @@ class LLMRouter:
             out = subprocess.check_output(
                 ["gcloud", "auth", "print-access-token"],
                 stderr=subprocess.DEVNULL,
-                timeout=3.0,
+                timeout=2.5,
             )
             token = out.decode("utf-8").strip()
+            self._cached_gcp_token = token
+            self._cached_gcp_token_ts = now
             if token:
                 return token
         except Exception:
-            pass
+            self._cached_gcp_token = ""
+            self._cached_gcp_token_ts = now
         return None
 
     async def generate_structured_synthesis(
@@ -376,6 +396,68 @@ class LLMRouter:
             f"(Translation Score: {opp_info.get('overall_tos_score')}/100). All four validation steps, patent claims, and Python code are ready below."
         )
 
+    async def extract_scientific_pdf_intelligence(
+        self,
+        first_pages_text: str = "",
+        candidate_table_pages_text: str = "",
+        pdf_text: str = "",
+        filename: str = "",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Uses Gemini 4 Argon (with Gemini 3.8 Flash fallback) to perform deep scientific PDF extraction:
+        1) Bibliographic metadata (title, authors, university/institution, year, domain)
+        2) Author's primary hypothesis, statistical method, primary target variable, and reported baseline score
+        3) Key empirical claims & overlooked limitations
+        4) Reconstructed structured tabular matrix (headers + rows of numeric/categorical measurements)
+           from complex multi-column, borderless LaTeX, or prose-embedded empirical tables in the PDF.
+        """
+        front_txt = first_pages_text or pdf_text
+        table_txt = candidate_table_pages_text or pdf_text
+        if not front_txt or len(front_txt.strip()) < 40:
+            return None
+        system_prompt = (
+            "You are the ThesisOut Scientific PDF Intelligence & Quantitative Table Extraction Engine "
+            "powered by Gemini 4 Argon (and Gemini 3.8 Flash).\n"
+            "Analyze the provided dissertation/paper PDF text and extract:\n"
+            "1. Accurate bibliographic metadata (title, authors, university, publication_year, domain: 'biomedical'|'cs_ai'|'energy_materials'|'climate_earth').\n"
+            "2. The author's primary statistical method (e.g. 'Logistic Regression', 'OLS Linear Fit', 'ANOVA', 'Cox PH'), "
+            "primary outcome/target variable name, and reported baseline score (float between 0.05 and 0.99 if reported, else null).\n"
+            "3. Up to 5 concise empirical claims or quantitative findings from the study.\n"
+            "4. If the text contains an experimental, clinical, or benchmark table (even if broken across lines or borderless LaTeX) "
+            "or structured numeric measurements across samples/groups/conditions, reconstruct the richest empirical table with "
+            "clean column headers (`headers`: list of strings) and `rows` (list of lists of values, at least 6 rows and 3 columns, "
+            "converting 'mean ± SD' or percentages into clean floats where applicable). NEVER invent or fabricate numbers—only extract "
+            "real numbers present in the PDF text.\n"
+            "Respond strictly in valid JSON matching this schema:\n"
+            "{\n"
+            '  "parsed_title": "string",\n'
+            '  "parsed_authors": "string",\n'
+            '  "parsed_university": "string",\n'
+            '  "parsed_year": 2024,\n'
+            '  "domain": "biomedical",\n'
+            '  "author_statistical_method": "string",\n'
+            '  "author_primary_target": "string or null",\n'
+            '  "author_baseline_score": 0.65,\n'
+            '  "extracted_claims": ["claim 1", "claim 2"],\n'
+            '  "extracted_table": {\n'
+            '    "table_name": "short_descriptive_name",\n'
+            '    "headers": ["Col1", "Col2", "Col3"],\n'
+            '    "rows": [["val1", 12.4, 0.85], ["val2", 15.1, 0.91]]\n'
+            "  }\n"
+            "}"
+        )
+        user_prompt = (
+            f"=== FRONT MATTER & ABSTRACT ({filename}) ===\n{front_txt[:4500]}\n\n"
+            f"=== QUANTITATIVE & TABLE-BEARING PAGES ===\n{table_txt[:7000]}"
+        )
+        try:
+            res = await self._call_gemini_json(system_prompt, user_prompt)
+            if res and isinstance(res, dict):
+                return res
+        except Exception as exc:
+            logger.warning("Gemini PDF intelligence extraction notice: %s", exc)
+        return None
+
 
     async def _call_gemini_json(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
         capped_system = system_prompt[:4000]
@@ -402,14 +484,14 @@ class LLMRouter:
 
         model_cascade = ["gemini-4-argon", "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"]
 
-        async with self._semaphore:
+        async with self._get_semaphore():
             # 1. Try GEMINI_API_KEY via generativelanguage.googleapis.com
             api_key = self._get_gemini_key()
             if api_key:
                 for model_name in model_cascade:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                     try:
-                        async with httpx.AsyncClient(timeout=20.0) as client:
+                        async with httpx.AsyncClient(timeout=8.0) as client:
                             resp = await client.post(url, json=payload)
                             if resp.status_code == 200:
                                 data = resp.json()
@@ -432,7 +514,7 @@ class LLMRouter:
                         f"{model_name}:generateContent"
                     )
                     try:
-                        async with httpx.AsyncClient(timeout=20.0) as client:
+                        async with httpx.AsyncClient(timeout=8.0) as client:
                             resp = await client.post(
                                 url,
                                 headers={"Authorization": f"Bearer {token}"},

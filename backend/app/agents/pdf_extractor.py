@@ -453,6 +453,7 @@ class PDFExtractorAgent:
                 "source_url": "",
                 "file_path": str(out_path),
                 "row_count": len(df),
+                "col_count": int(df.shape[1]),
                 "numeric_cols": numeric_cols,
             }
         return None
@@ -621,6 +622,7 @@ class PDFExtractorAgent:
                 "source_url": "",
                 "file_path": str(out_path),
                 "row_count": len(df),
+                "col_count": int(df.shape[1]),
                 "numeric_cols": df.shape[1],
             }
         ]
@@ -741,6 +743,99 @@ class PDFExtractorAgent:
             reverse=True,
         )
         return extracted_artifacts
+
+    async def extract_gemini_pdf_intelligence_and_tables(
+        self,
+        pdf_path: str | Path,
+        dissertation_slug: str,
+    ) -> Dict[str, Any]:
+        """
+        Combines deterministic pypdf/pdfplumber scanning with Gemini 4 Argon (and Gemini 3.8 Flash fallback)
+        deep scientific PDF intelligence to extract:
+        - Accurate bibliographic metadata, statistical baseline method, primary target, and empirical claims
+        - Gemini-reconstructed structured empirical tables from complex/borderless PDF layouts.
+        """
+        from app.services.llm_router import llm_router
+
+        path = Path(pdf_path)
+        if not path.exists():
+            return {"gemini_meta": {}, "gemini_tables": []}
+
+        first_pages_chunks: List[str] = []
+        scored_table_pages: List[tuple[int, int, str]] = []
+        try:
+            reader = PdfReader(str(path))
+            for idx, page in enumerate(reader.pages):
+                try:
+                    txt = page.extract_text() or ""
+                except Exception:
+                    txt = ""
+                if idx < 4 and txt:
+                    first_pages_chunks.append(txt)
+                if txt:
+                    num_tokens = len(re.findall(r"\b\d+(?:\.\d+)?\b", txt))
+                    has_tbl = 30 if re.search(r"\btable\s+\d+|\bsupplementary\s+table\b", txt, re.I) else 0
+                    score = num_tokens + has_tbl
+                    if score >= 10:
+                        scored_table_pages.append((score, idx + 1, txt))
+        except Exception as exc:
+            logger.warning("Gemini PDF page scan notice: %s", exc)
+
+        if not first_pages_chunks:
+            try:
+                fallback_meta = self.extract_text_and_metadata(path)
+                fb_txt = fallback_meta.get("full_text_excerpt") or fallback_meta.get("text_preview") or ""
+                if fb_txt:
+                    first_pages_chunks.append(fb_txt)
+            except Exception:
+                pass
+
+        scored_table_pages.sort(key=lambda x: x[0], reverse=True)
+        top_table_text = "\n\n".join(
+            f"--- PAGE {pnum} ---\n{ptxt[:1800]}" for _, pnum, ptxt in scored_table_pages[:5]
+        )
+        first_pages_text = "\n\n".join(first_pages_chunks)
+        if len(first_pages_text.strip()) < 40 and len(top_table_text.strip()) < 40:
+            return {"gemini_meta": {}, "gemini_tables": []}
+
+        gemini_res = await llm_router.extract_scientific_pdf_intelligence(
+            first_pages_text=first_pages_text,
+            candidate_table_pages_text=top_table_text or first_pages_text,
+            pdf_text=first_pages_text,
+            filename=path.name,
+        )
+        if not gemini_res or not isinstance(gemini_res, dict):
+            return {"gemini_meta": {}, "gemini_tables": []}
+
+        gemini_tables: List[Dict[str, Any]] = []
+        candidate_tbl_dicts: List[Dict[str, Any]] = []
+        ext_tbl = gemini_res.get("extracted_table")
+        if isinstance(ext_tbl, dict):
+            candidate_tbl_dicts.append(ext_tbl)
+        ext_tbls = gemini_res.get("extracted_tables")
+        if isinstance(ext_tbls, list):
+            for t_item in ext_tbls:
+                if isinstance(t_item, dict):
+                    candidate_tbl_dicts.append(t_item)
+
+        for t_idx, t_dict in enumerate(candidate_tbl_dicts, start=1):
+            headers = t_dict.get("headers") or t_dict.get("columns")
+            rows = t_dict.get("rows")
+            if isinstance(headers, list) and isinstance(rows, list) and len(headers) >= 2 and len(rows) >= 4:
+                art = self._validate_and_save_raw_table(
+                    raw_table=[headers] + rows,
+                    dissertation_slug=f"{dissertation_slug}_gemini",
+                    stem=t_dict.get("table_name") or path.stem,
+                    page_num=1,
+                    table_idx=t_idx,
+                )
+                if art:
+                    gemini_tables.append(art)
+
+        return {
+            "gemini_meta": gemini_res,
+            "gemini_tables": gemini_tables,
+        }
 
 
 NUMERIC_LINE_START_RE = re.compile(r"^\d+[\.\)\s]+$")

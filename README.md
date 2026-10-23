@@ -6,19 +6,19 @@
 
 ## License & Commercial Pricing Schedule
 
-**Dual License: Free for Non-Commercial Research • Paid Commercial License Available** — Copyright (c) 2026 **Dr. Gretchen Boria**.
+**Dual License: Free for Personal & Academic Research • Paid Commercial License Available** — Copyright (c) 2026 **Dr. Gretchen Boria**.
 
 This repository (`https://github.com/gretchenboria/ThesisOut`) is **public** and licensed under the dual licensing terms in [`LICENSE`](LICENSE):
 
-### 1. Free Academic & Non-Commercial Research License (`$0`)
-Academic researchers, doctoral students, faculty, accredited universities, and non-profit research institutions may freely inspect, run, fork, and modify ThesisOut for **non-commercial scientific research and educational use** with attribution to Dr. Gretchen Boria.
+### 1. Free Personal, Academic & Non-Commercial Research License (`$0`)
+Individuals (personal use), academic researchers, doctoral students, faculty, accredited universities, and non-profit research institutions may freely inspect, run, fork, and modify ThesisOut for **personal, educational, and non-commercial scientific research** with attribution to Dr. Gretchen Boria.
 
 ### 2. Commercial License Pricing Schedule (For-Profit Entities)
 Using, hosting, integrating, or deploying ThesisOut within a for-profit company, venture capital fund, biotechnology/pharmaceutical enterprise, or commercial consulting practice requires a paid **Commercial License**:
 
 | Tier | Target Organization | Seats / Deployment | Annual License | Perpetual / Monthly Option |
 | :--- | :--- | :--- | :--- | :--- |
-| **Tier 0: Academic & Non-Profit** | Universities, PhD Researchers, Non-Profit Labs | Unlimited (Non-Commercial) | **FREE (`$0`)** | Free with Attribution |
+| **Tier 0: Personal, Academic & Non-Profit** | Individuals, Universities, PhD Researchers, Non-Profit Labs | Unlimited (Non-Commercial) | **FREE (`$0`)** | Free with Attribution |
 | **Tier 1: Startup & Boutique Scout** | Seed Startups ($\le 10$ staff), Boutique IP Scouts, Independent Consultants | Up to 3 seats • 1 Cloud Run / VPC instance | **`$4,800 / yr`** | `$450 / mo` |
 | **Tier 2: Venture & Biotech R&D** | Venture Capital Funds, Mid-Market Biotech/MedTech R&D, Corporate BD | Up to 15 seats • Private VPC deployment + 9-API Connectors | **`$18,000 / yr`** | `$1,750 / mo` |
 | **Tier 3: Enterprise & OEM** | Global Pharma, Enterprise R&D, White-Label / Commercial Redistribution | Unlimited seats • Multi-region VPC + Full OEM Source Rights | **`$48,000 / yr`** | **`$125,000`** One-Time Buyout |
