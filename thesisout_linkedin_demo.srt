@@ -35,85 +35,105 @@ benchmarks thirty machine learning models,
 and highlights the winning model and primary driver at the top.
 
 10
-00:00:39,738 --> 00:00:44,588
-Each discovery card pairs the source academic study and its overlooked
+00:00:39,738 --> 00:00:44,789
+Under the hood, seven specialized autonomous agents orchestrate the
 
 11
-00:00:44,588 --> 00:00:48,261
-empirical variable with a commercial product concept,
+00:00:44,789 --> 00:00:48,031
+audit in sequence: harvesting repositories,
 
 12
-00:00:48,261 --> 00:00:53,260
-model performance gain, and Translation Opportunity Score.
+00:00:48,031 --> 00:00:52,630
+extracting PDF tables, cleansing schemas and pruning leakage,
 
 13
-00:00:53,380 --> 00:00:57,850
-Save promising findings to your shortlist and attach due-diligence
+00:00:52,630 --> 00:00:55,872
+benchmarking thirty cross-validated models,
 
 14
-00:00:57,850 --> 00:01:03,638
-notes so your team can track priority licensing and validation targets.
+00:00:55,872 --> 00:01:02,884
+running conformal verification, and synthesizing clinical and patent whitespace.
 
 15
-00:01:03,758 --> 00:01:07,358
-Selecting any card opens the Opportunity Dossier.
+00:01:03,004 --> 00:01:07,854
+Each discovery card pairs the source academic study and its overlooked
 
 16
-00:01:07,358 --> 00:01:11,619
-Four summary blocks present the overlooked empirical clue,
+00:01:07,854 --> 00:01:11,527
+empirical variable with a commercial product concept,
 
 17
-00:01:11,619 --> 00:01:16,761
-the classical baseline blindspot, live clinical and patent whitespace,
+00:01:11,527 --> 00:01:16,526
+model performance gain, and Translation Opportunity Score.
 
 18
-00:01:16,761 --> 00:01:19,872
-and addressable market scale.
+00:01:16,646 --> 00:01:21,116
+Save promising findings to your shortlist and attach due-diligence
 
 19
-00:01:19,992 --> 00:01:24,491
-Directly inside the dossier, generate a provisional patent claim
+00:01:21,116 --> 00:01:26,904
+notes so your team can track priority licensing and validation targets.
 
 20
-00:01:24,491 --> 00:01:27,654
-grounded in the discovered regime thresholds,
+00:01:27,024 --> 00:01:30,624
+Selecting any card opens the Opportunity Dossier.
 
 21
-00:01:27,654 --> 00:01:34,258
-run live regulatory checks, and download the standalone Python model and report.
+00:01:30,624 --> 00:01:34,885
+Four summary blocks present the overlooked empirical clue,
 
 22
-00:01:34,378 --> 00:01:38,815
-The Empirical Leaderboard compares all thirty cross-validated models
+00:01:34,885 --> 00:01:40,027
+the classical baseline blindspot, live clinical and patent whitespace,
 
 23
-00:01:38,815 --> 00:01:43,383
-against the author's original baseline, reporting out-of-fold accuracy
+00:01:40,027 --> 00:01:43,138
+and addressable market scale.
 
 24
-00:01:43,383 --> 00:01:47,300
-and ninety-five percent confidence intervals.
+00:01:43,258 --> 00:01:47,757
+Directly inside the dossier, generate a provisional patent claim
 
 25
-00:01:47,420 --> 00:01:52,249
-Finally, inspect the exact variables driving the prediction alongside
+00:01:47,757 --> 00:01:50,920
+grounded in the discovered regime thresholds,
 
 26
-00:01:52,249 --> 00:01:56,799
-five-stage statistical verification, reporting target-permutation
+00:01:50,920 --> 00:01:57,524
+run live regulatory checks, and download the standalone Python model and report.
 
 27
-00:01:56,799 --> 00:01:59,738
-p-values, Super-Learner ensemble accuracy,
+00:01:57,644 --> 00:02:02,081
+The Empirical Leaderboard compares all thirty cross-validated models
 
 28
-00:01:59,738 --> 00:02:03,798
-and ninety percent split-conformal coverage.
+00:02:02,081 --> 00:02:06,649
+against the author's original baseline, reporting out-of-fold accuracy
 
 29
-00:02:03,918 --> 00:02:08,961
-Turn overlooked doctoral research and open scientific datasets into
+00:02:06,649 --> 00:02:10,566
+and ninety-five percent confidence intervals.
 
 30
-00:02:08,961 --> 00:02:17,214
+00:02:10,686 --> 00:02:15,515
+Finally, inspect the exact variables driving the prediction alongside
+
+31
+00:02:15,515 --> 00:02:20,065
+five-stage statistical verification, reporting target-permutation
+
+32
+00:02:20,065 --> 00:02:23,004
+p-values, Super-Learner ensemble accuracy,
+
+33
+00:02:23,004 --> 00:02:27,064
+and ninety percent split-conformal coverage.
+
+34
+00:02:27,184 --> 00:02:32,227
+Turn overlooked doctoral research and open scientific datasets into
+
+35
+00:02:32,227 --> 00:02:40,480
 verified commercial breakthroughs. Explore the live platform today at thesisout.com.
