@@ -49,6 +49,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from app.config import settings
 from app.agents.pdf_extractor import parse_scientific_number
+from app.agents.data_cleansing_agent import data_cleansing_agent
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
@@ -185,160 +186,40 @@ def _compute_multiclass_ovr_balanced_accuracy(y_true: np.ndarray, y_pred: np.nda
 
 
 class DataScientistAgent:
-    def _read_delimited_with_fallbacks(self, path: Path, preferred_sep: Optional[str] = None) -> pd.DataFrame:
-        encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
-        candidate_seps = [preferred_sep] if preferred_sep else [",", ";", "\t", "|", None]
-        best_df: Optional[pd.DataFrame] = None
-
-        for enc in encodings:
-            for sep in candidate_seps:
-                try:
-                    if sep is None:
-                        df = pd.read_csv(path, sep=None, engine="python", encoding=enc, on_bad_lines="skip")
-                    else:
-                        df = pd.read_csv(path, sep=sep, encoding=enc, on_bad_lines="skip")
-                    if df is not None and len(df) >= 1 and df.shape[1] >= 2:
-                        return df
-                    if best_df is None or (df is not None and df.shape[1] > best_df.shape[1]):
-                        best_df = df
-                except UnicodeDecodeError:
-                    break
-                except Exception:
-                    continue
-
-        if best_df is not None:
-            return best_df
-        return pd.read_csv(path, encoding="latin1", on_bad_lines="skip")
-
-    def _read_excel_with_fallbacks(self, path: Path) -> pd.DataFrame:
-        try:
-            xl = pd.ExcelFile(path)
-            best_sheet_df = None
-            for sname in xl.sheet_names:
-                sdf = xl.parse(sname)
-                if sdf.shape[1] >= 2 and len(sdf) >= 4:
-                    best_sheet_df = sdf
-                    break
-                if best_sheet_df is None or (sdf.shape[0] * sdf.shape[1] > best_sheet_df.shape[0] * best_sheet_df.shape[1]):
-                    best_sheet_df = sdf
-            if best_sheet_df is not None:
-                return best_sheet_df
-        except Exception:
-            pass
-        try:
-            return pd.read_excel(path)
-        except Exception:
-            return self._read_delimited_with_fallbacks(path, preferred_sep=None)
+    def __init__(self) -> None:
+        self._last_cleansing_reports: Dict[str, Dict[str, Any]] = {}
 
     def load_dataframe(self, file_path: str | Path) -> pd.DataFrame:
-        path = Path(file_path)
-        if not path.exists():
-            fallback = settings.DATASET_DIR / path.name
-            if fallback.exists():
-                path = fallback
-        suffix = path.suffix.lower()
-        magic = b""
-        try:
-            with open(path, "rb") as fh:
-                magic = fh.read(8)
-        except Exception:
-            pass
-
-        if magic[:4] == b"PK\x03\x04" or magic[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" or suffix in (".xlsx", ".xls"):
-            df = self._read_excel_with_fallbacks(path)
-        elif magic[:4] == b"PAR1" or suffix == ".parquet":
-            df = pd.read_parquet(path)
-        elif suffix in (".tsv", ".tab"):
-            df = self._read_delimited_with_fallbacks(path, preferred_sep="\t")
-        elif suffix == ".json":
-            df = pd.read_json(path)
-        else:
-            df = self._read_delimited_with_fallbacks(path, preferred_sep=None)
-
-        if df is None or df.empty:
-            return pd.DataFrame()
-
-        # Drop completely empty rows and columns
-        df = df.dropna(how="all").reset_index(drop=True)
-
-        # If >= 50% of columns are `Unnamed:*`, check if a title banner row preceded the real header row
-        unnamed_cnt = sum(1 for c in df.columns if str(c).strip().lower().startswith("unnamed") or str(c).strip() == "")
-        if df.shape[1] >= 2 and unnamed_cnt >= max(1, int(df.shape[1] * 0.5)) and len(df) >= 4:
-            for r_idx in range(min(6, len(df) - 2)):
-                row_vals = [str(v).strip() if pd.notna(v) else "" for v in df.iloc[r_idx].values]
-                non_empty = [v for v in row_vals if v and v.lower() != "nan"]
-                num_in_row = sum(1 for v in non_empty if parse_scientific_number(v) is not None)
-                if len(non_empty) >= max(2, int(df.shape[1] * 0.5)) and num_in_row < len(non_empty) * 0.5:
-                    new_cols = []
-                    seen_c: Dict[str, int] = {}
-                    for c_i, val in enumerate(row_vals):
-                        cname = val if val and val.lower() != "nan" else f"Variable_{c_i + 1}"
-                        if cname in seen_c:
-                            seen_c[cname] += 1
-                            cname = f"{cname}_{seen_c[cname]}"
-                        else:
-                            seen_c[cname] = 1
-                        new_cols.append(cname)
-                    df = df.iloc[r_idx + 1 :].copy().reset_index(drop=True)
-                    df.columns = new_cols
-                    break
-
-        # Safely handle remaining `Unnamed: *` columns:
-        # Drop `Unnamed: 0` if it is a row index or mostly empty; rename other data-bearing `Unnamed` columns
-        cols_to_drop = []
-        rename_map = {}
-        for idx, c in enumerate(df.columns):
-            c_str = str(c).strip()
-            if c_str.lower().startswith("unnamed") or c_str == "":
-                s = df.iloc[:, idx]
-                if float(s.isna().mean()) >= 0.70 or (idx == 0 and is_junk_or_id_column(c_str, s, len(df))):
-                    cols_to_drop.append(c)
-                else:
-                    rename_map[c] = f"Variable_{idx + 1}"
-        if cols_to_drop and len(df.columns) - len(cols_to_drop) >= 2:
-            df = df.drop(columns=cols_to_drop)
-        if rename_map:
-            df = df.rename(columns=rename_map)
-
-        # Deduplicate column names if needed
-        if len(set(df.columns)) < len(df.columns):
-            deduped = []
-            seen_names: Dict[str, int] = {}
-            for c in df.columns:
-                cs = str(c)
-                if cs in seen_names:
-                    seen_names[cs] += 1
-                    deduped.append(f"{cs}_{seen_names[cs]}")
-                else:
-                    seen_names[cs] = 1
-                    deduped.append(cs)
-            df.columns = deduped
-
-        # Coerce scientific numeric strings (e.g. `12.4 ± 1.2`, `84.2%`, `<0.001`, `1,234.5`) into float columns
-        for col in df.columns:
-            s = df[col]
-            if _is_string_or_object_series(s):
-                non_null = s.dropna().astype(str).str.strip()
-                non_null = non_null[non_null != ""]
-                if len(non_null) >= 3:
-                    parsed = s.map(parse_scientific_number)
-                    if float(parsed.notna().sum()) / max(1, len(non_null)) >= 0.55:
-                        df[col] = parsed.astype(float)
-
+        df, report = data_cleansing_agent.cleanse_tabular_file(file_path)
+        self._last_cleansing_reports[str(file_path)] = report
+        self._last_cleansing_reports["__latest__"] = report
         return df
 
-    def profile_dataset(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Generates column metadata and filters out junk/ID columns."""
+    def get_last_cleansing_report(self, file_path: Optional[str | Path] = None) -> Dict[str, Any]:
+        if file_path and str(file_path) in self._last_cleansing_reports:
+            return self._last_cleansing_reports[str(file_path)]
+        return self._last_cleansing_reports.get("__latest__", {})
+
+    def profile_dataset(self, df: pd.DataFrame, cleansing_report: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Generates column metadata and attaches data-cleansing-agent audit details."""
         col_meta: List[Dict[str, Any]] = []
         n_rows = len(df)
+        report = cleansing_report or self._last_cleansing_reports.get("__latest__", {})
+        coerced_map = {
+            c["column"]: c.get("example", "") for c in (report.get("scientific_coercions") or [])
+        }
+        renamed_map = {
+            r["to"]: r.get("from", "") for r in (report.get("renamed_columns") or [])
+        }
 
         for col in df.columns:
+            col_str = str(col)
             series = df[col]
             missing_pct = round(float(series.isna().mean() * 100.0), 2)
             unique_cnt = int(series.nunique(dropna=True))
             dtype_str = str(series.dtype)
 
-            if is_junk_or_id_column(str(col), series, n_rows):
+            if is_junk_or_id_column(col_str, series, n_rows):
                 role = "identifier"
             elif unique_cnt <= 1:
                 role = "constant"
@@ -349,13 +230,25 @@ class DataScientistAgent:
             else:
                 role = "feature"
 
+            cleansing_notes = []
+            if col_str in coerced_map:
+                cleansing_notes.append(f"Coerced from scientific string ({coerced_map[col_str]})")
+            if col_str in renamed_map:
+                cleansing_notes.append(f"Renamed from '{renamed_map[col_str]}'")
+            if missing_pct > 0:
+                cleansing_notes.append(f"Inside-fold median/ordinal imputation ({missing_pct}% missing)")
+            if role == "identifier":
+                cleansing_notes.append("Excluded from modeling (identifier/index)")
+
             col_meta.append(
                 {
-                    "name": str(col),
+                    "name": col_str,
                     "dtype": dtype_str,
                     "missing_pct": missing_pct,
                     "unique_count": unique_cnt,
                     "role": role,
+                    "cleansing_note": "; ".join(cleansing_notes) if cleansing_notes else "Validated clean",
+                    "cleansing_summary": report if (len(col_meta) == 0 and report) else None,
                 }
             )
 
@@ -369,6 +262,7 @@ class DataScientistAgent:
             "col_count": int(len(df.columns)),
             "column_metadata": col_meta,
             "sample_rows": sample_rows,
+            "cleansing_report": report,
         }
 
     def select_targets_for_sweep(

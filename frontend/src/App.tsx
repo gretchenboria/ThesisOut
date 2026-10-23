@@ -1209,6 +1209,7 @@ export function App() {
                         {[
                           'harvester-agent',
                           'pdf-extractor-agent',
+                          'data-cleansing-agent',
                           'ml-rigor-scientist',
                           'deep-inference-auditor',
                           'translation-whitespace-agent',
@@ -1640,7 +1641,8 @@ export function App() {
                       uRun?.top_features?.find((f) => !f.discussed_by_author) ||
                       uRun?.top_features?.[0];
                     return (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
                         <div className="bg-white border-2 border-slate-900 rounded-xl p-2.5">
                           <div className="text-[10px] font-extrabold text-slate-500 uppercase">
                             TARGET AUDITED
@@ -1691,6 +1693,28 @@ export function App() {
                           </div>
                         </div>
                       </div>
+                      {(() => {
+                        const cSummary = (uDs?.column_metadata?.[0] as any)?.cleansing_summary;
+                        if (!cSummary?.actions?.length) return null;
+                        return (
+                          <div className="bg-white/80 border border-slate-300 rounded-xl px-3 py-2 text-[11px] font-mono text-slate-800 space-y-1">
+                            <div className="font-extrabold text-[#2B4257] uppercase text-[10px]">
+                              DATA CLEANSING AUDIT (data-cleansing-agent • {cSummary.detected_format || 'Tabular'})
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {cSummary.actions.map((act: string, i: number) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-0.5 rounded bg-[#EDF0F2] border border-[#B8C6D1] text-[#1E2E3D] font-bold"
+                                >
+                                  {act}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
                     );
                   })()}
                 </section>

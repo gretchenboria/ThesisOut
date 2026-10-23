@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.agents.data_cleansing_agent import data_cleansing_agent
 from app.agents.data_scientist import data_scientist_agent
 from app.agents.deep_inference_agent import deep_inference_agent
 from app.agents.harvester_agent import harvester_agent
@@ -387,6 +388,28 @@ async def upload_dissertation_and_dataset(
         db.refresh(diss)
 
     return diss
+
+
+@router.get("/datasets/{dataset_id}/cleansing-report")
+def get_dataset_cleansing_report(
+    dataset_id: int,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Runs or retrieves the structured Data Cleansing & Schema Curation Report (`data-cleansing-agent`)
+    for any indexed or uploaded dataset artifact.
+    """
+    ds = db.query(DatasetArtifact).filter(DatasetArtifact.id == dataset_id).first()
+    if not ds:
+        raise HTTPException(status_code=404, detail="Dataset artifact not found")
+    record_agent_invocation(db, "data-cleansing-agent")
+    _, report = data_cleansing_agent.cleanse_tabular_file(ds.file_path)
+    return {
+        "dataset_id": ds.id,
+        "dataset_name": ds.name,
+        "source_type": ds.source_type,
+        **report,
+    }
 
 
 @router.post("/lazypredict/run-custom", response_model=LazyPredictRunSchema)

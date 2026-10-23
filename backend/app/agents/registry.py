@@ -44,6 +44,20 @@ PRODUCTION_AGENT_SPECS: List[Dict[str, Any]] = [
         ],
     },
     {
+        "name": "data-cleansing-agent",
+        "role": "Scientific Data Cleansing & Schema Curation Agent",
+        "description": "Normalizes raw CSV, TSV, Excel (.xlsx/.xls), Parquet, and PDF tables; promotes title-banner headers; coerces scientific measurement strings (±, %, CI brackets, inequalities) to float64; strips ID/index columns; and enforces inside-fold imputation.",
+        "skill_name": "scientific-data-cleanser",
+        "skill_path": ".agents/skills/scientific-data-cleanser/SKILL.md",
+        "agent_md_path": ".agents/agents/data-cleansing-agent/agent.md",
+        "tools_allowed": ["view_file", "write_file", "edit_file", "send_message"],
+        "policies": [
+            {"rule": "enforce", "target": "scientific_unit_and_string_coercion", "reason": "Coerces mean ± SD, percentages, CI brackets, and inequalities into float64."},
+            {"rule": "enforce", "target": "header_promotion_and_deduplication", "reason": "Promotes true headers from title-banner sheets and deduplicates column names."},
+            {"rule": "enforce", "target": "inside_fold_imputation_only", "reason": "Routes NaN/inf cells strictly to training-fold median and ordinal encoders."},
+        ],
+    },
+    {
         "name": "ml-rigor-scientist",
         "role": "Principal ML & Biostatistical Rigor Scientist Agent",
         "description": "Executes leak-free 30-model out-of-fold LazyPredict sweeps with inside-fold imputation/scaling, single/multi-feature proxy pruning, and 95% confidence intervals.",

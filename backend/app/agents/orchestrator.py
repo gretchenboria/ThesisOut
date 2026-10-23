@@ -15,6 +15,7 @@ from app.agents.data_scientist import data_scientist_agent
 from app.agents.harvester_agent import harvester_agent
 from app.agents.pdf_extractor import pdf_extractor_agent
 from app.agents.problem_harvester import live_problem_harvester
+from app.agents.registry import record_agent_invocation
 from app.agents.translation_agent import translation_agent
 from app.config import settings
 from app.models import DatasetArtifact, Dissertation, IndustryProblem, LazyPredictRun, MarketOpportunity
@@ -37,12 +38,14 @@ class PipelineOrchestrator:
         author_discussed_features: Optional[List[str]] = None,
         max_secondary_targets: int = 0,
     ) -> Optional[DatasetArtifact]:
+        record_agent_invocation(db, "data-cleansing-agent")
         df = await asyncio.to_thread(data_scientist_agent.load_dataframe, dataset_path)
         if len(df) < 5 or len(df.columns) < 2:
             logger.warning("Dataset %s has insufficient rows/columns (%s) for LazyPredict", dataset_name, df.shape)
             return None
 
-        profile = await asyncio.to_thread(data_scientist_agent.profile_dataset, df)
+        cleansing_rep = data_scientist_agent.get_last_cleansing_report(dataset_path)
+        profile = await asyncio.to_thread(data_scientist_agent.profile_dataset, df, cleansing_rep)
 
         ds_artifact = DatasetArtifact(
             dissertation_id=dissertation.id,
