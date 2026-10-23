@@ -288,23 +288,10 @@ class PipelineOrchestrator:
             real_zenodo_files = []
 
         if not real_zenodo_files:
-            # Use verified tabular CSV on disk so 30-model LazyPredict sweep always completes quickly
-            existing_csvs = sorted(settings.DATASET_DIR.glob("*.csv"))
-            if existing_csvs:
-                chosen_csv = existing_csvs[0]
-                if domain == "biomedical":
-                    for c in existing_csvs:
-                        if "stanford" in c.name or "pdac" in c.name:
-                            chosen_csv = c
-                            break
-                real_zenodo_files = [
-                    {
-                        "name": f"Open-Access Cohort Dataset ({chosen_csv.name})",
-                        "source_type": "zenodo",
-                        "source_url": "https://zenodo.org/",
-                        "file_path": str(chosen_csv),
-                    }
-                ]
+            yield sse(
+                "zenodo_notice",
+                f"No direct open-access tabular CSV/TSV file resolved for '{query}' across Zenodo, Figshare, Dataverse, or Dryad.",
+            )
 
         if created_dissertations and real_zenodo_files:
             primary_diss = created_dissertations[0]

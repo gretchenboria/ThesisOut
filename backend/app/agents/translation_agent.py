@@ -92,11 +92,16 @@ class TranslationAgent:
             kw_hits = sum(3.0 for kw in (prob.keywords or []) if kw.lower() in corpus)
             title_words = [w.lower() for w in prob.title.split() if len(w) > 4]
             title_hits = sum(1.5 for w in title_words if w in corpus)
+            if kw_hits == 0 and title_hits == 0:
+                continue
             tam_bonus = min(5.0, prob.tam_billions_usd / 50.0)
             score = kw_hits + title_hits + tam_bonus
             if score > best_score:
                 best_score = score
                 best_problem = prob
+
+        if best_score <= 0:
+            return None
 
         return best_problem
 
@@ -167,11 +172,15 @@ class TranslationAgent:
             "commercial_saturation": "Low — Current tools rely on simpler single-variable rules.",
         }
 
-        # Honest, clear scoring (never fake a +15% gain when gain is 0%)
+        # Honest, clear scoring (never fake a +15% gain when gain is 0%, nor inflate near-zero R2/AUC)
         raw_gain = max(0.0, float(lazy_run.signal_gain_delta or 0.0))
-        base_accuracy_score = max(0.0, min(1.0, float(lazy_run.best_score or 0.7))) * 85.0
+        best_sc = max(0.0, min(1.0, float(lazy_run.best_score or 0.0)))
+        base_accuracy_score = best_sc * 85.0
         gain_bonus = min(14.5, raw_gain * 60.0)
-        data_signal_score = round(min(99.0, max(62.0, base_accuracy_score + gain_bonus)), 1)
+        if best_sc < 0.25:
+            data_signal_score = round(max(18.0, best_sc * 100.0 + gain_bonus * 0.5), 1)
+        else:
+            data_signal_score = round(min(99.0, max(52.0, base_accuracy_score + gain_bonus)), 1)
 
         rigor_score = round(float(dissertation.scientific_rigor_score or 0.90) * 100.0, 1)
         whitespace_score = 94.0 if ct_check.get("total_trials", 0) <= 10 else 85.0
