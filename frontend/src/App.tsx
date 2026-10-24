@@ -212,11 +212,11 @@ interface DeepInferenceResult {
 }
 
 const DOMAIN_NAMES: Record<string, string> = {
-  all: 'All Domains',
-  biomedical: 'Biomedical',
-  cs_ai: 'AI / Systems',
+  all: 'All Science & Engineering',
+  cs_ai: 'AI / Computing',
   energy_materials: 'Energy / Materials',
   climate_earth: 'Climate / Earth',
+  biomedical: 'Biomedical',
 };
 
 export function App() {
@@ -880,7 +880,7 @@ export function App() {
                 Thesis<span className="text-[#D8B99C]">Out</span>
               </span>
               <span className="text-[10px] font-mono font-bold text-[#E6D2BE]/90 tracking-tight mt-0.5">
-                Turning Doctoral Data into Verified Commercial Breakthroughs
+                Turning Science &amp; Engineering Doctoral Data into Breakthroughs
               </span>
             </div>
           </button>
@@ -975,17 +975,17 @@ export function App() {
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2.5">
                   <span className="px-2.5 py-0.5 rounded-lg leather-badge text-[11px] font-extrabold font-mono">
-                    7-AGENT SCIENTIFIC DISCOVERY ENGINE
+                    7-AGENT SCIENCE &amp; ENGINEERING DISCOVERY ENGINE
                   </span>
                   <span className="px-2.5 py-0.5 rounded-lg bg-[#EDF0F2] border border-[#B8C6D1] text-[#2B4257] text-[11px] font-mono font-extrabold">
                     Google Gemini + 30 ML Models
                   </span>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  Surface Overlooked Signals in Global Doctoral Research
+                  Surface Overlooked Signals Across Science &amp; Engineering Dissertations
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed max-w-2xl">
-                  Thousands of PhD dissertations publish rich experimental datasets analyzed only with basic linear models. ThesisOut harvests open-access doctoral datasets, parses hypotheses and complex data tables with <span className="font-bold text-slate-900">Gemini</span>, benchmarks <span className="font-bold text-slate-900">30 cross-validated ML models</span> with <span className="font-bold text-slate-900">5-stage conformal proof</span>, and audits clinical and patent whitespace across <span className="font-bold text-slate-900">9 live scientific registries</span>.
+                  Thousands of PhD dissertations across <span className="font-bold text-slate-900">computing, energy, materials, climate, physics, and biomedical sciences</span> publish rich experimental datasets analyzed only with basic linear models. ThesisOut harvests open-access doctoral datasets, parses hypotheses and complex data tables with <span className="font-bold text-slate-900">Gemini</span>, benchmarks <span className="font-bold text-slate-900">30 cross-validated ML models</span> with <span className="font-bold text-slate-900">5-stage conformal proof</span>, and audits technical and patent whitespace across <span className="font-bold text-slate-900">9 live scientific registries</span>.
                 </p>
               </div>
             </div>
@@ -1125,10 +1125,10 @@ export function App() {
                         Mission &amp; Scope
                       </div>
                       <div className="text-sm font-extrabold text-slate-900">
-                        Empirical Discovery Across Global Doctoral Research
+                        Empirical Discovery Across All Science &amp; Engineering Fields
                       </div>
                       <div className="text-slate-700 leading-relaxed font-medium">
-                        Doctoral dissertations frequently publish rich experimental and clinical datasets analyzed only with classical linear or univariate models. ThesisOut harvests live dissertations and open-access datasets, re-analyzes every tabular variable across 30 machine learning architectures, and surfaces non-linear interactions with high commercial and clinical value.
+                        Doctoral dissertations across computing, energy, materials science, climate, physics, and biomedical fields frequently publish rich experimental datasets analyzed only with classical linear models. ThesisOut harvests live dissertations and open-access datasets, re-analyzes every tabular variable across 30 machine learning architectures, and surfaces non-linear interactions with high commercial and technical value.
                       </div>
                     </div>
 
@@ -1140,7 +1140,7 @@ export function App() {
                         Nested Cross-Validation &amp; Conformal Calibration
                       </div>
                       <div className="text-slate-700 leading-relaxed font-medium">
-                        Dissertations are indexed from OpenAlex, EuropePMC, and arXiv alongside empirical tabular datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad. Imputation, categorical encoding, and scaling are fit strictly inside cross-validation folds to preserve out-of-fold integrity.
+                        Dissertations are indexed from OpenAlex, arXiv, and EuropePMC alongside empirical tabular datasets from Zenodo, Figshare, Harvard Dataverse, and Dryad. Imputation, categorical encoding, and scaling are fit strictly inside cross-validation folds to preserve out-of-fold integrity.
                       </div>
                     </div>
 
@@ -1152,7 +1152,7 @@ export function App() {
                         Multi-Registry Evidence &amp; Standalone Code
                       </div>
                       <div className="text-slate-700 leading-relaxed font-medium">
-                        Each empirical signal is cross-referenced against ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to quantify clinical and patent whitespace. Researchers can maintain due-diligence shortlists with persistent notes and export standalone Python pipelines.
+                        Each empirical signal is cross-referenced against 9 live scientific, engineering, and regulatory registries (arXiv, HuggingFace, Zenodo, DataCite, ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA) to quantify patent and market whitespace. Researchers can maintain shortlists with persistent notes and download standalone Python pipelines.
                       </div>
                     </div>
                   </div>
@@ -1225,10 +1225,10 @@ export function App() {
                       STAGE 04 • TRANSLATION &amp; WHITESPACE
                     </span>
                     <div className="text-sm font-extrabold text-slate-900">
-                      9-API Regulatory Audit &amp; Code Export
+                      9-API Whitespace Audit &amp; Code Generation
                     </div>
                     <div className="text-slate-700 leading-relaxed font-medium">
-                      Cross-checks ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA FAERS, synthesizes the Translation Opportunity Score (TOS) with Google Gemini, and exports standalone Python code.
+                      Cross-checks arXiv, HuggingFace, Zenodo, DataCite, ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA, synthesizes the Translation Opportunity Score (TOS) with Google Gemini, and generates standalone Python code.
                     </div>
                   </div>
                 </div>
@@ -1846,7 +1846,7 @@ export function App() {
                         label: 'Translate',
                         sub: '9 Live APIs',
                         accent: '#7A1C24',
-                        desc: 'Audits clinical and patent whitespace across ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA to score commercial potential.',
+                        desc: 'Audits technical, patent, and regulatory whitespace across arXiv, HuggingFace, Zenodo, ClinicalTrials.gov, OpenTargets, ChEMBL, and openFDA.',
                       },
                       {
                         num: '07',
@@ -1865,7 +1865,7 @@ export function App() {
                               WHAT THESISOUT IS &amp; HOW IT WORKS
                             </span>
                             <span className="text-xs font-bold text-slate-700">
-                              Autonomous 7-agent platform that re-analyzes doctoral datasets across 30 ML models &amp; 9 live registries to uncover commercial breakthroughs.
+                              Autonomous 7-agent platform that re-analyzes science &amp; engineering doctoral datasets across 30 ML models &amp; 9 live registries.
                             </span>
                           </div>
                           <button
@@ -2050,10 +2050,10 @@ export function App() {
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {[
-                      'Oncology Biomarkers',
                       'Battery Degradation',
                       'Semiconductor Telemetry',
                       'Ocean Carbon Flux',
+                      'Oncology Biomarkers',
                     ].map((topic) => (
                       <button
                         key={topic}
